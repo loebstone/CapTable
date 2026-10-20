@@ -3,7 +3,7 @@ import {
   db, distributionYears, snapshotRows, yearFigures, yearCosts, yearDeclarations,
   yearFinalizations, yearCorrections,
 } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import {
   OpenYearBody, GetYearParams, GetYearResponse, ListYearsResponse, SaveYearFiguresBody,
   DeclareYearBody, FinalizeYearBody, CorrectYearBody,
@@ -16,11 +16,12 @@ import {
   yearDetail, currentYearRates, draftInputs, requireDraft, requireFinalized, requireDocument, requiredNote, calendarDate,
 } from "../lib/distribution-years";
 import { HttpError } from "../lib/errors";
+import { resetPracticeYear } from "../lib/practice-years";
 
 const router: IRouter = Router();
-router.get("/years", async (_req, res): Promise<void> => {
+for (const [path, practice] of [["/years", false], ["/practice-years", true]] as const) router.get(path, async (_req, res): Promise<void> => {
   const result = await db.transaction(async (tx) => {
-    const rows = await tx.select().from(distributionYears).orderBy(desc(distributionYears.calendarYear));
+    const rows = await tx.select().from(distributionYears).where(eq(distributionYears.isPractice, practice)).orderBy(desc(distributionYears.calendarYear), desc(distributionYears.id));
     return Promise.all(rows.map(async (year) => {
       const final = await requireFinalized(tx, year.id).catch((error: unknown) => {
         if (error instanceof HttpError && error.status === 409) return null;
@@ -41,8 +42,8 @@ router.post("/years", async (req, res): Promise<void> => {
   const data = OpenYearBody.parse(req.body);
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
     await assertAccess(actor, tx);
-    const [existing] = await tx.select().from(distributionYears).where(eq(distributionYears.calendarYear, data.calendarYear)).limit(1);
-    if (existing) throw new HttpError(409, `A distribution year already exists for ${data.calendarYear}`);
+    const [existing] = await tx.select().from(distributionYears).where(and(eq(distributionYears.calendarYear, data.calendarYear), eq(distributionYears.isPractice, false))).limit(1);
+    if (!data.isPractice && existing) throw new HttpError(409, `A real distribution year already exists for ${data.calendarYear}`);
     const rows = await tx.select().from(snapshotRows).where(eq(snapshotRows.snapshotId, data.snapshotId));
     if (!rows.length) throw new HttpError(404, "Holdings snapshot not found or empty");
     validateYearSnapshot(rows);
@@ -51,6 +52,13 @@ router.post("/years", async (req, res): Promise<void> => {
     return yearDetail(tx, year.id);
   });
   res.status(201).json(GetYearResponse.parse(result));
+});
+router.post("/years/:id/reset-practice", async (req, res): Promise<void> => {
+  const { id } = GetYearParams.parse(req.params);
+  const result = await resetPracticeYear(currentIdentity(req).personId, id, req.body);
+  // Refusal is returned AFTER committing its audit, not thrown in the transaction.
+  if ("denied" in result) { res.status(403).json({ error: "A real distribution year cannot be reset" }); return; }
+  res.json(GetYearResponse.parse(result));
 });
 router.post("/years/:id/figures", async (req, res): Promise<void> => {
   const { id } = GetYearParams.parse(req.params);

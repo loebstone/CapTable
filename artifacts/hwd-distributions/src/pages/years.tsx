@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useListYears, useOpenYear, useListSnapshots, useGetHoldings, useFetchHoldings, useTakeSnapshot, useListRates, useCopyRates,
-  getListYearsQueryKey, getListSnapshotsQueryKey, getGetHoldingsQueryKey, getListRatesQueryKey, getListAuditQueryKey,
+  useListYears, useListPracticeYears, useOpenYear, useListSnapshots, useGetHoldings, useFetchHoldings, useTakeSnapshot, useListRates, useCopyRates,
+  getListYearsQueryKey, getListPracticeYearsQueryKey, getListSnapshotsQueryKey, getGetHoldingsQueryKey, getListRatesQueryKey, getListAuditQueryKey,
   type YearSummaryStatus,
 } from "@workspace/api-client-react";
 import { Plus, ArrowRight, RefreshCw, Camera, Copy } from "lucide-react";
@@ -19,6 +19,7 @@ export function StatusTag({ status }: { status: YearSummaryStatus }) {
 
 export default function YearsPage() {
   const q = useListYears();
+  const practice = useListPracticeYears();
   const [open, setOpen] = useState(false);
   const list = [...(q.data ?? [])].sort((a, b) => b.calendarYear - a.calendarYear);
   return (
@@ -42,6 +43,15 @@ export default function YearsPage() {
           ))}
         </div>
       )}
+      <section className="space-y-3" data-testid="section-practice-years">
+        <h2 className="font-display text-xl">Practice years</h2>
+        <p className="text-xs text-muted-foreground">Separate from real distributions. Any number may use the same calendar year.</p>
+        {practice.isLoading ? <SkeletonRows rows={2} /> : practice.isError ? <ErrorPanel error={practice.error} onRetry={() => practice.refetch()} /> : !practice.data?.length ? <Empty title="No practice years yet." /> : (
+          <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+            {practice.data.map((y) => <li key={y.id}><Link href={`/years/${y.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-secondary/40" data-testid={`link-practice-year-${y.id}`}><span className="font-display text-xl">{y.calendarYear} — Practice</span><StatusTag status={y.status} /><span className="text-xs text-muted-foreground">Snapshot #{y.snapshotId}</span><ArrowRight className="ml-auto h-4 w-4" /></Link></li>)}
+          </ul>
+        )}
+      </section>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto bg-card sm:max-w-2xl">{open && <OpenYearForm existing={list.map((y) => y.calendarYear)} onDone={() => setOpen(false)} />}</DialogContent>
       </Dialog>
@@ -54,6 +64,7 @@ function OpenYearForm({ existing, onDone }: { existing: number[]; onDone: () => 
   const { toast } = useToast();
   const [, nav] = useLocation();
   const [year, setYear] = useState(String(new Date().getFullYear() - 1));
+  const [isPractice, setPractice] = useState(false);
   const [snapId, setSnapId] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [snapNote, setSnapNote] = useState("");
@@ -65,11 +76,11 @@ function OpenYearForm({ existing, onDone }: { existing: number[]; onDone: () => 
   const fetchH = useFetchHoldings({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetHoldingsQueryKey() }); inv(); } } });
   const take = useTakeSnapshot({ mutation: { onSuccess: (s) => { qc.invalidateQueries({ queryKey: getListSnapshotsQueryKey() }); inv(); setSnapId(s.id); setSnapNote(""); toast({ title: `Snapshot #${s.id} taken` }); } } });
   const copy = useCopyRates({ mutation: { onSuccess: (t) => { qc.invalidateQueries({ queryKey: getListRatesQueryKey() }); inv(); setCopyNote(""); toast({ title: `Rates copied into ${t.taxYear}`, description: "Review them on Annual rates." }); } } });
-  const openY = useOpenYear({ mutation: { onSuccess: (y) => { qc.invalidateQueries({ queryKey: getListYearsQueryKey() }); inv(); toast({ title: `${y.calendarYear} opened` }); onDone(); nav(`/years/${y.id}`); } } });
+  const openY = useOpenYear({ mutation: { onSuccess: (y) => { qc.invalidateQueries({ queryKey: getListYearsQueryKey() }); qc.invalidateQueries({ queryKey: getListPracticeYearsQueryKey() }); inv(); toast({ title: `${y.calendarYear}${y.isPractice ? " — Practice" : ""} opened` }); onDone(); nav(`/years/${y.id}`); } } });
 
   const y = Number(year);
   const yearOk = Number.isInteger(y) && y >= 1900 && y <= 9999;
-  const dup = existing.includes(y);
+  const dup = !isPractice && existing.includes(y);
   const rateYears = (rates.data ?? []).map((r) => r.taxYear).sort((a, b) => b - a);
   const hasRates = rateYears.includes(y);
   const prior = rateYears.find((r) => r < y) ?? rateYears[0];
@@ -78,11 +89,15 @@ function OpenYearForm({ existing, onDone }: { existing: number[]; onDone: () => 
   const valid = yearOk && !dup && hasRates && snapId && note.trim();
 
   return (
-    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (valid) openY.mutate({ data: { calendarYear: y, snapshotId: snapId!, note: note.trim() } }); }}>
+    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (valid) openY.mutate({ data: { calendarYear: y, isPractice, snapshotId: snapId!, note: note.trim() } }); }}>
       <DialogHeader>
         <DialogTitle className="font-display text-2xl font-normal">Open a distribution year</DialogTitle>
         <DialogDescription>The snapshot is fixed when you open the year. Rates and residences are frozen when you finalize it.</DialogDescription>
       </DialogHeader>
+      <label className="flex items-start gap-3 rounded-md border border-border bg-secondary/40 p-3 text-sm">
+        <input type="checkbox" checked={isPractice} onChange={(e) => setPractice(e.target.checked)} className="mt-1" data-testid="checkbox-practice-year" />
+        <span><b>Practice year</b><span className="mt-1 block text-xs text-muted-foreground">Nothing here is a real distribution. This choice is permanent; practice and real years can never be converted into each other.</span></span>
+      </label>
       <Field label="Calendar year" error={dup ? "This year is already open." : !yearOk && year ? "Year 1900–9999" : null}>
         <input className={inputCls + " num w-32"} value={year} maxLength={4} onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))} data-testid="input-calendar-year" />
       </Field>

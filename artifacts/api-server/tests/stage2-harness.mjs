@@ -111,7 +111,7 @@ export async function stage2Harness() {
     client.release(); stream.write = originalStreamWrite;
     await new Promise((resolve) => stub.close(resolve));
     const persisted = (await pool.query("SELECT (SELECT count(*) FROM access_entries)::int AS access, (SELECT count(*) FROM distribution_years)::int AS years, (SELECT count(*) FROM distribution_entries)::int AS payments, (SELECT count(*) FROM audit_log)::int AS audit")).rows[0];
-    results.push({ check: "Cleanup and transport", result: "PASS", evidence: { databaseAction: "ROLLBACK; no hard deletes", persisted, roster: "LOCAL STUB ONLY", stubCalls: calls, realRosterCalls: 0, storage: "Real private App Storage; small labeled test files retained (no hard deletes)" } });
+    results.push({ check: "Cleanup and transport", result: "PASS", evidence: { databaseAction: "ROLLBACK of temporary test tables; persistent records unchanged", persisted, roster: "LOCAL STUB ONLY", stubCalls: calls, realRosterCalls: 0, storage: "Real private App Storage; real-year test files retained; only guarded practice resets remove files" } });
     await pool.end();
     console.log(JSON.stringify(results, null, 2));
   };

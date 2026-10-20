@@ -12,7 +12,8 @@
     "verify:stage2": "tsx tests/verify-stage2.mjs",
     "verify:stage3": "tsx tests/verify-stage3.mjs",
     "verify:security": "tsx tests/verify-security.mjs",
-    "verify:rates-csv": "tsx tests/verify-rates-csv.mjs"
+    "verify:rates-csv": "tsx tests/verify-rates-csv.mjs",
+    "verify:practice": "tsx tests/verify-practice.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.4.0",

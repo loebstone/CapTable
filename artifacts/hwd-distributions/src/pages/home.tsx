@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { useGetHoldings, useListYears, getGetHoldingsQueryKey, getListYearsQueryKey } from "@workspace/api-client-react";
+import { useGetHoldings, useListYears, useListPracticeYears, getGetHoldingsQueryKey, getListYearsQueryKey } from "@workspace/api-client-react";
 import { ArrowRight } from "lucide-react";
 import { PageHeader, SkeletonRows, ErrorPanel, Empty } from "@/components/bits";
 import { StatusTag } from "@/pages/years";
@@ -16,6 +16,7 @@ const LINKS = [
 export default function HomePage() {
   const hq = useGetHoldings({ query: { queryKey: getGetHoldingsQueryKey() } });
   const yq = useListYears({ query: { queryKey: getListYearsQueryKey() } });
+  const pq = useListPracticeYears();
   const h = hq.data?.holdings ?? null;
   const years = [...(yq.data ?? [])].sort((a, b) => b.calendarYear - a.calendarYear);
 
@@ -51,7 +52,7 @@ export default function HomePage() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-3" data-testid="section-home-real-years">
         <h2 className="font-display text-xl">Distribution years</h2>
         {yq.isLoading ? <SkeletonRows rows={3} /> : yq.isError ? <ErrorPanel error={yq.error} onRetry={() => yq.refetch()} /> : years.length === 0 ? (
           <Empty title="No distribution years yet." action={<Link href="/years" className="text-sm text-primary" data-testid="link-home-years">Go to Distribution years</Link>} />
@@ -71,6 +72,14 @@ export default function HomePage() {
         )}
       </section>
 
+      <section className="space-y-3" data-testid="section-home-practice-years">
+        <h2 className="font-display text-xl">Practice years</h2>
+        {pq.isLoading ? <SkeletonRows rows={2} /> : pq.isError ? <ErrorPanel error={pq.error} onRetry={() => pq.refetch()} /> : !pq.data?.length ? <Empty title="No practice years yet." /> : (
+          <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+            {pq.data.map((y) => <li key={y.id}><Link href={`/years/${y.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-secondary/40" data-testid={`link-home-practice-${y.id}`}><span className="font-display text-xl">{y.calendarYear} — Practice</span><StatusTag status={y.status} /><ArrowRight className="ml-auto h-4 w-4" /></Link></li>)}
+          </ul>
+        )}
+      </section>
       <section className="space-y-3">
         <h2 className="font-display text-xl">Records</h2>
         <div className="flex flex-wrap gap-2">

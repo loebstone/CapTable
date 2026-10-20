@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetYear, useSaveYearFigures, useDeclareYear, useFinalizeYear, useCorrectYear, useRecordPayment, useReversePayment,
   useSetYearHold, useRequestYearUpload, useAttachYearDocument,
-  getGetYearQueryKey, getListYearsQueryKey, getListAuditQueryKey,
+  getGetYearQueryKey, getListYearsQueryKey, getListPracticeYearsQueryKey, getListAuditQueryKey,
   type YearDetail, type YearCalculation, type YearHolder, type YearDocument, type PaymentEntry, type CostLineInput,
   type YearCorrectionInputKind, type DocumentUploadInputContentType,
 } from "@workspace/api-client-react";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { PageHeader, SkeletonRows, ErrorPanel, Empty, Btn, Field, inputCls, Tag } from "@/components/bits";
 import { StatusTag } from "@/pages/years";
 import { YearExports } from "@/components/year-exports";
+import { PracticeReset } from "@/components/practice-reset";
 import { fmtDate, errMessage, ratePct } from "@/lib/format";
 import { fmtCents, parseDollars, centsToInput, isNeg, todayISO, fmtBytes, sumCents } from "@/lib/money";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,7 @@ function useYearInval(id: number) {
   return () => {
     qc.invalidateQueries({ queryKey: getGetYearQueryKey(id) });
     qc.invalidateQueries({ queryKey: getListYearsQueryKey() });
+    qc.invalidateQueries({ queryKey: getListPracticeYearsQueryKey() });
     qc.invalidateQueries({ queryKey: getListAuditQueryKey() });
   };
 }
@@ -52,7 +54,7 @@ export default function YearDetailPage() {
       <Link href="/years" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary" data-testid="link-back-years"><ArrowLeft className="h-3.5 w-3.5" /> All years</Link>
       <PageHeader
         kicker={`Distribution year · snapshot #${y.snapshotId} · rate table #${y.rateTableId}`}
-        title={`${y.calendarYear} timber distribution`}
+        title={`${y.calendarYear}${y.isPractice ? " — Practice" : " timber distribution"}`}
         actions={draft ? <>
           <Btn variant="ghost" onClick={() => setModal({ k: "figures" })} data-testid="button-edit-figures"><PencilLine className="h-4 w-4" /> {y.figures ? "Revise figures" : "Enter figures"}</Btn>
           <Btn variant="ghost" onClick={() => setModal({ k: "declare" })} disabled={!y.calculation} data-testid="button-declare"><Stamp className="h-4 w-4" /> Declare</Btn>
@@ -66,6 +68,8 @@ export default function YearDetailPage() {
         </span>
       </PageHeader>
 
+      {y.isPractice && <div role="note" className="sticky top-0 z-20 rounded-md border border-amber-600 bg-amber-100 px-4 py-3 font-medium text-amber-950" data-testid="banner-practice-year">Practice year — nothing here is a real distribution</div>}
+      {y.isPractice && <PracticeReset y={y} />}
       {y.blockers.length > 0 && <Blockers y={y} />}
 
       <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
@@ -520,10 +524,10 @@ function FinalizeForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const inval = useYearInval(y.id);
   const { toast } = useToast();
   const [note, setNote] = useState("");
-  const fin = useFinalizeYear({ mutation: { onSuccess: () => { inval(); toast({ title: `${y.calendarYear} finalized`, description: "Figures are now permanent; changes go through corrections." }); onDone(); } } });
+  const fin = useFinalizeYear({ mutation: { onSuccess: () => { inval(); toast({ title: `${y.calendarYear}${y.isPractice ? " — Practice" : ""} finalized`, description: y.isPractice ? "Inputs are locked until an explicit practice reset; changes go through corrections." : "Figures are now permanent; changes go through corrections." }); onDone(); } } });
   const blocked = y.blockers.length > 0;
   return (
-    <FormShell title={`Finalize ${y.calendarYear}`} desc="Finalizing freezes the figures, snapshot, residences and rates. It cannot be undone; later changes are recorded as corrections." error={fin.error} pending={fin.isPending} valid={!blocked && !!note.trim()} submit="Finalize year" onDone={onDone}
+    <FormShell title={`Finalize ${y.calendarYear}${y.isPractice ? " — Practice" : ""}`} desc={y.isPractice ? "Finalizing freezes the figures, snapshot, residences and rates. Later changes are corrections, unless you explicitly reset this practice year." : "Finalizing freezes the figures, snapshot, residences and rates. It cannot be undone; later changes are recorded as corrections."} error={fin.error} pending={fin.isPending} valid={!blocked && !!note.trim()} submit="Finalize year" onDone={onDone}
       onSubmit={() => fin.mutate({ id: y.id, data: { note: note.trim() } })}>
       {blocked ? (
         <ul className="space-y-1 rounded-md border border-[hsl(38_60%_70%)] bg-[hsl(38_70%_94%)] px-3 py-2 text-sm" data-testid="list-finalize-blockers">

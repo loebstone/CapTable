@@ -31,6 +31,8 @@ export * from './paymentEntry';
 export * from './paymentEntryKind';
 export * from './paymentInput';
 export * from './paymentInputKind';
+export * from './practiceResetInput';
+export * from './practiceResetInputConfirmation';
 export * from './rateCopyInput';
 export * from './rateCsvConfirmation';
 export * from './rateCsvInput';

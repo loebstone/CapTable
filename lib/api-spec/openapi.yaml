@@ -278,7 +278,7 @@ paths:
       operationId: listYears
       responses:
         "200":
-          description: Distribution years
+          description: Real distribution years only; practice years are isolated
           content:
             application/json:
               schema: {type: array, items: {$ref: "#/components/schemas/YearSummary"}}
@@ -295,6 +295,33 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/YearDetail"}
+  /practice-years:
+    get:
+      operationId: listPracticeYears
+      responses:
+        "200":
+          description: Practice years only
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/YearSummary"}}
+  /years/{id}/reset-practice:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: resetPracticeYear
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PracticeResetInput"}
+      responses:
+        "200":
+          description: Practice contents removed, snapshot and year identity retained
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+        "403":
+          description: Real year reset refused and audit logged
   /years/{id}:
     parameters:
       - {name: id, in: path, required: true, schema: {type: integer}}
@@ -519,14 +546,21 @@ components:
       required: [calendarYear, snapshotId, note]
       properties:
         calendarYear: {type: integer, minimum: 1900, maximum: 9999}
+        isPractice: {type: boolean, default: false}
         snapshotId: {type: integer, minimum: 1}
         note: {type: string, minLength: 1}
+    PracticeResetInput:
+      type: object
+      required: [confirmation]
+      properties:
+        confirmation: {type: string, enum: [RESET]}
     YearSummary:
       type: object
-      required: [id, calendarYear, snapshotId, status, createdAt, createdBy]
+      required: [id, calendarYear, isPractice, snapshotId, status, createdAt, createdBy]
       properties:
         id: {type: integer}
         calendarYear: {type: integer}
+        isPractice: {type: boolean}
         snapshotId: {type: integer}
         status: {type: string, enum: [draft, finalized, corrected]}
         createdAt: {type: string}

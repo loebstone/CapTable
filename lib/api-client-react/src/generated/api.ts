@@ -36,6 +36,7 @@ import type {
   Message,
   NoteInput,
   PaymentInput,
+  PracticeResetInput,
   RateCopyInput,
   RateCsvConfirmation,
   RateCsvInput,
@@ -1968,6 +1969,160 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getOpenYearMutationOptions(options));
+    }
+
+export const getListPracticeYearsUrl = () => {
+
+
+
+
+  return `/api/practice-years`
+}
+
+export const listPracticeYears = async ( options?: Parameters<typeof customFetch>[1]): Promise<YearSummary[]> => {
+
+  return customFetch<YearSummary[]>(getListPracticeYearsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPracticeYearsQueryKey = () => {
+    return [
+    `/api/practice-years`
+    ] as const;
+    }
+
+
+export const getListPracticeYearsQueryOptions = <TData = Awaited<ReturnType<typeof listPracticeYears>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPracticeYears>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPracticeYearsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPracticeYears>>> = ({ signal }) => listPracticeYears({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPracticeYears>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPracticeYearsQueryResult = NonNullable<Awaited<ReturnType<typeof listPracticeYears>>>
+export type ListPracticeYearsQueryError = ErrorType<unknown>
+
+
+
+export function useListPracticeYears<TData = Awaited<ReturnType<typeof listPracticeYears>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPracticeYears>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPracticeYearsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getResetPracticeYearUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/reset-practice`
+}
+
+export const resetPracticeYear = async (id: number,
+    practiceResetInput: PracticeResetInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getResetPracticeYearUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(practiceResetInput)
+  }
+);}
+
+
+
+
+
+export const getResetPracticeYearMutationKey = () => ['resetPracticeYear'] as const;
+
+export const getResetPracticeYearMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPracticeYear>>, TError,ResetPracticeYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetPracticeYear>>, TError,ResetPracticeYearMutationVariables, TContext> => {
+
+const mutationKey = getResetPracticeYearMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetPracticeYear>>, ResetPracticeYearMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resetPracticeYear(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetPracticeYearMutationResult = NonNullable<Awaited<ReturnType<typeof resetPracticeYear>>>
+    export type ResetPracticeYearMutationBody = BodyType<PracticeResetInput>
+    export type ResetPracticeYearMutationError = ErrorType<void>
+    export type ResetPracticeYearMutationVariables = {id: number;data: BodyType<PracticeResetInput>}
+
+    export const useResetPracticeYear = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPracticeYear>>, TError,ResetPracticeYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resetPracticeYear>>,
+        TError,
+        ResetPracticeYearMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResetPracticeYearMutationOptions(options));
     }
 
 export const getGetYearUrl = (id: number,) => {

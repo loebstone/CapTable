@@ -2,7 +2,7 @@
  * Exact Stage 2 acceptance inputs, created through real app routes inside the
  * caller's rollback transaction. Local Roster STUB; real private App Storage.
  */
-export async function finalizedFixture(h) {
+export async function finalizedFixture(h, { isPractice = false } = {}) {
   const { call, expect, login } = h;
   const cookie = await login();
   const fetched = expect(await call("post", "/api/holdings/fetch", cookie), 200);
@@ -18,7 +18,7 @@ export async function finalizedFixture(h) {
     personId: residence.personId, stateCode: residence.displayName === "Gaston Natalie Davis" ? "GA" : residence.stateCode,
     confirmed: true, note: "STUB all confirmed, Natalie GA for acceptance",
   }), 201);
-  let detail = expect(await call("post", "/api/years", cookie, { calendarYear: 2026, snapshotId: snapshot.id, note: "STUB Stage 3 report fixture" }), 201);
+  let detail = expect(await call("post", "/api/years", cookie, { calendarYear: 2026, isPractice, snapshotId: snapshot.id, note: "STUB Stage 3 report fixture" }), 201);
   const base = `/api/years/${detail.id}`;
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jA1sAAAAASUVORK5CYII=", "base64");
   const slot = expect(await call("post", `${base}/documents/uploads`, cookie, { filename: "STUB-stage3-timber-source.png", contentType: "image/png", size: png.length }), 201);

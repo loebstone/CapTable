@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, bigint, boolean, date, timestamp, jsonb, check, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, bigint, boolean, date, timestamp, jsonb, check, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { snapshots, type StoredHolding } from "./holdings";
 
@@ -6,12 +6,16 @@ const instant = (name: string) => timestamp(name, { withTimezone: true, mode: "s
 
 export const distributionYears = pgTable("distribution_years", {
   id: serial("id").primaryKey(),
-  calendarYear: integer("calendar_year").notNull().unique(),
+  calendarYear: integer("calendar_year").notNull(),
+  // Creation-only: distribution year records have no update/delete API.
+  isPractice: boolean("is_practice").notNull().default(false),
   snapshotId: integer("snapshot_id").notNull().references(() => snapshots.id),
   createdAt: instant("created_at"),
   createdBy: text("created_by").notNull(),
   note: text("note").notNull(),
-});
+}, (t) => [
+  uniqueIndex("one_real_distribution_per_calendar_year").on(t.calendarYear).where(sql`${t.isPractice} = false`),
+]);
 export const yearUploads = pgTable("year_uploads", {
   id: serial("id").primaryKey(),
   yearId: integer("year_id").notNull().references(() => distributionYears.id),

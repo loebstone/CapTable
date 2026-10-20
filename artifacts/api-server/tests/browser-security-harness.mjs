@@ -11,6 +11,10 @@ import { createWebApp } from "../../hwd-distributions/server.mjs";
 const h = await stage2Harness();
 const fixture = await finalizedFixture(h);
 await fixture.finalizeWithLedger();
+if (process.argv.includes("--practice")) {
+  const practice = await finalizedFixture(h, { isPractice: true });
+  await practice.finalizeWithLedger();
+}
 process.env.APP_ORIGIN = "http://127.0.0.1:8099";
 const test = express();
 const writes = [];

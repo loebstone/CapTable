@@ -11,6 +11,7 @@ function document(context: ReportContext, title: string, body: string, compact =
   @page{size:Letter;margin:${compact ? ".32in" : ".55in"}}
   *{box-sizing:border-box}html,body{margin:0;padding:0;color:#172b31;background:white;font-family:Arial,Helvetica,sans-serif;font-size:${compact ? "9px" : "12px"};line-height:1.32}
   .sheet{width:${compact ? "754.56px" : "710.4px"};transform-origin:top left}
+  .practice-watermark{position:fixed;top:43%;left:0;width:100%;text-align:center;transform:rotate(-32deg);font:bold 33px Arial,sans-serif;white-space:nowrap;color:rgba(150,30,30,.24);z-index:1000;pointer-events:none}
   h1{font-family:Georgia,serif;font-size:${compact ? "22px" : "27px"};line-height:1.12;margin:0 0 4px;font-weight:normal}
   h2{font-size:${compact ? "12px" : "15px"};margin:0 0 7px}h3{font-size:11px;margin:15px 0 6px}
   p{margin:7px 0}.muted{color:#536269}.eyebrow{letter-spacing:1.4px;text-transform:uppercase;color:#884d40;font-size:9px;margin-bottom:8px}
@@ -25,7 +26,7 @@ function document(context: ReportContext, title: string, body: string, compact =
   .holders{font-size:8.5px;line-height:1.2}.holders th{font-size:8px}.holders td{padding:2px 3px;white-space:nowrap;overflow-wrap:normal}
   .holders tr:nth-child(even){background:#faf9f5}.holders .name{white-space:normal}
   footer{font-size:${compact ? "7px" : "8px"};line-height:1.4;color:#536269;border-top:1px solid #d6d2c9;padding-top:7px;margin-top:12px}
-  </style></head><body><main class="sheet">${body}${footer(context)}</main></body></html>`;
+  </style></head><body>${context.year.isPractice ? '<div class="practice-watermark">PRACTICE — NOT A STATEMENT</div>' : ""}<main class="sheet">${body}${footer(context)}</main></body></html>`;
 }
 function valueRow(label: string, value: string, strong = false) {
   return `<tr${strong ? ' class="strong"' : ""}><td>${html(label)}</td><td class="right amount">${html(value)}</td></tr>`;

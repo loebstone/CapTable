@@ -467,6 +467,7 @@ export const ListAuditResponse = zod.array(ListAuditResponseItem)
 export const ListYearsResponseItem = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -478,12 +479,13 @@ export const ListYearsResponse = zod.array(ListYearsResponseItem)
 export const openYearBodyCalendarYearMin = 1900;
 export const openYearBodyCalendarYearMax = 9999;
 
-
+export const openYearBodyIsPracticeDefault = false;
 
 
 
 export const OpenYearBody = zod.object({
   "calendarYear": zod.number().int().min(openYearBodyCalendarYearMin).max(openYearBodyCalendarYearMax),
+  "isPractice": zod.boolean().default(openYearBodyIsPracticeDefault),
   "snapshotId": zod.number().int().min(1),
   "note": zod.string().min(1)
 })
@@ -491,6 +493,143 @@ export const OpenYearBody = zod.object({
 export const OpenYearResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const ListPracticeYearsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})
+export const ListPracticeYearsResponse = zod.array(ListPracticeYearsResponseItem)
+
+
+export const ResetPracticeYearParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ResetPracticeYearBody = zod.object({
+  "confirmation": zod.enum(['RESET'])
+})
+
+export const ResetPracticeYearResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -610,6 +749,7 @@ export const GetYearParams = zod.object({
 export const GetYearResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -751,6 +891,7 @@ export const SaveYearFiguresBody = zod.object({
 export const SaveYearFiguresResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -881,6 +1022,7 @@ export const DeclareYearBody = zod.object({
 export const DeclareYearResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -1008,6 +1150,7 @@ export const FinalizeYearBody = zod.object({
 export const FinalizeYearResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -1141,6 +1284,7 @@ export const CorrectYearBody = zod.object({
 export const CorrectYearResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -1278,6 +1422,7 @@ export const RecordPaymentBody = zod.object({
 export const RecordPaymentResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -1409,6 +1554,7 @@ export const ReversePaymentBody = zod.object({
 export const ReversePaymentResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),
@@ -1539,6 +1685,7 @@ export const SetYearHoldBody = zod.object({
 export const SetYearHoldResponse = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
   "snapshotId": zod.number().int(),
   "status": zod.enum(['draft', 'finalized', 'corrected']),
   "createdAt": zod.string(),

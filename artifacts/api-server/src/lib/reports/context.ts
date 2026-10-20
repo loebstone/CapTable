@@ -38,10 +38,10 @@ export function statementFilename(context: ReportContext, holder: ReportHolder) 
   // surname-first inference matches the Farm fixture. The first given token is
   // used in the filename; the full unmodified name is printed in the statement.
   const [last, ...given] = holder.displayName.trim().split(/\s+/);
-  return `HWD_Distribution_${context.year.calendarYear}_Statement_${safeName(last)}_${safeName(given[0] || last)}_${reportDate(context)}.pdf`;
+  return `HWD_Distribution_${context.year.calendarYear}_${context.year.isPractice ? "Practice_" : ""}Statement_${safeName(last)}_${safeName(given[0] || last)}_${reportDate(context)}.pdf`;
 }
 export function reportFilename(context: ReportContext, kind: "board" | "ledger" | "zip") {
   const suffix = { board: "Board_Summary", ledger: "Ledger", zip: "Statements" }[kind];
   const extension = { board: "pdf", ledger: "xlsx", zip: "zip" }[kind];
-  return `HWD_Distribution_${context.year.calendarYear}_${suffix}_${reportDate(context)}.${extension}`;
+  return `HWD_Distribution_${context.year.calendarYear}_${context.year.isPractice ? "Practice_" : ""}${suffix}_${reportDate(context)}.${extension}`;
 }

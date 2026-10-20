@@ -10,6 +10,7 @@ import type { YearSummaryStatus } from './yearSummaryStatus';
 export interface YearSummary {
   id: number;
   calendarYear: number;
+  isPractice: boolean;
   snapshotId: number;
   status: YearSummaryStatus;
   createdAt: string;

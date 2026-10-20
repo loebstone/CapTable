@@ -92,5 +92,17 @@ export async function ledgerWorkbook(context: ReportContext) {
     ["Record basis", year.status === "draft" ? "Open year: not finalized. Missing declared amounts are blank, not zero." : "Finalized snapshot, rates and residences, plus any explicit noted corrections."],
   ].forEach((row) => info.addRow(row));
   styleSheet(info, [34, 110], []);
+  if (year.isPractice) {
+    for (const sheet of book.worksheets) {
+      sheet.insertRow(1, ["PRACTICE"]);
+      sheet.mergeCells(1, 1, 1, sheet.columnCount);
+      const banner = sheet.getRow(1);
+      banner.height = 28;
+      banner.getCell(1).font = { bold: true, size: 16, color: { argb: "FF9A2323" } };
+      banner.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFE7C7" } };
+      sheet.views = [{ state: "frozen", ySplit: 2 }];
+      sheet.autoFilter = { from: { row: 2, column: 1 }, to: { row: sheet.rowCount, column: sheet.columnCount } };
+    }
+  }
   return Buffer.from(await book.xlsx.writeBuffer());
 }

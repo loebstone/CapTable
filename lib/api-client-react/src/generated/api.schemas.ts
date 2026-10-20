@@ -19,10 +19,22 @@ export interface YearInput {
      * @maximum 9999
      */
   calendarYear: number;
+  isPractice?: boolean;
   /** @minimum 1 */
   snapshotId: number;
   /** @minLength 1 */
   note: string;
+}
+
+export type PracticeResetInputConfirmation = typeof PracticeResetInputConfirmation[keyof typeof PracticeResetInputConfirmation];
+
+
+export const PracticeResetInputConfirmation = {
+  RESET: 'RESET',
+} as const;
+
+export interface PracticeResetInput {
+  confirmation: PracticeResetInputConfirmation;
 }
 
 export type YearSummaryStatus = typeof YearSummaryStatus[keyof typeof YearSummaryStatus];
@@ -37,6 +49,7 @@ export const YearSummaryStatus = {
 export interface YearSummary {
   id: number;
   calendarYear: number;
+  isPractice: boolean;
   snapshotId: number;
   status: YearSummaryStatus;
   createdAt: string;

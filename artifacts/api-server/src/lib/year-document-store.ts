@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ObjectStorageService } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { HttpError } from "./errors";
 
 const storage = new ObjectStorageService();
@@ -46,5 +46,22 @@ export const yearDocumentStore = {
   },
   async getFile(objectPath: string) {
     return storage.getObjectEntityFile(objectPath);
+  },
+  // The caller must have checked the persisted is_practice flag under the write lock.
+  async removePracticeFiles(paths: string[]) {
+    let removed = 0;
+    for (const path of new Set(paths)) {
+      if (!/^\/objects\/(uploads|year-documents)\/[a-f0-9-]+$/.test(path)) throw new HttpError(409, "Practice document has an invalid private object path");
+    }
+    for (const path of new Set(paths)) {
+      try {
+        const file = await storage.getObjectEntityFile(path);
+        await file.delete({ ignoreNotFound: true });
+        removed++;
+      } catch (error) {
+        if (!(error instanceof ObjectNotFoundError)) throw new HttpError(502, "Practice file cleanup did not complete. No database records were removed. Retry reset to finish cleanup.");
+      }
+    }
+    return removed;
   },
 };

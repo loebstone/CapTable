@@ -12,6 +12,7 @@ export interface YearInput {
      * @maximum 9999
      */
   calendarYear: number;
+  isPractice?: boolean;
   /** @minimum 1 */
   snapshotId: number;
   /** @minLength 1 */
