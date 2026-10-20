@@ -8,9 +8,11 @@
 
 export interface ResidenceInput {
   personId: string;
+  /** @minimum 1 */
+  expectedRevisionId?: number;
   /** @pattern ^(NONE|[A-Z]{2})$ */
   stateCode: string;
   confirmed: boolean;
-  /** @minLength 1 */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }

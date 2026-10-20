@@ -451,11 +451,39 @@ export interface Snapshot {
 
 export interface ResidenceInput {
   personId: string;
+  /** @minimum 1 */
+  expectedRevisionId?: number;
   /** @pattern ^(NONE|[A-Z]{2})$ */
   stateCode: string;
   confirmed: boolean;
-  /** @minLength 1 */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
+}
+
+export interface ResidenceBatchInput {
+  /**
+     * @maxItems 10000
+     * @items.minimum 1
+     */
+  revisionIds: number[];
+}
+
+export interface ResidenceStateCount {
+  stateCode: string;
+  count: number;
+}
+
+export interface ResidenceSkipped {
+  personId: string;
+  displayName: string;
+}
+
+export interface ResidenceBatchResult {
+  confirmedCount: number;
+  confirmedBy: string;
+  confirmedAt: string;
+  stateCounts: ResidenceStateCount[];
+  skipped: ResidenceSkipped[];
 }
 
 export interface Residence {

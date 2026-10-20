@@ -177,15 +177,18 @@ export const ListResidencesResponseItem = zod.object({
 export const ListResidencesResponse = zod.array(ListResidencesResponseItem)
 
 
+
 export const saveResidenceBodyStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
+export const saveResidenceBodyNoteMax = 5000;
 
 
 
 export const SaveResidenceBody = zod.object({
   "personId": zod.string(),
+  "expectedRevisionId": zod.number().int().min(1).optional(),
   "stateCode": zod.string().regex(saveResidenceBodyStateCodeRegExp),
   "confirmed": zod.boolean(),
-  "note": zod.string().min(1)
+  "note": zod.string().max(saveResidenceBodyNoteMax).optional()
 })
 
 export const SaveResidenceResponse = zod.object({
@@ -197,6 +200,30 @@ export const SaveResidenceResponse = zod.object({
   "confirmedBy": zod.string().nullable(),
   "confirmedAt": zod.string().nullable(),
   "note": zod.string()
+})
+
+
+
+export const confirmAllResidencesBodyRevisionIdsMax = 10000;
+
+
+
+export const ConfirmAllResidencesBody = zod.object({
+  "revisionIds": zod.array(zod.number().int().min(1)).max(confirmAllResidencesBodyRevisionIdsMax)
+})
+
+export const ConfirmAllResidencesResponse = zod.object({
+  "confirmedCount": zod.number().int(),
+  "confirmedBy": zod.string(),
+  "confirmedAt": zod.string(),
+  "stateCounts": zod.array(zod.object({
+  "stateCode": zod.string(),
+  "count": zod.number().int()
+})),
+  "skipped": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string()
+}))
 })
 
 

@@ -150,6 +150,22 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Residence"}
+  /residences/confirm-all:
+    post:
+      operationId: confirmAllResidences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ResidenceBatchInput"}
+      responses:
+        "200":
+          description: Atomically confirmed current proposals; missing states skipped
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ResidenceBatchResult"}
+        "409":
+          description: Eligible residence revisions changed since preview; nothing written
   /rates:
     get:
       operationId: listRates
@@ -869,12 +885,46 @@ components:
         note: {type: string}
     ResidenceInput:
       type: object
-      required: [personId, stateCode, confirmed, note]
+      required: [personId, stateCode, confirmed]
       properties:
         personId: {type: string}
+        expectedRevisionId: {type: integer, minimum: 1}
         stateCode: {type: string, pattern: '^(NONE|[A-Z]{2})$'}
         confirmed: {type: boolean}
-        note: {type: string, minLength: 1}
+        note: {type: string, maxLength: 5000}
+    ResidenceBatchInput:
+      type: object
+      required: [revisionIds]
+      properties:
+        revisionIds:
+          type: array
+          maxItems: 10000
+          items: {type: integer, minimum: 1}
+    ResidenceStateCount:
+      type: object
+      required: [stateCode, count]
+      properties:
+        stateCode: {type: string}
+        count: {type: integer}
+    ResidenceSkipped:
+      type: object
+      required: [personId, displayName]
+      properties:
+        personId: {type: string}
+        displayName: {type: string}
+    ResidenceBatchResult:
+      type: object
+      required: [confirmedCount, confirmedBy, confirmedAt, stateCounts, skipped]
+      properties:
+        confirmedCount: {type: integer}
+        confirmedBy: {type: string}
+        confirmedAt: {type: string}
+        stateCounts:
+          type: array
+          items: {$ref: "#/components/schemas/ResidenceStateCount"}
+        skipped:
+          type: array
+          items: {$ref: "#/components/schemas/ResidenceSkipped"}
     Residence:
       type: object
       required: [id, personId, displayName, stateCode, confirmed, confirmedBy, confirmedAt, note]

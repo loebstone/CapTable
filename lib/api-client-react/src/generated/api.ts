@@ -47,6 +47,8 @@ import type {
   RedeemSignInBodyOne,
   RedeemSignInBodyTwo,
   Residence,
+  ResidenceBatchInput,
+  ResidenceBatchResult,
   ResidenceInput,
   ReversalInput,
   Session,
@@ -1040,6 +1042,88 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getSaveResidenceMutationOptions(options));
+    }
+
+export const getConfirmAllResidencesUrl = () => {
+
+
+
+
+  return `/api/residences/confirm-all`
+}
+
+export const confirmAllResidences = async (residenceBatchInput: ResidenceBatchInput, options?: Parameters<typeof customFetch>[1]): Promise<ResidenceBatchResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ResidenceBatchResult>(getConfirmAllResidencesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(residenceBatchInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmAllResidencesMutationKey = () => ['confirmAllResidences'] as const;
+
+export const getConfirmAllResidencesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmAllResidences>>, TError,ConfirmAllResidencesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmAllResidences>>, TError,ConfirmAllResidencesMutationVariables, TContext> => {
+
+const mutationKey = getConfirmAllResidencesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmAllResidences>>, ConfirmAllResidencesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmAllResidences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmAllResidencesMutationResult = NonNullable<Awaited<ReturnType<typeof confirmAllResidences>>>
+    export type ConfirmAllResidencesMutationBody = BodyType<ResidenceBatchInput>
+    export type ConfirmAllResidencesMutationError = ErrorType<void>
+    export type ConfirmAllResidencesMutationVariables = {data: BodyType<ResidenceBatchInput>}
+
+    export const useConfirmAllResidences = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmAllResidences>>, TError,ConfirmAllResidencesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmAllResidences>>,
+        TError,
+        ConfirmAllResidencesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmAllResidencesMutationOptions(options));
     }
 
 export const getListRatesUrl = () => {

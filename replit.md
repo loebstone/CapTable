@@ -245,6 +245,7 @@ The Stage 3 suite reconstructs the exact 47-holder Stage 2 fixture, including Na
 
 ## On-demand backup
 
+
 - **Access list → Download backup** opens an access-checked confirmation page.
   GET never exports or writes. Its origin-preserving referrer policy lets the
   native confirmation form send a same-origin POST to `/api/backup`. Both routes
@@ -307,3 +308,22 @@ The Stage 3 suite reconstructs the exact 47-holder Stage 2 fixture, including Na
   practice fixture's file is removed only through the guarded practice reset.
   No real Roster call or email is needed. This test requires development
   `CREATEDB` permission and PostgreSQL client tools; never run it in production.
+
+## Tax-residence confirmation
+
+- Tax-residence notes are always optional, including confirmation and correction.
+  There is no required reason field. A proposed state can be confirmed directly
+  with one click; Review retains the optional note and state editing controls.
+- Unconfirmed residences sort first, then alphabetically. Confirm all unconfirmed
+  shows the number and per-state counts before submission. It appends one
+  confirmed revision per current proposal with a state in one transaction,
+  preserving notes and recording actor/time/state in each audit event, plus one
+  batch summary audit. Missing states are skipped and named in the result.
+- The preview submits immutable revision IDs; a concurrent change returns 409
+  with no writes, prompting a fresh review rather than confirming unseen states.
+  Direct UI confirmations/corrections also pass their expected revision ID.
+  An empty eligible set is a no-op with no audit entry. No schema changes or
+  hard deletes; existing access and same-origin checks remain enforced.
+- Verify: `pnpm --filter @workspace/api-server run verify:residences`. The local
+  Roster stub supplies 47 rows, 45 proposed states and 2 missing states. Fixture
+  writes roll back; no real Roster call or email is sent.
