@@ -186,6 +186,48 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/RateTable"}
+  /rates/csv/preview:
+    post:
+      operationId: previewRateCsv
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RateCsvInput"}
+      responses:
+        "200":
+          description: Validated preview; no writes
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RateCsvPreview"}
+  /rates/csv/confirm:
+    post:
+      operationId: confirmRateCsv
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RateCsvConfirmation"}
+      responses:
+        "200":
+          description: Atomic changed-only import, or unchanged no-op
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RateCsvResult"}
+  /rates/{taxYear}/csv:
+    get:
+      operationId: downloadRatesCsv
+      parameters:
+        - in: path
+          name: taxYear
+          required: true
+          schema: {type: integer, minimum: 1900, maximum: 9999}
+      responses:
+        "200":
+          description: Current annual rates as CSV
+          content:
+            text/csv:
+              schema: {type: string}
   /access:
     get:
       operationId: listAccess
@@ -823,6 +865,50 @@ components:
             id: {type: integer}
             createdAt: {type: string}
             createdBy: {type: string}
+    RateCsvInput:
+      type: object
+      required: [taxYear, filename, csv]
+      properties:
+        taxYear: {type: integer, minimum: 1900, maximum: 9999}
+        filename: {type: string, minLength: 1, maxLength: 180}
+        csv: {type: string, minLength: 1, maxLength: 65536}
+    RateCsvConfirmation:
+      allOf:
+        - {$ref: "#/components/schemas/RateCsvInput"}
+        - type: object
+          required: [previewToken]
+          properties:
+            previewToken: {type: string, minLength: 1, maxLength: 2048}
+    RateCsvRow:
+      type: object
+      required: [line, code, rate, sourceNote, currentRate, status]
+      properties:
+        line: {type: integer}
+        code: {type: string}
+        rate: {type: string}
+        sourceNote: {type: string}
+        currentRate: {type: [string, "null"]}
+        status: {type: string, enum: [new, changed, unchanged]}
+    RateCsvPreview:
+      type: object
+      required: [taxYear, filename, previewToken, rows, changedCount, unchangedCount]
+      properties:
+        taxYear: {type: integer}
+        filename: {type: string}
+        previewToken: {type: string}
+        rows: {type: array, items: {$ref: "#/components/schemas/RateCsvRow"}}
+        changedCount: {type: integer}
+        unchangedCount: {type: integer}
+    RateCsvResult:
+      type: object
+      required: [taxYear, filename, rows, changedCount, unchangedCount, importId]
+      properties:
+        taxYear: {type: integer}
+        filename: {type: string}
+        rows: {type: array, items: {$ref: "#/components/schemas/RateCsvRow"}}
+        changedCount: {type: integer}
+        unchangedCount: {type: integer}
+        importId: {type: [integer, "null"]}
     AccessInput:
       type: object
       required: [email, note]

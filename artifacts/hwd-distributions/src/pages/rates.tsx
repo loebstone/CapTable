@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useListRates, useSaveRates, useCopyRates, getListRatesQueryKey, getListAuditQueryKey, type RateTable, type StateRate } from "@workspace/api-client-react";
+import { useListRates, useSaveRates, useCopyRates, getListRatesQueryKey, getListAuditQueryKey, getDownloadRatesCsvUrl, type RateTable, type StateRate } from "@workspace/api-client-react";
 import { Plus, Copy, Trash2, PencilLine } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { PageHeader, SkeletonRows, ErrorPanel, Empty, Btn, Field, inputCls } from "@/components/bits";
 import { fmtDate, errMessage, ratePct, RATE_RE, STATE_RE } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
+import { RatesCsvImport } from "@/components/rates-csv-import";
+import { DownloadButton } from "@/components/download-button";
 
-type Mode = { kind: "edit"; base: RateTable | null } | { kind: "copy"; from?: number } | null;
+type Mode = { kind: "edit"; base: RateTable | null } | { kind: "copy"; from?: number } | { kind: "import"; year?: number } | null;
 
 export default function RatesPage() {
   const q = useListRates();
@@ -20,6 +22,7 @@ export default function RatesPage() {
         kicker="Annual rates"
         title="Capital gains rates by tax year"
         actions={<>
+          <Btn variant="ghost" onClick={() => setMode({ kind: "import", year: list[0]?.taxYear })} data-testid="button-import-rates-csv">Import CSV</Btn>
           <Btn variant="ghost" onClick={() => setMode({ kind: "copy", from: list[0]?.taxYear })} disabled={list.length === 0} data-testid="button-copy-rates"><Copy className="h-4 w-4" /> Copy a year</Btn>
           <Btn onClick={() => setMode({ kind: "edit", base: null })} data-testid="button-new-rates"><Plus className="h-4 w-4" /> New year</Btn>
         </>}
@@ -38,6 +41,8 @@ export default function RatesPage() {
               <div className="flex flex-wrap items-center gap-4 border-b border-border bg-secondary/40 px-4 py-3">
                 <div className="font-display text-2xl">{t.taxYear}</div>
                 <div className="text-xs text-muted-foreground">Saved {fmtDate(t.createdAt, true)} by {t.createdBy} · {t.note}</div>
+                <DownloadButton url={getDownloadRatesCsvUrl(t.taxYear)} fallbackName={`HWD_Rates_${t.taxYear}.csv`} variant="quiet" className="py-1 text-xs" testId={`button-download-rates-csv-${t.taxYear}`}>Download CSV</DownloadButton>
+                <Btn variant="ghost" className="py-1 text-xs" onClick={() => setMode({ kind: "import", year: t.taxYear })} data-testid={`button-import-rates-csv-${t.taxYear}`}>Import CSV</Btn>
                 <Btn variant="ghost" className="ml-auto py-1 text-xs" onClick={() => setMode({ kind: "edit", base: t })} data-testid={`button-correct-rates-${t.taxYear}`}><PencilLine className="h-3.5 w-3.5" /> Correct</Btn>
               </div>
               <table className="w-full text-sm">
@@ -55,6 +60,7 @@ export default function RatesPage() {
         <DialogContent className="max-h-[90dvh] overflow-y-auto bg-card sm:max-w-2xl">
           {mode?.kind === "edit" && <RateForm base={mode.base} onDone={() => setMode(null)} />}
           {mode?.kind === "copy" && <CopyForm from={mode.from} years={list.map((t) => t.taxYear)} onDone={() => setMode(null)} />}
+          {mode?.kind === "import" && <RatesCsvImport initialYear={mode.year} onDone={() => setMode(null)} />}
         </DialogContent>
       </Dialog>
     </div>

@@ -11,7 +11,8 @@
     "verify:stage1": "tsx tests/verify-stage1.mjs",
     "verify:stage2": "tsx tests/verify-stage2.mjs",
     "verify:stage3": "tsx tests/verify-stage3.mjs",
-    "verify:security": "tsx tests/verify-security.mjs"
+    "verify:security": "tsx tests/verify-security.mjs",
+    "verify:rates-csv": "tsx tests/verify-rates-csv.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.4.0",
@@ -19,6 +20,8 @@
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "csv-parse": "^7.0.3",
+    "csv-stringify": "^6.9.0",
     "drizzle-orm": "catalog:",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",

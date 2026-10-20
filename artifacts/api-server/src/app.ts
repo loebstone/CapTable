@@ -1,6 +1,7 @@
 import express, { type Express, type ErrorRequestHandler } from "express";
 import cookieParser from "cookie-parser";
 import { ZodError } from "zod/v4";
+import { ZodError as GeneratedZodError } from "zod";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -46,7 +47,7 @@ app.use(sameOrigin);
 app.use("/api", router);
 const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   if (error instanceof HttpError) { res.status(error.status).json({ error: error.message }); return; }
-  if (error instanceof ZodError) { res.status(400).json({ error: "Invalid input or response format", details: error.issues.map((i) => ({ path: i.path, message: i.message })) }); return; }
+  if (error instanceof ZodError || error instanceof GeneratedZodError) { res.status(400).json({ error: "Invalid input or response format", details: error.issues.map((i) => ({ path: i.path, message: i.message })) }); return; }
   req.log.error({ errorName: error instanceof Error ? error.name : "Unknown" }, "Request failed");
   res.status(500).json({ error: "The request could not be completed" });
 };

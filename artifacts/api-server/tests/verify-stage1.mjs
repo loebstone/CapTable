@@ -79,7 +79,7 @@ const adapter = {
   query: async (...args) => {
     const text = typeof args[0] === "string" ? args[0] : args[0].text;
     if (text.toLowerCase().includes("pg_advisory_xact_lock")) return client.query("SELECT pg_advisory_xact_lock($1)", [-process.pid]);
-    if (text.toLowerCase() === "begin") {
+    if (text.toLowerCase().trim().startsWith("begin")) {
       const name = `verification_${++savepointIndex}`; savepoints.push(name);
       return client.query(`SAVEPOINT ${name}`);
     }

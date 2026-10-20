@@ -496,6 +496,70 @@ export type RateTable = RateInput & {
   createdBy: string;
 };
 
+export interface RateCsvInput {
+  /**
+     * @minimum 1900
+     * @maximum 9999
+     */
+  taxYear: number;
+  /**
+     * @minLength 1
+     * @maxLength 180
+     */
+  filename: string;
+  /**
+     * @minLength 1
+     * @maxLength 65536
+     */
+  csv: string;
+}
+
+export type RateCsvConfirmation = RateCsvInput & {
+  /**
+     * @minLength 1
+     * @maxLength 2048
+     */
+  previewToken: string;
+};
+
+export type RateCsvRowStatus = typeof RateCsvRowStatus[keyof typeof RateCsvRowStatus];
+
+
+export const RateCsvRowStatus = {
+  new: 'new',
+  changed: 'changed',
+  unchanged: 'unchanged',
+} as const;
+
+export interface RateCsvRow {
+  line: number;
+  code: string;
+  rate: string;
+  sourceNote: string;
+  /** @nullable */
+  currentRate: string | null;
+  status: RateCsvRowStatus;
+}
+
+export interface RateCsvPreview {
+  taxYear: number;
+  filename: string;
+  previewToken: string;
+  rows: RateCsvRow[];
+  changedCount: number;
+  unchangedCount: number;
+}
+
+export interface RateCsvResult {
+  taxYear: number;
+  filename: string;
+  rows: RateCsvRow[];
+  changedCount: number;
+  unchangedCount: number;
+  /** @nullable */
+  importId: number | null;
+}
+
 export interface AccessInput {
   email: string;
   /** @minLength 1 */

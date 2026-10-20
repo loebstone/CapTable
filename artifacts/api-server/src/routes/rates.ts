@@ -1,11 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db, rateTables, stateRates } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   ListRatesResponse, SaveRatesBody, SaveRatesResponse, CopyRatesBody, CopyRatesResponse,
 } from "@workspace/api-zod";
 import { currentIdentity } from "../lib/auth";
-import { append, write, latestBy, type Tx } from "../lib/records";
+import { append, write, type Tx } from "../lib/records";
+import { currentRates, allCurrentRates } from "../lib/rate-data";
 import { assertAccess } from "../lib/access";
 import { HttpError } from "../lib/errors";
 
@@ -26,8 +27,7 @@ async function appendRates(tx: Tx, actor: string, data: RateData) {
   return fullTable(row, tx);
 }
 router.get("/rates", async (_req, res): Promise<void> => {
-  const rows = latestBy(await db.select().from(rateTables).orderBy(desc(rateTables.id)), (r) => r.taxYear);
-  const full = await Promise.all(rows.sort((a, b) => b.taxYear - a.taxYear).map((row) => fullTable(row)));
+  const full = await db.transaction((tx) => allCurrentRates(tx), { isolationLevel: "repeatable read", accessMode: "read only" });
   res.json(ListRatesResponse.parse(full));
 });
 router.post("/rates", async (req, res): Promise<void> => {
@@ -43,11 +43,11 @@ router.post("/rates/copy", async (req, res): Promise<void> => {
   if (data.toYear <= data.fromYear) throw new HttpError(400, "Copy to a later tax year");
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
     await assertAccess(actor, tx);
-    const [exists] = await tx.select().from(rateTables).where(eq(rateTables.taxYear, data.toYear)).limit(1);
+    const exists = await currentRates(tx, data.toYear);
     if (exists) throw new HttpError(409, "Destination tax year already exists; record a correction instead");
-    const [previous] = await tx.select().from(rateTables).where(eq(rateTables.taxYear, data.fromYear)).orderBy(desc(rateTables.id)).limit(1);
+    const previous = await currentRates(tx, data.fromYear);
     if (!previous) throw new HttpError(404, "Prior-year rate table not found");
-    const full = await fullTable(previous, tx);
+    const full = previous;
     return appendRates(tx, actor, {
       taxYear: data.toYear, federalRate: full.federalRate, federalSourceNote: full.federalSourceNote,
       states: full.states, note: data.note,

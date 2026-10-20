@@ -13,13 +13,13 @@ export async function write<T>(actor: string, action: (tx: Tx, actor: string) =>
 }
 
 export async function append<T extends PgTable>(
-  tx: Tx, actor: string, table: T, values: T["$inferInsert"],
+  tx: Tx, actor: string, table: T, values: T["$inferInsert"], auditOperation = "INSERT",
 ): Promise<T["$inferSelect"]> {
   const [row] = await tx.insert(table).values(values).returning();
   if (!row) throw new Error("Insert did not return a record");
   const entity = getTableName(table);
   await tx.insert(auditLog).values({
-    actor, entity, operation: "INSERT", recordId: String((row as { id: number }).id),
+    actor, entity, operation: auditOperation, recordId: String((row as { id: number }).id),
   });
   return row as T["$inferSelect"];
 }

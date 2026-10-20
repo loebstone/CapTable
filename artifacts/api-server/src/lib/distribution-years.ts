@@ -1,5 +1,5 @@
 import {
-  db, distributionYears, snapshots, snapshotRows, residences, rateTables, stateRates,
+  db, distributionYears, snapshots, snapshotRows, residences,
   yearFigures, yearCosts, yearDeclarations, yearFinalizations, yearCorrections,
   distributionEntries, distributionHolds, yearDocuments, type FrozenYearInputs,
 } from "@workspace/db";
@@ -7,6 +7,7 @@ import { desc, eq } from "drizzle-orm";
 import { latestBy, type Tx } from "./records";
 import { HttpError } from "./errors";
 import { calculateYear } from "./distribution-math";
+import { currentRates } from "./rate-data";
 
 export type Database = Tx | typeof db;
 
@@ -35,12 +36,9 @@ export async function requireDocument(database: Database, yearId: number, docume
   return document;
 }
 export async function currentYearRates(database: Database, calendarYear: number) {
-  const [row] = await database.select().from(rateTables).where(eq(rateTables.taxYear, calendarYear)).orderBy(desc(rateTables.id)).limit(1);
+  const row = await currentRates(database, calendarYear);
   if (!row) throw new HttpError(409, `No rate table exists for ${calendarYear}. Enter rates or copy a prior year on Annual rates before opening this year.`);
-  const states = await database.select({
-    stateCode: stateRates.stateCode, rate: stateRates.rate, sourceNote: stateRates.sourceNote,
-  }).from(stateRates).where(eq(stateRates.tableId, row.id)).orderBy(stateRates.stateCode);
-  return { id: row.id, federalRate: row.federalRate, states };
+  return { id: row.id, federalRate: row.federalRate, states: row.states };
 }
 export async function draftInputs(database: Database, id: number): Promise<FrozenYearInputs> {
   const year = await requireYear(database, id);

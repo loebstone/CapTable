@@ -37,6 +37,10 @@ import type {
   NoteInput,
   PaymentInput,
   RateCopyInput,
+  RateCsvConfirmation,
+  RateCsvInput,
+  RateCsvPreview,
+  RateCsvResult,
   RateInput,
   RateTable,
   RedeemSignInBodyOne,
@@ -1271,6 +1275,241 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getCopyRatesMutationOptions(options));
     }
+
+export const getPreviewRateCsvUrl = () => {
+
+
+
+
+  return `/api/rates/csv/preview`
+}
+
+export const previewRateCsv = async (rateCsvInput: RateCsvInput, options?: Parameters<typeof customFetch>[1]): Promise<RateCsvPreview> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RateCsvPreview>(getPreviewRateCsvUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rateCsvInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewRateCsvMutationKey = () => ['previewRateCsv'] as const;
+
+export const getPreviewRateCsvMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewRateCsv>>, TError,PreviewRateCsvMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewRateCsv>>, TError,PreviewRateCsvMutationVariables, TContext> => {
+
+const mutationKey = getPreviewRateCsvMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewRateCsv>>, PreviewRateCsvMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewRateCsv(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewRateCsvMutationResult = NonNullable<Awaited<ReturnType<typeof previewRateCsv>>>
+    export type PreviewRateCsvMutationBody = BodyType<RateCsvInput>
+    export type PreviewRateCsvMutationError = ErrorType<unknown>
+    export type PreviewRateCsvMutationVariables = {data: BodyType<RateCsvInput>}
+
+    export const usePreviewRateCsv = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewRateCsv>>, TError,PreviewRateCsvMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewRateCsv>>,
+        TError,
+        PreviewRateCsvMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewRateCsvMutationOptions(options));
+    }
+
+export const getConfirmRateCsvUrl = () => {
+
+
+
+
+  return `/api/rates/csv/confirm`
+}
+
+export const confirmRateCsv = async (rateCsvConfirmation: RateCsvConfirmation, options?: Parameters<typeof customFetch>[1]): Promise<RateCsvResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RateCsvResult>(getConfirmRateCsvUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rateCsvConfirmation)
+  }
+);}
+
+
+
+
+
+export const getConfirmRateCsvMutationKey = () => ['confirmRateCsv'] as const;
+
+export const getConfirmRateCsvMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmRateCsv>>, TError,ConfirmRateCsvMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmRateCsv>>, TError,ConfirmRateCsvMutationVariables, TContext> => {
+
+const mutationKey = getConfirmRateCsvMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmRateCsv>>, ConfirmRateCsvMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmRateCsv(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmRateCsvMutationResult = NonNullable<Awaited<ReturnType<typeof confirmRateCsv>>>
+    export type ConfirmRateCsvMutationBody = BodyType<RateCsvConfirmation>
+    export type ConfirmRateCsvMutationError = ErrorType<unknown>
+    export type ConfirmRateCsvMutationVariables = {data: BodyType<RateCsvConfirmation>}
+
+    export const useConfirmRateCsv = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmRateCsv>>, TError,ConfirmRateCsvMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmRateCsv>>,
+        TError,
+        ConfirmRateCsvMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmRateCsvMutationOptions(options));
+    }
+
+export const getDownloadRatesCsvUrl = (taxYear: number,) => {
+
+
+
+
+  return `/api/rates/${taxYear}/csv`
+}
+
+export const downloadRatesCsv = async (taxYear: number, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getDownloadRatesCsvUrl(taxYear),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadRatesCsvQueryKey = (taxYear: number,) => {
+    return [
+    `/api/rates/${taxYear}/csv`
+    ] as const;
+    }
+
+
+export const getDownloadRatesCsvQueryOptions = <TData = Awaited<ReturnType<typeof downloadRatesCsv>>, TError = ErrorType<unknown>>(taxYear: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadRatesCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadRatesCsvQueryKey(taxYear);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadRatesCsv>>> = ({ signal }) => downloadRatesCsv(taxYear, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: taxYear !== null && taxYear !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadRatesCsv>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadRatesCsvQueryResult = NonNullable<Awaited<ReturnType<typeof downloadRatesCsv>>>
+export type DownloadRatesCsvQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadRatesCsv<TData = Awaited<ReturnType<typeof downloadRatesCsv>>, TError = ErrorType<unknown>>(
+ taxYear: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadRatesCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadRatesCsvQueryOptions(taxYear,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListAccessUrl = () => {
 

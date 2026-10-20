@@ -323,6 +323,86 @@ export const CopyRatesResponse = zod.object({
 }))
 
 
+export const previewRateCsvBodyTaxYearMin = 1900;
+export const previewRateCsvBodyTaxYearMax = 9999;
+
+export const previewRateCsvBodyFilenameMax = 180;
+
+export const previewRateCsvBodyCsvMax = 65536;
+
+
+
+export const PreviewRateCsvBody = zod.object({
+  "taxYear": zod.number().int().min(previewRateCsvBodyTaxYearMin).max(previewRateCsvBodyTaxYearMax),
+  "filename": zod.string().min(1).max(previewRateCsvBodyFilenameMax),
+  "csv": zod.string().min(1).max(previewRateCsvBodyCsvMax)
+})
+
+export const PreviewRateCsvResponse = zod.object({
+  "taxYear": zod.number().int(),
+  "filename": zod.string(),
+  "previewToken": zod.string(),
+  "rows": zod.array(zod.object({
+  "line": zod.number().int(),
+  "code": zod.string(),
+  "rate": zod.string(),
+  "sourceNote": zod.string(),
+  "currentRate": zod.string().nullable(),
+  "status": zod.enum(['new', 'changed', 'unchanged'])
+})),
+  "changedCount": zod.number().int(),
+  "unchangedCount": zod.number().int()
+})
+
+
+export const confirmRateCsvBodyOneTaxYearMin = 1900;
+export const confirmRateCsvBodyOneTaxYearMax = 9999;
+
+export const confirmRateCsvBodyOneFilenameMax = 180;
+
+export const confirmRateCsvBodyOneCsvMax = 65536;
+
+export const confirmRateCsvBodyTwoPreviewTokenMax = 2048;
+
+
+
+export const ConfirmRateCsvBody = zod.object({
+  "taxYear": zod.number().int().min(confirmRateCsvBodyOneTaxYearMin).max(confirmRateCsvBodyOneTaxYearMax),
+  "filename": zod.string().min(1).max(confirmRateCsvBodyOneFilenameMax),
+  "csv": zod.string().min(1).max(confirmRateCsvBodyOneCsvMax)
+}).and(zod.object({
+  "previewToken": zod.string().min(1).max(confirmRateCsvBodyTwoPreviewTokenMax)
+}))
+
+export const ConfirmRateCsvResponse = zod.object({
+  "taxYear": zod.number().int(),
+  "filename": zod.string(),
+  "rows": zod.array(zod.object({
+  "line": zod.number().int(),
+  "code": zod.string(),
+  "rate": zod.string(),
+  "sourceNote": zod.string(),
+  "currentRate": zod.string().nullable(),
+  "status": zod.enum(['new', 'changed', 'unchanged'])
+})),
+  "changedCount": zod.number().int(),
+  "unchangedCount": zod.number().int(),
+  "importId": zod.number().int().nullable()
+})
+
+
+export const downloadRatesCsvPathTaxYearMin = 1900;
+export const downloadRatesCsvPathTaxYearMax = 9999;
+
+
+
+export const DownloadRatesCsvParams = zod.object({
+  "taxYear": zod.coerce.number().int().min(downloadRatesCsvPathTaxYearMin).max(downloadRatesCsvPathTaxYearMax)
+})
+
+export const DownloadRatesCsvResponse = zod.unknown()
+
+
 export const ListAccessResponseItem = zod.object({
   "id": zod.number().int(),
   "personId": zod.string(),
