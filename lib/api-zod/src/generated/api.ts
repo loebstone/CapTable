@@ -596,7 +596,9 @@ export const OpenYearResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -732,7 +734,9 @@ export const ResetPracticeYearResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -852,7 +856,9 @@ export const GetYearResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -994,7 +1000,9 @@ export const SaveYearFiguresResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -1125,7 +1133,9 @@ export const DeclareYearResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -1253,7 +1263,9 @@ export const FinalizeYearResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -1387,7 +1399,9 @@ export const CorrectYearResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -1525,7 +1539,9 @@ export const RecordPaymentResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -1657,7 +1673,9 @@ export const ReversePaymentResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),
@@ -1788,7 +1806,9 @@ export const SetYearHoldResponse = zod.object({
   "retainedCents": zod.string(),
   "remainingCents": zod.string().nullable(),
   "status": zod.enum(['open', 'held', 'complete']),
-  "holdNote": zod.string().nullable()
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
 })),
   "totals": zod.object({
   "nominalCents": zod.string(),

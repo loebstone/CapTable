@@ -726,7 +726,7 @@ components:
         residualCents: {type: [string, "null"]}
     YearHolder:
       type: object
-      required: [personId, displayName, shareClass, shares, stateCode, residenceConfirmed, isUnsettled, stateRate, nominalCents, shareOfGainCents, estimatedTaxCents, surplusCents, paidCents, retainedCents, remainingCents, status, holdNote]
+      required: [personId, displayName, shareClass, shares, stateCode, residenceConfirmed, isUnsettled, stateRate, nominalCents, shareOfGainCents, estimatedTaxCents, surplusCents, paidCents, retainedCents, remainingCents, status, holdNote, isOnHold, instruction]
       properties:
         personId: {type: string}
         displayName: {type: string}
@@ -745,6 +745,8 @@ components:
         remainingCents: {type: [string, "null"]}
         status: {type: string, enum: [open, held, complete]}
         holdNote: {type: [string, "null"]}
+        isOnHold: {type: boolean}
+        instruction: {type: string, enum: ["Pay", "Hold", "✓"]}
     PaymentEntry:
       type: object
       required: [id, personId, kind, amountCents, date, method, note, reversesEntryId, createdAt, createdBy]

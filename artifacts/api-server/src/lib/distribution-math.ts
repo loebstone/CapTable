@@ -86,7 +86,8 @@ export function calculateYear(input: FrozenYearInputs, entries: Entry[] = [], ho
       estimatedTaxCents: tax?.toString() ?? null,
       surplusCents: nominal !== null && tax !== null ? (nominal - tax).toString() : null,
       paidCents: paid.toString(), retainedCents: retained.toString(), remainingCents: remaining?.toString() ?? null,
-      status, holdNote: hold?.note ?? (person.isUnsettled ? "Held: unsettled in the frozen holdings snapshot" : null),
+      status, isOnHold: held, instruction: remaining === 0n ? "✓" as const : held ? "Hold" as const : "Pay" as const,
+      holdNote: hold?.note ?? (person.isUnsettled ? "Unsettled in the frozen holdings snapshot" : null),
     };
   });
   const combined: bigint | null = missingRate || highestRate === null ? null : federal + highestRate;

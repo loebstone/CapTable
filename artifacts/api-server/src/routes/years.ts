@@ -132,7 +132,7 @@ router.post("/years/:id/corrections", async (req, res): Promise<void> => {
     if (BigInt(detail.calculation!.grossCents) < 0n || BigInt(detail.calculation!.costTotalCents) < 0n || BigInt(detail.declaredPerShareCents!) < 0n) {
       throw new HttpError(409, "Correction would make gross, total costs or declared per-share amount negative");
     }
-    if (detail.holders.some((h) => BigInt(h.remainingCents!) < 0n)) throw new HttpError(409, "Correction would reduce a nominal amount below its paid plus retained total; reverse entries first");
+    if (detail.holders.some((h) => BigInt(h.remainingCents!) < 0n)) throw new HttpError(409, "Correction would reduce a distribution below its Paid plus APIC retained total; reverse entries first");
     return detail;
   });
   res.status(201).json(GetYearResponse.parse(result));

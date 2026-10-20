@@ -17,6 +17,7 @@ router.post("/years/:id/payments", async (req, res): Promise<void> => {
     const detail = await yearDetail(tx, id);
     const holder = detail.holders.find((h) => h.personId === data.personId);
     if (!holder) throw new HttpError(404, "Shareholder is not in this year's frozen snapshot");
+    if (holder.isOnHold) throw new HttpError(409, "This holder is on hold — remove the hold first.");
     const amount = BigInt(data.amountCents);
     if (amount <= 0n) throw new HttpError(400, "Enter a positive amount; use reversal for a mistaken entry");
     if (amount > BigInt(holder.remainingCents!)) throw new HttpError(409, `Entry exceeds remaining open amount of ${holder.remainingCents} cents for ${holder.displayName}`);

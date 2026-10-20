@@ -164,7 +164,7 @@ function WorkedTable({ c, declared, date, muted }: { c: YearCalculation; declare
           <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
             <dt>Declared per share {date && <span className="text-xs text-muted-foreground">· {fmtDate(date)}</span>}</dt><dd className="num text-right font-medium" data-testid="text-declared">{declared ? fmtCents(declared) : "Not declared"}</dd>
             <dt>Declared × 400</dt><dd className="num text-right">{fmtCents(c.declaredPoolCents)}</dd>
-            <dt>Sum of holder nominal amounts</dt><dd className="num text-right" data-testid="text-sum-nominal">{fmtCents(c.sumNominalCents)}</dd>
+            <dt>Sum of distributions</dt><dd className="num text-right" data-testid="text-sum-distribution">{fmtCents(c.sumNominalCents)}</dd>
             <dt>Residual</dt><dd className={cn("num text-right", residual && residual !== "0" && "text-primary")} data-testid="text-residual">{fmtCents(residual, { signed: true })}</dd>
           </dl>
         </div>
@@ -270,7 +270,7 @@ function DocRow({ d }: { d: YearDocument }) {
 }
 
 function statusTag(h: YearHolder) {
-  return <Tag tone={h.status === "complete" ? "lichen" : h.status === "held" ? "amber" : "plain"}>{h.status === "complete" ? "Complete" : h.status === "held" ? "Held" : "Open"}</Tag>;
+  return <Tag tone={h.instruction === "✓" ? "lichen" : h.isOnHold ? "amber" : "plain"}><span aria-label={h.instruction === "✓" ? "Paid in full" : undefined}>{h.instruction}</span></Tag>;
 }
 
 function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void }) {
@@ -278,17 +278,16 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
   const t = y.totals;
   return (
     <section className="rise rise-d3 space-y-3">
-      <SectionTitle right={<div className="num flex gap-3 text-xs text-muted-foreground"><span>{t.openCount} open</span><span>{t.heldCount} held</span><span>{t.completeCount} complete</span></div>}>Holders</SectionTitle>
+      <SectionTitle right={<div className="num flex gap-3 text-xs text-muted-foreground"><span>on hold: {t.heldCount}</span><span>paid in full: {t.completeCount}</span><span>to pay: {t.openCount}</span></div>}>Holders</SectionTitle>
       {y.holders.length === 0 ? <Empty title="No holders in this snapshot." /> : (
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="w-full min-w-[1080px] text-sm">
-            <thead className="bg-secondary/50 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <table className="w-full min-w-[1180px] text-sm" data-testid="table-year-holders">
+            <thead className="bg-secondary/50 text-[11px] tracking-wider text-muted-foreground">
               <tr className="text-left">
                 <th className="px-3 py-2 font-medium">Holder</th><th className="px-2 py-2 font-medium">Class</th><th className="px-2 py-2 font-medium">State</th>
-                <th className="px-2 py-2 text-right font-medium">Shares</th><th className="px-2 py-2 text-right font-medium">Nominal</th><th className="px-2 py-2 text-right font-medium">Gain share</th>
-                <th className="px-2 py-2 text-right font-medium">Est. tax</th><th className="px-2 py-2 text-right font-medium">Surplus</th><th className="px-2 py-2 text-right font-medium">Paid</th>
-                <th className="px-2 py-2 text-right font-medium">APIC</th><th className="px-2 py-2 text-right font-medium">Remaining</th><th className="px-2 py-2 font-medium">Status</th>
-                {ledger && <th className="px-3 py-2" />}
+                <th className="px-2 py-2 text-right font-medium">Shares</th><th className="px-2 py-2 text-right font-medium">Allocated Profit</th><th className="px-2 py-2 text-right font-medium">Distribution</th>
+                <th className="px-2 py-2 text-right font-medium">Estimated Tax</th><th className="px-2 py-2 text-right font-medium">Surplus/Deficit</th><th className="px-2 py-2 text-right font-medium">APIC</th>
+                <th className="px-2 py-2 text-right font-medium">Paid</th><th className="px-2 py-2 font-medium">Instruction</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -297,40 +296,40 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
                   <td className="px-3 py-2">
                     <div className="font-medium">{h.displayName}</div>
                     {h.isUnsettled && <div className="text-[11px] text-[hsl(30_60%_32%)]">Unsettled</div>}
-                    {h.holdNote && <div className="max-w-[200px] text-[11px] text-muted-foreground">Hold: {h.holdNote}</div>}
+                    {h.holdNote && <div className="max-w-[200px] text-[11px] text-muted-foreground">Instruction note: {h.holdNote}</div>}
                   </td>
                   <td className="num px-2 py-2">{h.shareClass}</td>
                   <td className="num px-2 py-2">{h.stateCode ?? "—"}{!h.residenceConfirmed && <span className="ml-1 text-[10px] text-primary">unconf.</span>}{h.stateRate && <div className="text-[10px] text-muted-foreground">{h.stateRate}</div>}</td>
                   <td className="num px-2 py-2 text-right">{h.shares}</td>
-                  <td className="num px-2 py-2 text-right font-medium" data-testid={`text-nominal-${h.personId}`}>{fmtCents(h.nominalCents)}</td>
                   <td className="num px-2 py-2 text-right">{fmtCents(h.shareOfGainCents)}</td>
+                  <td className="num px-2 py-2 text-right font-medium" data-testid={`text-distribution-${h.personId}`}>{fmtCents(h.nominalCents)}</td>
                   <td className="num px-2 py-2 text-right">{fmtCents(h.estimatedTaxCents)}</td>
                   <td className={cn("num px-2 py-2 text-right", isNeg(h.surplusCents) && "text-destructive")}>{fmtCents(h.surplusCents)}</td>
-                  <td className="num px-2 py-2 text-right">{fmtCents(h.paidCents)}</td>
                   <td className="num px-2 py-2 text-right">{fmtCents(h.retainedCents)}</td>
-                  <td className="num px-2 py-2 text-right font-medium" data-testid={`text-remaining-${h.personId}`}>{fmtCents(h.remainingCents)}</td>
-                  <td className="px-2 py-2">{statusTag(h)}</td>
-                  {ledger && (
-                    <td className="px-3 py-1.5">
+                  <td className="num px-2 py-2 text-right">{fmtCents(h.paidCents)}</td>
+                  <td className="px-2 py-2">
+                    <div data-testid={`text-instruction-${h.personId}`}>{statusTag(h)}</div>
+                    {ledger && (
                       <div className="flex justify-end gap-0.5">
-                         <IconBtn title="Record cash payment" disabled={h.status === "complete"} onClick={() => onAction({ k: "pay", holder: h, kind: "cash" })} test={`button-pay-${h.personId}`}><Banknote className="h-4 w-4" /></IconBtn>
-                         <IconBtn title="Record retained APIC" disabled={h.status === "complete"} onClick={() => onAction({ k: "pay", holder: h, kind: "apic" })} test={`button-apic-${h.personId}`}><Landmark className="h-4 w-4" /></IconBtn>
-                        <IconBtn title={h.status === "held" ? "Release hold" : "Place on hold"} onClick={() => onAction({ k: "hold", holder: h })} test={`button-hold-${h.personId}`}><Hand className={cn("h-4 w-4", h.status === "held" && "text-[hsl(30_60%_38%)]")} /></IconBtn>
+                         <IconBtn title="Record cash payment" disabled={h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "cash" })} test={`button-pay-${h.personId}`}><Banknote className="h-4 w-4" /></IconBtn>
+                         <IconBtn title="Record APIC retained" disabled={h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "apic" })} test={`button-apic-${h.personId}`}><Landmark className="h-4 w-4" /></IconBtn>
+                        <IconBtn title={h.isOnHold ? "Remove hold" : "Put on hold"} onClick={() => onAction({ k: "hold", holder: h })} test={`button-hold-${h.personId}`}><Hand className={cn("h-4 w-4", h.isOnHold && "text-[hsl(30_60%_38%)]")} /></IconBtn>
                       </div>
-                    </td>
-                  )}
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="border-t-2 border-double border-border bg-secondary/40 text-sm font-medium">
               <tr>
                 <td className="px-3 py-2" colSpan={4}>Totals</td>
-                <td className="num px-2 py-2 text-right" data-testid="text-total-nominal">{fmtCents(t.nominalCents)}</td>
-                <td colSpan={3} />
-                <td className="num px-2 py-2 text-right">{fmtCents(t.paidCents)}</td>
+                <td className="num px-2 py-2 text-right">{y.calculation ? fmtCents(sumCents(y.holders.map((h) => h.shareOfGainCents))) : "—"}</td>
+                <td className="num px-2 py-2 text-right" data-testid="text-total-distribution">{y.declaredPerShareCents === null ? "—" : fmtCents(t.nominalCents)}</td>
+                <td className="num px-2 py-2 text-right">{y.calculation && y.holders.every((h) => h.estimatedTaxCents !== null) ? fmtCents(sumCents(y.holders.map((h) => h.estimatedTaxCents))) : "—"}</td>
+                <td className="num px-2 py-2 text-right">{y.holders.every((h) => h.surplusCents !== null) ? fmtCents(sumCents(y.holders.map((h) => h.surplusCents))) : "—"}</td>
                 <td className="num px-2 py-2 text-right">{fmtCents(t.retainedCents)}</td>
-                <td className="num px-2 py-2 text-right" data-testid="text-total-remaining">{fmtCents(t.remainingCents)}</td>
-                <td colSpan={ledger ? 2 : 1} />
+                <td className="num px-2 py-2 text-right">{fmtCents(t.paidCents)}</td>
+                <td />
               </tr>
             </tfoot>
           </table>
@@ -503,7 +502,7 @@ function DeclareForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const proposed = y.calculation?.proposedPerShareCents;
   const valid = !!c && /^\d{4}-\d{2}-\d{2}$/.test(date) && !!note.trim();
   return (
-    <FormShell title="Declare per-share amount" desc="The declared amount, not the proposal, governs each holder's nominal distribution." error={decl.error} pending={decl.isPending} valid={valid} submit="Record declaration" onDone={onDone}
+    <FormShell title="Declare per-share amount" desc="The declared amount, not the proposal, governs each holder's distribution." error={decl.error} pending={decl.isPending} valid={valid} submit="Record declaration" onDone={onDone}
       onSubmit={() => decl.mutate({ id: y.id, data: { declaredPerShareCents: c!, declarationDate: date, note: note.trim() } })}>
       <div className="flex items-center justify-between rounded-md bg-secondary/60 px-3 py-2 text-sm">
         <span>Proposed per share <b className="num ml-2 font-medium">{fmtCents(proposed)}</b>{y.declaredPerShareCents && <span className="ml-3 text-xs text-muted-foreground">current: {fmtCents(y.declaredPerShareCents)}</span>}</span>
@@ -534,7 +533,7 @@ function FinalizeForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
           {y.blockers.map((b, i) => <li key={i}><b className="font-medium">{b.displayName}</b> — {b.reason}</li>)}
         </ul>
       ) : (
-        <div className="flex items-center gap-2 rounded-md bg-accent/60 px-3 py-2 text-sm text-accent-foreground"><CheckCircle2 className="h-4 w-4" /> Nothing blocks finalization. Declared {fmtCents(y.declaredPerShareCents)} per share; nominal total {fmtCents(y.totals.nominalCents)}.</div>
+        <div className="flex items-center gap-2 rounded-md bg-accent/60 px-3 py-2 text-sm text-accent-foreground"><CheckCircle2 className="h-4 w-4" /> Nothing blocks finalization. Declared {fmtCents(y.declaredPerShareCents)} per share; distribution total {fmtCents(y.totals.nominalCents)}.</div>
       )}
       <NoteField v={note} set={setNote} />
     </FormShell>
@@ -597,7 +596,7 @@ function PaymentForm({ y, holder, kind, onDone }: { y: YearDetail; holder: YearH
   const valid = !!c && c !== "0" && /^\d{4}-\d{2}-\d{2}$/.test(date) && (kind === "cash" ? !!method.trim() : letter);
   return (
     <FormShell title={kind === "cash" ? `Cash payment to ${holder.displayName}` : `Retain as APIC for ${holder.displayName}`}
-      desc={<>Remaining <b className="num">{fmtCents(holder.remainingCents)}</b> of nominal <span className="num">{fmtCents(holder.nominalCents)}</span>. Entries are permanent; mistakes are fixed by reversal.</>}
+      desc={<>Remaining <b className="num">{fmtCents(holder.remainingCents)}</b> of distribution <span className="num">{fmtCents(holder.nominalCents)}</span>. Entries are permanent; mistakes are fixed by reversal.</>}
       error={pay.error} pending={pay.isPending} valid={valid} submit="Record entry" onDone={onDone}
       onSubmit={() => pay.mutate({ id: y.id, data: { personId: holder.personId, kind, amountCents: c!, date, method: kind === "cash" ? method.trim() : undefined, note: note.trim() || undefined } })}>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -625,12 +624,12 @@ function PaymentForm({ y, holder, kind, onDone }: { y: YearDetail; holder: YearH
 function HoldForm({ y, holder, onDone }: { y: YearDetail; holder: YearHolder; onDone: () => void }) {
   const inval = useYearInval(y.id);
   const { toast } = useToast();
-  const held = holder.status === "held";
+  const held = holder.isOnHold;
   const [note, setNote] = useState("");
-  const m = useSetYearHold({ mutation: { onSuccess: () => { inval(); toast({ title: held ? "Hold released" : "Placed on hold", description: holder.displayName }); onDone(); } } });
+  const m = useSetYearHold({ mutation: { onSuccess: () => { inval(); toast({ title: held ? "Remove hold" : "Put on hold", description: holder.displayName }); onDone(); } } });
   return (
-    <FormShell title={held ? `Release hold on ${holder.displayName}` : `Hold ${holder.displayName}`} desc={held ? <>Currently held{holder.holdNote ? `: ${holder.holdNote}` : "."}{holder.isUnsettled && " This holding is unsettled."}</> : "Mark the remaining amount as held and record the reason. Existing entries remain unchanged."}
-      error={m.error} pending={m.isPending} valid={!!note.trim()} submit={held ? "Release hold" : "Place hold"} onDone={onDone}
+    <FormShell title={held ? `Remove hold: ${holder.displayName}` : `Put on hold: ${holder.displayName}`} desc={held ? <>Currently on hold{holder.holdNote ? `: ${holder.holdNote}` : "."}{holder.isUnsettled && " This holding is unsettled."}</> : "Put this holder on hold and record a note. Existing entries remain unchanged."}
+      error={m.error} pending={m.isPending} valid={!!note.trim()} submit={held ? "Remove hold" : "Put on hold"} onDone={onDone}
       onSubmit={() => m.mutate({ id: y.id, data: { personId: holder.personId, held: !held, note: note.trim() } })}>
       <NoteField v={note} set={setNote} />
     </FormShell>

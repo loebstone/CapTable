@@ -64,20 +64,23 @@ export async function ledgerWorkbook(context: ReportContext) {
     }
   });
   const summary = book.addWorksheet("Shareholder summary");
-  summary.addRow(["Shareholder", "Class", "Shares", "Nominal", "Paid cash", "Retained APIC", "Remaining", "Status", "Person ID"]);
+  summary.addRow(["Holder", "Class", "Shares", "Distribution", "Paid", "APIC retained", "Remaining", "Instruction", "Person ID", "State", "Allocated profit", "Estimated tax", "Surplus/Deficit"]);
   for (const holder of year.holders) summary.addRow([
     holder.displayName, holder.shareClass, shares(holder.shares), money(holder.nominalCents),
-    money(holder.paidCents), money(holder.retainedCents), money(holder.remainingCents), holder.status, holder.personId,
+    money(holder.paidCents), money(holder.retainedCents), money(holder.remainingCents), holder.instruction, holder.personId,
+    holder.stateCode, money(holder.shareOfGainCents), money(holder.estimatedTaxCents), money(holder.surplusCents),
   ]);
-  styleSheet(summary, [30, 9, 12, 18, 18, 18, 18, 15, 24], [4, 5, 6, 7], 3);
+  styleSheet(summary, [30, 9, 12, 18, 18, 18, 18, 15, 24, 10, 20, 20, 20], [4, 5, 6, 7, 11, 12, 13], 3);
   const total = summary.addRow([
     "TOTAL", "", null, money(year.declaredPerShareCents === null ? null : year.totals.nominalCents),
     money(year.totals.paidCents), money(year.totals.retainedCents),
-    money(year.declaredPerShareCents === null ? null : year.totals.remainingCents), "", "",
+    money(year.declaredPerShareCents === null ? null : year.totals.remainingCents), "", "", "",
+    ...(["shareOfGainCents", "estimatedTaxCents", "surplusCents"] as const).map((key) =>
+      money(year.holders.some((h) => h[key] === null) ? null : year.holders.reduce((sum, h) => sum + BigInt(h[key]!), 0n).toString())),
   ]);
   total.font = { name: "Calibri", bold: true };
   total.eachCell((cell) => { cell.border = { top: { style: "double", color: { argb: "FF884D40" } } }; });
-  for (const column of [4, 5, 6, 7]) total.getCell(column).numFmt = currency;
+  for (const column of [4, 5, 6, 7, 11, 12, 13]) total.getCell(column).numFmt = currency;
   const info = book.addWorksheet("Report information");
   [
     ["Field", "Value"], ["Issued by", ISSUER], ["Distribution year", year.calendarYear],
@@ -86,7 +89,7 @@ export async function ledgerWorkbook(context: ReportContext) {
     ["Observed inet_server_addr()", context.serverAddress ?? "SQL NULL"],
     ["Fixed snapshot", year.snapshotId], ["Snapshot asOf", context.snapshotAsOf],
     ["Rounding residual (cents)", year.calculation?.residualCents ?? "Not recorded"],
-    ["Open / held / complete", `${year.totals.openCount} / ${year.totals.heldCount} / ${year.totals.completeCount}`],
+    ["Instructions", `on hold: ${year.totals.heldCount}, paid in full: ${year.totals.completeCount}, to pay: ${year.totals.openCount}`],
     ["Date meaning", "Cash date is payment date. APIC letter date is the date the direction letter was received. Reversal date is when the reversal was recorded; its APIC letter date remains the original received date."],
     ["Amounts", "Numeric dollars, currency formatted. Calculations use integer cents; conversion occurs only when writing Excel numeric cells. Negative entries reverse linked prior entries."],
     ["Record basis", year.status === "draft" ? "Open year: not finalized. Missing declared amounts are blank, not zero." : "Finalized snapshot, rates and residences, plus any explicit noted corrections."],

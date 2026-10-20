@@ -111,7 +111,7 @@ export async function yearDetail(database: Database, id: number) {
     ...declarationHistory.map((r) => ({ id: `declaration-${r.id}`, kind: "Declaration revision (per share)", note: r.note, amountCents: r.declaredPerShareCents.toString(), createdAt: r.createdAt, createdBy: r.createdBy })),
     ...(finalization ? [{ id: `finalization-${finalization.id}`, kind: "Finalized", note: finalization.note, amountCents: null, createdAt: finalization.createdAt, createdBy: finalization.createdBy }] : []),
     ...corrections.map((r) => ({ id: `correction-${r.id}`, kind: r.kind, note: r.note, amountCents: r.amountCents?.toString() ?? null, createdAt: r.createdAt, createdBy: r.createdBy })),
-    ...holdHistory.map((r) => ({ id: `hold-${r.id}`, kind: r.held ? `Hold: ${r.personId}` : `Hold released: ${r.personId}`, note: r.note, amountCents: null, createdAt: r.createdAt, createdBy: r.createdBy })),
+    ...holdHistory.map((r) => ({ id: `hold-${r.id}`, kind: r.held ? `Put on hold: ${r.personId}` : `Remove hold: ${r.personId}`, note: r.note, amountCents: null, createdAt: r.createdAt, createdBy: r.createdBy })),
   ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return {
     ...year,

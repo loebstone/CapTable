@@ -269,6 +269,15 @@ export const YearHolderStatus = {
   complete: 'complete',
 } as const;
 
+export type YearHolderInstruction = typeof YearHolderInstruction[keyof typeof YearHolderInstruction];
+
+
+export const YearHolderInstruction = {
+  Pay: 'Pay',
+  Hold: 'Hold',
+  '✓': '✓',
+} as const;
+
 export interface YearHolder {
   personId: string;
   displayName: string;
@@ -295,6 +304,8 @@ export interface YearHolder {
   status: YearHolderStatus;
   /** @nullable */
   holdNote: string | null;
+  isOnHold: boolean;
+  instruction: YearHolderInstruction;
 }
 
 export type PaymentEntryKind = typeof PaymentEntryKind[keyof typeof PaymentEntryKind];

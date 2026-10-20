@@ -327,3 +327,11 @@ The Stage 3 suite reconstructs the exact 47-holder Stage 2 fixture, including Na
 - Verify: `pnpm --filter @workspace/api-server run verify:residences`. The local
   Roster stub supplies 47 rows, 45 proposed states and 2 missing states. Fixture
   writes roll back; no real Roster call or email is sent.
+
+### Distribution display vocabulary and Hold instruction
+
+The year shareholder grid uses exactly: Holder | Class | State | Shares | Allocated Profit | Distribution | Estimated Tax | Surplus/Deficit | APIC | Paid | Instruction. Remaining is not a shareholder-grid column; it remains available in the ledger/payment records. Reports and workbook summaries use Allocated profit, Distribution, Estimated tax, Surplus/Deficit, APIC retained and Paid. Negative amounts use a minus sign, not parentheses. Financial formulas, integer-cent arithmetic, frozen inputs and historical rows are unchanged.
+
+Instruction is Pay by default, Hold while an explicit or snapshot-unsettled hold is active, or ✓ once Paid plus APIC retained equals Distribution. Completion takes precedence for the displayed instruction; the independent hold flag still prevents new cash/APIC entries. Hold changes require a note and append a new audited row; an unsettled snapshot flag is clearable only through such an explicit remove-hold entry. Reversals remain available to correct existing entries. Legacy internal status and amount field names remain for compatibility but are not display labels.
+
+The server rejects a new cash/APIC entry on Hold with “This holder is on hold — remove the hold first.” A Hold statement omits payment rows, dates and amounts, and instead uses exactly: “Your distribution is being held pending resolution; the Corporation will be in touch.” That required sentence is the sole intentional exception to the no-obsolete-“held”-wording scan; stored free-text history is never rewritten. Board counts read “on hold: n, paid in full: n, to pay: n”; APIC/Paid total cells are blank until a ledger entry exists.

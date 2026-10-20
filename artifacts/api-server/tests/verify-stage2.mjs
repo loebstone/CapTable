@@ -152,12 +152,25 @@ try {
   record("5. Nominal reconciliation", { sumNominalCents: nominal.toString(), declaredPerShareTimes400Cents: pool.toString(), residualCents: (nominal - pool).toString() });
 
   const holder = detail.holders.find((r) => r.displayName === "Forster Nancy Anne");
+  assert.deepEqual([holder.shareOfGainCents, holder.nominalCents, holder.estimatedTaxCents, holder.surplusCents], ["550000", "155660", "110000", "45660"]);
+  const entryCount = (await client.query("SELECT count(*)::int AS n FROM distribution_entries")).rows[0].n;
+  for (const name of ["Adorno Marco", "Kneisel Geoffrey"]) {
+    const onHold = detail.holders.find((r) => r.displayName === name);
+    assert.equal(onHold.instruction, "Hold"); assert.equal(onHold.isOnHold, true);
+    for (const kind of ["cash", "apic"]) {
+      const denied = expect(await call("post", `${base}/payments`, cookie, { personId: onHold.personId, kind, amountCents: "100", date: "2026-10-20", method: "STUB test" }), 409);
+      assert.equal(denied.error, "This holder is on hold — remove the hold first.");
+    }
+  }
+  assert.equal((await client.query("SELECT count(*)::int AS n FROM distribution_entries")).rows[0].n, entryCount);
+  record("Hold payment guard and display figures", { ForsterCents: ["550000", "155660", "110000", "45660"], defaultHold: ["Adorno Marco", "Kneisel Geoffrey"], cashAndApicOnHoldHTTP: 409, rejectedEntriesWritten: 0 });
   const payment = { personId: holder.personId, kind: "cash", amountCents: (BigInt(holder.nominalCents) + 1n).toString(), date: "2026-10-20", method: "STUB paper check 101", note: "STUB test paid entry" };
   const overpaid = expect(await call("post", `${base}/payments`, cookie, payment), 409);
   detail = expect(await call("post", `${base}/payments`, cookie, { ...payment, amountCents: "100000" }), 201);
   const cashEntry = detail.payments.find((e) => e.personId === holder.personId && e.kind === "cash");
   const apicAmount = BigInt(holder.nominalCents) - 100000n;
   detail = expect(await call("post", `${base}/payments`, cookie, { personId: holder.personId, kind: "apic", amountCents: apicAmount.toString(), date: "2026-10-19", note: "STUB direction letter received on the recorded date" }), 201);
+  assert.equal(detail.holders.find((r) => r.personId === holder.personId).instruction, "✓");
   assert.equal(detail.holders.find((r) => r.personId === holder.personId).status, "complete");
   assert.equal(detail.holders.find((r) => r.personId === holder.personId).remainingCents, "0");
   expect(await call("post", `${base}/reversals`, cookie, { entryId: cashEntry.id, date: "2026-10-20", note: " " }), 400);
@@ -171,6 +184,8 @@ try {
   expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: false, note: " " }), 400);
   detail = expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: false, note: "STUB manual release with note" }), 201);
   assert.equal(detail.holders.find((r) => r.personId === marco.personId).status, "open");
+  assert.equal(detail.holders.find((r) => r.personId === marco.personId).instruction, "Pay");
+  assert.equal(detail.holders.find((r) => r.personId === marco.personId).isOnHold, false);
   detail = expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: true, note: "STUB restore hold with note" }), 201);
   assert.equal(detail.holders.find((r) => r.personId === marco.personId).status, "held");
   record("Manual held status", "Required note enforced; explicit release/re-hold appended and reflected in history");

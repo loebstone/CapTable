@@ -44,38 +44,42 @@ export function statementHtml(context: ReportContext, holder: ReportHolder) {
   const entries = year.payments.filter((e) => e.personId === holder.personId);
   const paymentRows = entries.map((entry) => `<tr><td>${html(entry.date)}</td><td>${html(BigInt(entry.amountCents) < 0n
     ? entry.kind === "cash" ? "Cash reversal" : "APIC retention reversal"
-    : entry.kind === "cash" ? "Cash paid" : "Retained as additional paid-in capital")}</td><td class="right amount">${html(dollars(entry.amountCents))}</td></tr>`).join("");
+    : entry.kind === "cash" ? "Paid" : "APIC retained")}</td><td class="right amount">${html(dollars(entry.amountCents))}</td></tr>`).join("");
   const body = `<header><div class="eyebrow">Shareholder distribution statement · ${year.calendarYear}</div>
     <h1>${ISSUER}</h1><p>Timber revenue distribution for ${year.calendarYear}</p></header>
     <div class="sub"><div><h2>${html(holder.displayName)}</h2><p>Class ${html(holder.shareClass)} · ${html(holder.shares)} shares</p></div>
     <div class="right muted"><p>Statement as of ${html(context.generatedAt.slice(0, 10))} (UTC)</p><p>${year.status === "corrected" ? "Includes recorded corrections" : "Finalized distribution record"}</p></div></div>
-    <div class="box">Your nominal distribution <strong class="hero amount">${html(dollars(holder.nominalCents))}</strong>
+    <div class="box">Your distribution <strong class="hero amount">${html(dollars(holder.nominalCents))}</strong>
     <p>This is the amount declared for your shares, before accounting for cash already paid or amounts you directed the Corporation to retain.</p></div>
     <div class="grid"><section><h2>How your amount was determined</h2><table>
     ${valueRow("Net timbering profit for the year", dollars(c.netProfitCents))}
     ${valueRow("Declared amount per share", dollars(year.declaredPerShareCents))}
     ${valueRow("Declaration date", dateLabel(year.declarationDate))}
     ${valueRow("Your shares", holder.shares)}
-    ${valueRow("Your nominal distribution", dollars(holder.nominalCents), true)}</table></section>
+    ${valueRow("Allocated profit", dollars(holder.shareOfGainCents))}
+    ${valueRow("Distribution", dollars(holder.nominalCents), true)}</table></section>
     <section><h2>Your estimated tax</h2><table>
     ${valueRow(`Federal tax at ${percent(c.federalRate)}`, dollars(federal))}
     ${valueRow(`State tax: ${holder.stateCode} at ${percent(holder.stateRate)}`, dollars(state))}
     ${rounding === 0n ? "" : valueRow("Cent rounding adjustment", dollars(rounding))}
-    ${valueRow("Total estimated tax", dollars(holder.estimatedTaxCents), true)}</table>
+    ${valueRow("Estimated tax", dollars(holder.estimatedTaxCents), true)}
+    ${valueRow("Surplus/Deficit", dollars(holder.surplusCents))}</table>
     <p class="muted">Estimated from your share of the year's net timbering profit, using the rates recorded for this finalized year.</p></section></div>
     <p class="caveat">${TAX_CAVEAT}</p>
-    <h2>Cash paid and amounts retained</h2>
-    <p class="muted">For cash, the date is the payment date. For retained amounts, it is the date your direction letter was received. A negative entry reverses an earlier entry.</p>
+    <h2>Paid and APIC retained</h2>
+    ${holder.isOnHold ? '<p>Your distribution is being held pending resolution; the Corporation will be in touch.</p>' : `
+    <p class="muted">For Paid, the date is the payment date. For APIC retained (additional paid-in capital), it is the date your direction letter was received. A negative entry reverses an earlier entry.</p>
     <table><colgroup><col style="width:22%"><col style="width:54%"><col style="width:24%"></colgroup><thead><tr><th>Date</th><th>Record</th><th class="right">Amount</th></tr></thead><tbody>
     ${paymentRows || '<tr><td colspan="3">No cash payments or APIC retentions have been recorded.</td></tr>'}</tbody></table>
-    <table style="margin-top:12px">${valueRow("Total cash paid, after reversals", dollars(holder.paidCents))}
-    ${valueRow("Total retained as additional paid-in capital, after reversals", dollars(holder.retainedCents))}
-    ${valueRow("Remaining amount", dollars(holder.remainingCents), true)}</table>
-    <p>Status: <strong>${html(holder.status)}</strong>${holder.status === "held" ? ". The remaining amount is marked as held." : ""}</p>`;
+    <table style="margin-top:12px">${valueRow("Paid", dollars(holder.paidCents))}
+    ${valueRow("APIC retained", dollars(holder.retainedCents))}</table>`}
+    <p>Instruction: <strong>${html(holder.instruction)}</strong></p>`;
   return document(context, `${year.calendarYear} shareholder statement`, body);
 }
 export function boardHtml(context: ReportContext) {
   const year = context.year, c = year.calculation;
+  const sum = (key: "shareOfGainCents" | "estimatedTaxCents" | "surplusCents") =>
+    year.holders.some((h) => h[key] === null) ? null : year.holders.reduce((total, h) => total + BigInt(h[key]!), 0n);
   const sourceName = (id: number | null) => id === null && year.isPractice ? "none (practice)" : year.documents.find((d) => d.id === id)?.filename ?? "Missing document";
   const figureRows = year.figures ? valueRow(`Gross timber revenue — ${sourceName(year.figures.grossDocumentId)}`, dollars(year.figures.grossCents)) +
     year.figures.costs.map((line) => valueRow(`${line.label} — ${sourceName(line.documentId)}`, dollars(line.amountCents))).join("") +
@@ -89,17 +93,14 @@ export function boardHtml(context: ReportContext) {
     <p>${context.classes.map((cl) => `Class ${html(cl.shareClass)}: ${html(cl.totalShares)} shares / ${cl.holderCount} holders`).join(" · ")} · <strong>${year.holders.length} shareholders</strong></p>
     <div class="grid"><section><h2>Year figures and source documents</h2><table class="mini">${figureRows}</table>
     <p><strong>Declared per share:</strong> ${html(dollars(year.declaredPerShareCents))} · <strong>Date:</strong> ${html(dateLabel(year.declarationDate))}</p>
-    <table class="mini">${valueRow("Sum of nominal amounts", dollars(c?.sumNominalCents ?? null))}
+    <table class="mini">${valueRow("Sum of distributions", dollars(c?.sumNominalCents ?? null))}
     ${valueRow("Declared per share × 400", dollars(c?.declaredPoolCents ?? null))}
     ${valueRow("Rounding residual (sum minus declared × 400)", dollars(c?.residualCents ?? null), true)}</table></section>
     <section><h2>Worked proposed per-share calculation</h2><table class="mini">${worked}</table></section></div>
-    <div class="totals"><span>Nominal <strong>${html(dollars(year.declaredPerShareCents === null ? null : year.totals.nominalCents))}</strong></span>
-    <span>Paid <strong>${html(dollars(year.totals.paidCents))}</strong></span><span>Retained <strong>${html(dollars(year.totals.retainedCents))}</strong></span>
-    <span>Remaining <strong>${html(dollars(year.declaredPerShareCents === null ? null : year.totals.remainingCents))}</strong></span>
-    <span>${year.totals.openCount} open / ${year.totals.heldCount} held / ${year.totals.completeCount} complete</span></div>
-    <table class="holders"><colgroup><col style="width:25%"><col style="width:5%"><col style="width:6%"><col style="width:8%"><col style="width:13%"><col style="width:13%"><col style="width:12%"><col style="width:8%"></colgroup><thead><tr>
-    <th>Name</th><th>Class</th><th>State</th><th class="right">Shares</th><th class="right">Nominal</th><th class="right">Est. tax</th><th class="right">Surplus</th><th>Status</th></tr></thead><tbody>
-    ${year.holders.map((h) => `<tr data-holder-row><td class="name">${html(h.displayName)}${h.isUnsettled ? " (unsettled)" : ""}</td><td>${html(h.shareClass)}</td><td>${html(h.stateCode ?? "missing")}</td><td class="right">${html(h.shares)}</td><td class="right">${html(dollars(h.nominalCents))}</td><td class="right">${html(dollars(h.estimatedTaxCents))}</td><td class="right">${html(dollars(h.surplusCents))}</td><td>${html(h.status)}</td></tr>`).join("")}
-    </tbody></table><p class="muted">${year.status === "draft" ? "Open year: figures, rates and residences remain subject to revision until finalization." : year.status === "corrected" ? "Includes explicit corrections; calculations retain the finalized snapshot, rates and residences." : "Finalized inputs are locked."}</p>`;
+    <div class="totals"><span>on hold: ${year.totals.heldCount}, paid in full: ${year.totals.completeCount}, to pay: ${year.totals.openCount}</span></div>
+    <table class="holders"><colgroup><col style="width:20%"><col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:8%"><col style="width:7%"></colgroup><thead><tr>
+    <th>Holder</th><th>Class</th><th>State</th><th class="right">Shares</th><th class="right">Allocated profit</th><th class="right">Distribution</th><th class="right">Estimated tax</th><th class="right">Surplus/Deficit</th><th class="right">APIC retained</th><th class="right">Paid</th><th>Instruction</th></tr></thead><tbody>
+    ${year.holders.map((h) => `<tr data-holder-row><td class="name">${html(h.displayName)}${h.isUnsettled ? " (unsettled)" : ""}</td><td>${html(h.shareClass)}</td><td>${html(h.stateCode ?? "missing")}</td><td class="right">${html(h.shares)}</td><td class="right">${html(dollars(h.shareOfGainCents))}</td><td class="right">${html(dollars(h.nominalCents))}</td><td class="right">${html(dollars(h.estimatedTaxCents))}</td><td class="right">${html(dollars(h.surplusCents))}</td><td class="right">${html(dollars(h.retainedCents))}</td><td class="right">${html(dollars(h.paidCents))}</td><td>${html(h.instruction)}</td></tr>`).join("")}
+    </tbody><tfoot><tr class="strong"><td colspan="4">Totals</td><td class="right">${html(dollars(sum("shareOfGainCents")))}</td><td class="right">${html(dollars(year.declaredPerShareCents === null ? null : year.totals.nominalCents))}</td><td class="right">${html(dollars(sum("estimatedTaxCents")))}</td><td class="right">${html(dollars(sum("surplusCents")))}</td><td class="right">${year.payments.length ? html(dollars(year.totals.retainedCents)) : "—"}</td><td class="right">${year.payments.length ? html(dollars(year.totals.paidCents)) : "—"}</td><td></td></tr></tfoot></table><p class="muted">${year.status === "draft" ? "Open year: figures, rates and residences remain subject to revision until finalization." : year.status === "corrected" ? "Includes explicit corrections; calculations retain the finalized snapshot, rates and residences." : "Finalized inputs are locked."}</p>`;
   return document(context, `${year.calendarYear} board summary`, body, true);
 }

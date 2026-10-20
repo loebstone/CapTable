@@ -67,6 +67,7 @@ export * from './yearFiguresCostsItem';
 export * from './yearFiguresInput';
 export * from './yearHistory';
 export * from './yearHolder';
+export * from './yearHolderInstruction';
 export * from './yearHolderStatus';
 export * from './yearInput';
 export * from './yearSummary';

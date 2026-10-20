@@ -5,6 +5,7 @@
  * HWD Distributions foundation API
  * OpenAPI spec version: 1.0.0
  */
+import type { YearHolderInstruction } from './yearHolderInstruction';
 import type { YearHolderStatus } from './yearHolderStatus';
 
 export interface YearHolder {
@@ -33,4 +34,6 @@ export interface YearHolder {
   status: YearHolderStatus;
   /** @nullable */
   holdNote: string | null;
+  isOnHold: boolean;
+  instruction: YearHolderInstruction;
 }

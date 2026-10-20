@@ -10,6 +10,10 @@ import JSZip from "jszip";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { stage2Harness } from "./stage2-harness.mjs";
 import { finalizedFixture } from "./stage3-fixture.mjs";
+import { boardHtml } from "../src/lib/reports/templates.ts";
+import { reportContext } from "../src/lib/reports/context.ts";
+import { dollars } from "../src/lib/reports/format.ts";
+import { fmtCents } from "../../hwd-distributions/src/lib/money.ts";
 
 const h = await stage2Harness();
 const { client, call, expect, record, results } = h;
@@ -52,6 +56,11 @@ try {
   assert.equal((await client.query("SELECT count(*)::int AS n FROM access_entries")).rows[0].n, 0, "Verification requires a fresh development access list");
   const fixture = await finalizedFixture(h);
   const { cookie, base, source } = fixture;
+  assert.equal(dollars("-1200"), "−$12.00");
+  assert.equal(fmtCents("-1200"), "−$12.00");
+  const beforeEntries = boardHtml(await reportContext(fixture.detail.id)).match(/<tfoot>([\s\S]*?)<\/tfoot>/)[1];
+  assert.match(beforeEntries, /<td class="right">—<\/td><td class="right">—<\/td>/);
+  record("Board totals before entries", "APIC retained and Paid total cells are blank dashes until the first ledger entry");
   const forsterBefore = fixture.detail.holders.find((p) => p.displayName === "Forster Nancy Anne");
   const draftStatement = await call("get", `${base}/reports/statement/${forsterBefore.personId}.pdf`, cookie);
   assert.equal(draftStatement.status, 409);
@@ -72,12 +81,13 @@ try {
   assert.match(statement.headers["cache-control"], /private.*no-store/);
   const statementPdf = await inspectPdf(statement.body);
   assert.equal(statementPdf.pages, 1);
-  for (const required of ["Horace W. Davis Realty Corp.", "Forster Nancy Anne", "$1,556.60", "$1,100.00", "$825.00", "$275.00", "15.00%", "5.00%", "MA", "2026-10-19", "$556.60", "$1,000.00", caveat, "ENVIRONMENT development", identity.database_name, "SQL NULL"]) {
+  for (const required of ["Horace W. Davis Realty Corp.", "Forster Nancy Anne", "$5,500.00", "$1,556.60", "$1,100.00", "$456.60", "$825.00", "$275.00", "Allocated profit", "Distribution", "Estimated tax", "Surplus/Deficit", "APIC retained", "Paid", "15.00%", "5.00%", "MA", "2026-10-19", "$556.60", "$1,000.00", caveat, "ENVIRONMENT development", identity.database_name, "SQL NULL"]) {
     assert.ok(statementPdf.text.includes(required), `Statement missing ${required}: ${statementPdf.text}`);
   }
   const otherNames = detail.holders.filter((p) => p.personId !== forster.personId).map((p) => p.displayName);
   assert.ok(otherNames.every((name) => !statementPdf.text.includes(name)));
   assert.ok(!statementPdf.text.includes("Internal privacy probe"));
+  assert.doesNotMatch(statementPdf.text, /Remaining/i);
   record("8a. Forster statement PDF", {
     pages: statementPdf.pages, nominalCents: forster.nominalCents,
     estimatedFederalCents: "82500", estimatedStateCents: "27500", estimatedTaxCents: forster.estimatedTaxCents,
@@ -89,13 +99,14 @@ try {
   assert.equal(board.status, 200);
   assert.match(board.headers["content-disposition"], /HWD_Distribution_2026_Board_Summary_\d{4}-\d{2}-\d{2}\.pdf/);
   const boardPdf = await inspectPdf(board.body);
+  assert.doesNotMatch(boardPdf.text, /Remaining/i);
   assert.equal(boardPdf.pages, 1, boardPdf.text);
   const namedRows = detail.holders.filter((p) => boardPdf.text.includes(p.displayName));
   assert.equal(namedRows.length, 47);
   // A full source filename can wrap at a hyphen; visual line breaks do not
   // change the filename. Match its characters without inserted line spacing.
   assert.ok(boardPdf.text.replace(/\s+/g, "").includes(source.filename));
-  for (const text of ["$110,000.00", "$77.83", "2026-10-20", "28.30%", "$31,131.98", "$31,132.00", "0.02", "$556.60", "$30,575.38", "45 open / 2 held / 0 complete", "2 holders", "22 holders", "14 holders", "9 holders", "ENVIRONMENT development", identity.database_name]) {
+  for (const text of ["$110,000.00", "$77.83", "2026-10-20", "28.30%", "$31,131.98", "$31,132.00", "0.02", "$556.60", "on hold: 2, paid in full: 0, to pay: 45", "2 holders", "22 holders", "14 holders", "9 holders", "ENVIRONMENT development", identity.database_name]) {
     assert.ok(boardPdf.text.includes(text), `Board PDF missing ${text}: ${boardPdf.text}`);
   }
   assert.ok(/[−-]\s*\$0\.02/.test(boardPdf.text), "Board residual must be negative, not just 0.02");
@@ -134,11 +145,21 @@ try {
     assert.equal(centsFromCell(row.getCell(5)), paidDB);
     assert.equal(centsFromCell(row.getCell(6)), retainedDB);
     assert.equal(centsFromCell(row.getCell(7)), BigInt(holder.nominalCents) - paidDB - retainedDB);
-    assert.equal(row.getCell(8).value, holder.status);
+    assert.equal(row.getCell(8).value, holder.instruction);
+    for (const [column, key] of [[11, "shareOfGainCents"], [12, "estimatedTaxCents"], [13, "surplusCents"]]) assert.equal(centsFromCell(row.getCell(column)).toString(), holder[key]);
   }
   const total = summary.getRow(49);
   for (const [column, key] of [[4, "nominalCents"], [5, "paidCents"], [6, "retainedCents"], [7, "remainingCents"]]) assert.equal(centsFromCell(total.getCell(column)).toString(), detail.totals[key]);
   const metadata = workbook.getWorksheet("Report information");
+  assert.deepEqual(summary.getRow(1).values.slice(1), ["Holder", "Class", "Shares", "Distribution", "Paid", "APIC retained", "Remaining", "Instruction", "Person ID", "State", "Allocated profit", "Estimated tax", "Surplus/Deficit"]);
+  const workbookText = [];
+  for (const sheet of workbook.worksheets) {
+    workbookText.push(sheet.name);
+    sheet.eachRow((row) => row.eachCell((cell) => { if (typeof cell.value === "string") workbookText.push(cell.value); }));
+  }
+  assert.doesNotMatch(workbookText.join(" "), /nominal|held/i);
+  assert.doesNotMatch(statementPdf.text, /nominal|held/i);
+  assert.doesNotMatch(boardPdf.text, /nominal|held/i);
   assert.equal(metadata.getCell("B6").value, "development");
   assert.equal(metadata.getCell("B7").value, identity.database_name);
   assert.equal(metadata.getCell("B8").value, "SQL NULL");
@@ -157,6 +178,7 @@ try {
     const included = detail.holders.filter((holder) => pdf.text.includes(holder.displayName));
     assert.equal(included.length, 1, `${file.name} must mention exactly its own shareholder`);
     assert.ok(pdf.text.includes(caveat));
+    assert.doesNotMatch(pdf.text.replace("Your distribution is being held pending resolution; the Corporation will be in touch.", ""), /nominal|held/i);
     statementNames.add(included[0].personId);
   }
   assert.equal(statementNames.size, 47);
@@ -174,6 +196,18 @@ try {
   const after = expect(await call("get", base, cookie), 200);
   assert.deepEqual(after, detail, "Report generation must never mutate the year, ledger or status");
   record("Read-only generation", "Year and payment record identical before/after PDF, ZIP and XLSX generation");
+  // A holder with existing ledger entries must not reveal their payment dates
+  // or paid/APIC amounts in a statement once a person puts them on hold.
+  expect(await call("post", `${base}/holds`, cookie, { personId: forster.personId, held: true, note: "STUB put on hold after recorded ledger entries" }), 201);
+  const holdStatement = await call("get", statementPath, cookie);
+  assert.equal(holdStatement.status, 200);
+  const holdPdf = await inspectPdf(holdStatement.body);
+  assert.equal(holdPdf.pages, 1);
+  const holdSentence = "Your distribution is being held pending resolution; the Corporation will be in touch.";
+  assert.ok(holdPdf.text.includes(holdSentence));
+  assert.doesNotMatch(holdPdf.text, /\$556\.60|2026-10-19/);
+  assert.doesNotMatch(holdPdf.text.replace(holdSentence, ""), /nominal|held/i);
+  record("Wording and Hold statement", { pdfAndWorkbookNominalHits: 0, obsoleteHeldLabelHits: 0, requiredHeldSentenceException: true, onHoldStatementPages: holdPdf.pages, priorPaymentAmountsAndDatesOmitted: true });
 
   await mkdir(outputDir, { recursive: true });
   await writeFile(resolve(outputDir, "STUB_Forster_statement.pdf"), statement.body);
