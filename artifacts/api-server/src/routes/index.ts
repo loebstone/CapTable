@@ -6,6 +6,9 @@ import residencesRouter from "./residences";
 import ratesRouter from "./rates";
 import accessRouter from "./access";
 import auditRouter from "./audit";
+import yearsRouter from "./years";
+import paymentsRouter from "./payments";
+import yearDocumentsRouter from "./year-documents";
 import { requireAccess } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -19,6 +22,9 @@ router.use(residencesRouter);
 router.use(ratesRouter);
 router.use(accessRouter);
 router.use(auditRouter);
+router.use(yearsRouter);
+router.use(paymentsRouter);
+router.use(yearDocumentsRouter);
 router.use((_req, res) => { res.status(404).json({ error: "API route not found" }); });
 
 export default router;

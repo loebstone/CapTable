@@ -5,6 +5,339 @@
  * HWD Distributions foundation API
  * OpenAPI spec version: 1.0.0
  */
+export interface NoteInput {
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  note: string;
+}
+
+export interface YearInput {
+  /**
+     * @minimum 1900
+     * @maximum 9999
+     */
+  calendarYear: number;
+  /** @minimum 1 */
+  snapshotId: number;
+  /** @minLength 1 */
+  note: string;
+}
+
+export type YearSummaryStatus = typeof YearSummaryStatus[keyof typeof YearSummaryStatus];
+
+
+export const YearSummaryStatus = {
+  draft: 'draft',
+  finalized: 'finalized',
+  corrected: 'corrected',
+} as const;
+
+export interface YearSummary {
+  id: number;
+  calendarYear: number;
+  snapshotId: number;
+  status: YearSummaryStatus;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface CostLineInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  label: string;
+  /** @pattern ^\d{1,15}$ */
+  amountCents: string;
+  /** @minimum 1 */
+  documentId: number;
+}
+
+export interface YearFiguresInput {
+  /** @pattern ^\d{1,15}$ */
+  grossCents: string;
+  /** @minimum 1 */
+  grossDocumentId: number;
+  /** @maxItems 100 */
+  costs: CostLineInput[];
+  /** @minLength 1 */
+  note: string;
+}
+
+export type YearFiguresCostsItem = {
+  label: string;
+  amountCents: string;
+  documentId: number;
+};
+
+export interface YearFigures {
+  grossCents: string;
+  grossDocumentId: number;
+  note: string;
+  costs: YearFiguresCostsItem[];
+}
+
+export interface DeclarationInput {
+  /** @pattern ^\d{1,15}$ */
+  declaredPerShareCents: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  declarationDate: string;
+  /** @minLength 1 */
+  note: string;
+}
+
+export type YearCorrectionInputKind = typeof YearCorrectionInputKind[keyof typeof YearCorrectionInputKind];
+
+
+export const YearCorrectionInputKind = {
+  note: 'note',
+  grossAdjustment: 'grossAdjustment',
+  costAdjustment: 'costAdjustment',
+  declaredPerShareAdjustment: 'declaredPerShareAdjustment',
+} as const;
+
+export interface YearCorrectionInput {
+  kind: YearCorrectionInputKind;
+  /**
+     * @nullable
+     * @pattern ^-?\d{1,15}$
+     */
+  amountCents?: string | null;
+  /** @nullable */
+  documentId?: number | null;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  declarationDate?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  note: string;
+}
+
+export type PaymentInputKind = typeof PaymentInputKind[keyof typeof PaymentInputKind];
+
+
+export const PaymentInputKind = {
+  cash: 'cash',
+  apic: 'apic',
+} as const;
+
+export interface PaymentInput {
+  /** @minLength 1 */
+  personId: string;
+  kind: PaymentInputKind;
+  /** @pattern ^\d{1,15}$ */
+  amountCents: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /** @maxLength 200 */
+  method?: string;
+  /** @maxLength 5000 */
+  note?: string;
+}
+
+export interface ReversalInput {
+  /** @minimum 1 */
+  entryId: number;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  note: string;
+}
+
+export interface HoldInput {
+  /** @minLength 1 */
+  personId: string;
+  held: boolean;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  note: string;
+}
+
+export type DocumentUploadInputContentType = typeof DocumentUploadInputContentType[keyof typeof DocumentUploadInputContentType];
+
+
+export const DocumentUploadInputContentType = {
+  'application/pdf': 'application/pdf',
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+  'image/gif': 'image/gif',
+} as const;
+
+export interface DocumentUploadInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  filename: string;
+  contentType: DocumentUploadInputContentType;
+  /**
+     * @minimum 1
+     * @maximum 20971520
+     */
+  size: number;
+}
+
+export interface DocumentUpload {
+  uploadId: number;
+  uploadURL: string;
+}
+
+export interface DocumentAttachmentInput {
+  /** @minimum 1 */
+  uploadId: number;
+}
+
+export interface YearDocument {
+  id: number;
+  filename: string;
+  contentType: string;
+  size: number;
+  uploadedAt: string;
+  uploadedBy: string;
+  downloadUrl: string;
+}
+
+export interface YearBlocker {
+  /** @nullable */
+  personId: string | null;
+  displayName: string;
+  reason: string;
+}
+
+export interface YearCalculation {
+  grossCents: string;
+  costTotalCents: string;
+  netProfitCents: string;
+  federalRate: string;
+  /** @nullable */
+  highestState: string | null;
+  /** @nullable */
+  highestStateRate: string | null;
+  /** @nullable */
+  combinedRate: string | null;
+  /** @nullable */
+  poolCents: string | null;
+  /** @nullable */
+  proposedPerShareCents: string | null;
+  /** @nullable */
+  declaredPoolCents: string | null;
+  /** @nullable */
+  sumNominalCents: string | null;
+  /** @nullable */
+  residualCents: string | null;
+}
+
+export type YearHolderStatus = typeof YearHolderStatus[keyof typeof YearHolderStatus];
+
+
+export const YearHolderStatus = {
+  open: 'open',
+  held: 'held',
+  complete: 'complete',
+} as const;
+
+export interface YearHolder {
+  personId: string;
+  displayName: string;
+  shareClass: string;
+  shares: string;
+  /** @nullable */
+  stateCode: string | null;
+  residenceConfirmed: boolean;
+  isUnsettled: boolean;
+  /** @nullable */
+  stateRate: string | null;
+  /** @nullable */
+  nominalCents: string | null;
+  /** @nullable */
+  shareOfGainCents: string | null;
+  /** @nullable */
+  estimatedTaxCents: string | null;
+  /** @nullable */
+  surplusCents: string | null;
+  paidCents: string;
+  retainedCents: string;
+  /** @nullable */
+  remainingCents: string | null;
+  status: YearHolderStatus;
+  /** @nullable */
+  holdNote: string | null;
+}
+
+export type PaymentEntryKind = typeof PaymentEntryKind[keyof typeof PaymentEntryKind];
+
+
+export const PaymentEntryKind = {
+  cash: 'cash',
+  apic: 'apic',
+} as const;
+
+export interface PaymentEntry {
+  id: number;
+  personId: string;
+  kind: PaymentEntryKind;
+  amountCents: string;
+  date: string;
+  /** @nullable */
+  method: string | null;
+  note: string;
+  /** @nullable */
+  reversesEntryId: number | null;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface YearHistory {
+  id: string;
+  kind: string;
+  note: string;
+  /** @nullable */
+  amountCents: string | null;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface YearTotals {
+  nominalCents: string;
+  paidCents: string;
+  retainedCents: string;
+  remainingCents: string;
+  openCount: number;
+  heldCount: number;
+  completeCount: number;
+}
+
+export type YearDetail = YearSummary & ({
+  figures: YearFigures | null;
+  /** @nullable */
+  declaredPerShareCents: string | null;
+  /** @nullable */
+  declarationDate: string | null;
+  rateTableId: number;
+  /** @nullable */
+  finalizedAt: string | null;
+  calculation: YearCalculation | null;
+  originalCalculation: YearCalculation | null;
+  blockers: YearBlocker[];
+  holders: YearHolder[];
+  totals: YearTotals;
+  documents: YearDocument[];
+  payments: PaymentEntry[];
+  history: YearHistory[];
+});
+
 export interface HealthStatus {
   status: string;
 }

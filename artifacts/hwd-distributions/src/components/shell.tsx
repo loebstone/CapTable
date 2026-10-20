@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSignOut, type Session } from "@workspace/api-client-react";
-import { Layers, Archive, MapPin, Percent, KeyRound, ScrollText, LogOut } from "lucide-react";
+import { Layers, Archive, MapPin, Percent, KeyRound, ScrollText, LogOut, TreePine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
+  { href: "/years", label: "Distribution years", icon: TreePine },
   { href: "/holdings", label: "Holdings", icon: Layers },
   { href: "/snapshots", label: "Snapshots", icon: Archive },
   { href: "/residences", label: "Tax residence", icon: MapPin },

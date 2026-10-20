@@ -24,20 +24,34 @@ import type {
   AccessInput,
   AccessRemovalInput,
   AuditEntry,
+  DeclarationInput,
+  DocumentAttachmentInput,
+  DocumentUpload,
+  DocumentUploadInput,
   EmailInput,
   HealthStatus,
+  HoldInput,
   Holdings,
   HoldingsResult,
   Message,
+  NoteInput,
+  PaymentInput,
   RateCopyInput,
   RateInput,
   RateTable,
   Residence,
   ResidenceInput,
+  ReversalInput,
   Session,
   Snapshot,
   SnapshotInput,
-  VerifySignInParams
+  VerifySignInParams,
+  YearCorrectionInput,
+  YearDetail,
+  YearDocument,
+  YearFiguresInput,
+  YearInput,
+  YearSummary
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1482,6 +1496,1053 @@ export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListAuditQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListYearsUrl = () => {
+
+
+
+
+  return `/api/years`
+}
+
+export const listYears = async ( options?: Parameters<typeof customFetch>[1]): Promise<YearSummary[]> => {
+
+  return customFetch<YearSummary[]>(getListYearsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListYearsQueryKey = () => {
+    return [
+    `/api/years`
+    ] as const;
+    }
+
+
+export const getListYearsQueryOptions = <TData = Awaited<ReturnType<typeof listYears>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listYears>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListYearsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listYears>>> = ({ signal }) => listYears({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listYears>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListYearsQueryResult = NonNullable<Awaited<ReturnType<typeof listYears>>>
+export type ListYearsQueryError = ErrorType<unknown>
+
+
+
+export function useListYears<TData = Awaited<ReturnType<typeof listYears>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listYears>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListYearsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getOpenYearUrl = () => {
+
+
+
+
+  return `/api/years`
+}
+
+export const openYear = async (yearInput: YearInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getOpenYearUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(yearInput)
+  }
+);}
+
+
+
+
+
+export const getOpenYearMutationKey = () => ['openYear'] as const;
+
+export const getOpenYearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openYear>>, TError,OpenYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openYear>>, TError,OpenYearMutationVariables, TContext> => {
+
+const mutationKey = getOpenYearMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openYear>>, OpenYearMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  openYear(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenYearMutationResult = NonNullable<Awaited<ReturnType<typeof openYear>>>
+    export type OpenYearMutationBody = BodyType<YearInput>
+    export type OpenYearMutationError = ErrorType<unknown>
+    export type OpenYearMutationVariables = {data: BodyType<YearInput>}
+
+    export const useOpenYear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openYear>>, TError,OpenYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof openYear>>,
+        TError,
+        OpenYearMutationVariables,
+        TContext
+      > => {
+      return useMutation(getOpenYearMutationOptions(options));
+    }
+
+export const getGetYearUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}`
+}
+
+export const getYear = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+  return customFetch<YearDetail>(getGetYearUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetYearQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}`
+    ] as const;
+    }
+
+
+export const getGetYearQueryOptions = <TData = Awaited<ReturnType<typeof getYear>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYear>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetYearQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getYear>>> = ({ signal }) => getYear(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYear>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetYearQueryResult = NonNullable<Awaited<ReturnType<typeof getYear>>>
+export type GetYearQueryError = ErrorType<unknown>
+
+
+
+export function useGetYear<TData = Awaited<ReturnType<typeof getYear>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYear>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetYearQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveYearFiguresUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/figures`
+}
+
+export const saveYearFigures = async (id: number,
+    yearFiguresInput: YearFiguresInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getSaveYearFiguresUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(yearFiguresInput)
+  }
+);}
+
+
+
+
+
+export const getSaveYearFiguresMutationKey = () => ['saveYearFigures'] as const;
+
+export const getSaveYearFiguresMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveYearFigures>>, TError,SaveYearFiguresMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveYearFigures>>, TError,SaveYearFiguresMutationVariables, TContext> => {
+
+const mutationKey = getSaveYearFiguresMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveYearFigures>>, SaveYearFiguresMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveYearFigures(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveYearFiguresMutationResult = NonNullable<Awaited<ReturnType<typeof saveYearFigures>>>
+    export type SaveYearFiguresMutationBody = BodyType<YearFiguresInput>
+    export type SaveYearFiguresMutationError = ErrorType<unknown>
+    export type SaveYearFiguresMutationVariables = {id: number;data: BodyType<YearFiguresInput>}
+
+    export const useSaveYearFigures = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveYearFigures>>, TError,SaveYearFiguresMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveYearFigures>>,
+        TError,
+        SaveYearFiguresMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveYearFiguresMutationOptions(options));
+    }
+
+export const getDeclareYearUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/declaration`
+}
+
+export const declareYear = async (id: number,
+    declarationInput: DeclarationInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getDeclareYearUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(declarationInput)
+  }
+);}
+
+
+
+
+
+export const getDeclareYearMutationKey = () => ['declareYear'] as const;
+
+export const getDeclareYearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declareYear>>, TError,DeclareYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof declareYear>>, TError,DeclareYearMutationVariables, TContext> => {
+
+const mutationKey = getDeclareYearMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof declareYear>>, DeclareYearMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  declareYear(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeclareYearMutationResult = NonNullable<Awaited<ReturnType<typeof declareYear>>>
+    export type DeclareYearMutationBody = BodyType<DeclarationInput>
+    export type DeclareYearMutationError = ErrorType<unknown>
+    export type DeclareYearMutationVariables = {id: number;data: BodyType<DeclarationInput>}
+
+    export const useDeclareYear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declareYear>>, TError,DeclareYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof declareYear>>,
+        TError,
+        DeclareYearMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeclareYearMutationOptions(options));
+    }
+
+export const getFinalizeYearUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/finalize`
+}
+
+export const finalizeYear = async (id: number,
+    noteInput: NoteInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getFinalizeYearUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(noteInput)
+  }
+);}
+
+
+
+
+
+export const getFinalizeYearMutationKey = () => ['finalizeYear'] as const;
+
+export const getFinalizeYearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeYear>>, TError,FinalizeYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finalizeYear>>, TError,FinalizeYearMutationVariables, TContext> => {
+
+const mutationKey = getFinalizeYearMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finalizeYear>>, FinalizeYearMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  finalizeYear(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinalizeYearMutationResult = NonNullable<Awaited<ReturnType<typeof finalizeYear>>>
+    export type FinalizeYearMutationBody = BodyType<NoteInput>
+    export type FinalizeYearMutationError = ErrorType<unknown>
+    export type FinalizeYearMutationVariables = {id: number;data: BodyType<NoteInput>}
+
+    export const useFinalizeYear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeYear>>, TError,FinalizeYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof finalizeYear>>,
+        TError,
+        FinalizeYearMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFinalizeYearMutationOptions(options));
+    }
+
+export const getCorrectYearUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/corrections`
+}
+
+export const correctYear = async (id: number,
+    yearCorrectionInput: YearCorrectionInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getCorrectYearUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(yearCorrectionInput)
+  }
+);}
+
+
+
+
+
+export const getCorrectYearMutationKey = () => ['correctYear'] as const;
+
+export const getCorrectYearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof correctYear>>, TError,CorrectYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof correctYear>>, TError,CorrectYearMutationVariables, TContext> => {
+
+const mutationKey = getCorrectYearMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof correctYear>>, CorrectYearMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  correctYear(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CorrectYearMutationResult = NonNullable<Awaited<ReturnType<typeof correctYear>>>
+    export type CorrectYearMutationBody = BodyType<YearCorrectionInput>
+    export type CorrectYearMutationError = ErrorType<unknown>
+    export type CorrectYearMutationVariables = {id: number;data: BodyType<YearCorrectionInput>}
+
+    export const useCorrectYear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof correctYear>>, TError,CorrectYearMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof correctYear>>,
+        TError,
+        CorrectYearMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCorrectYearMutationOptions(options));
+    }
+
+export const getRecordPaymentUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/payments`
+}
+
+export const recordPayment = async (id: number,
+    paymentInput: PaymentInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getRecordPaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paymentInput)
+  }
+);}
+
+
+
+
+
+export const getRecordPaymentMutationKey = () => ['recordPayment'] as const;
+
+export const getRecordPaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPayment>>, TError,RecordPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordPayment>>, TError,RecordPaymentMutationVariables, TContext> => {
+
+const mutationKey = getRecordPaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordPayment>>, RecordPaymentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  recordPayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof recordPayment>>>
+    export type RecordPaymentMutationBody = BodyType<PaymentInput>
+    export type RecordPaymentMutationError = ErrorType<unknown>
+    export type RecordPaymentMutationVariables = {id: number;data: BodyType<PaymentInput>}
+
+    export const useRecordPayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPayment>>, TError,RecordPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordPayment>>,
+        TError,
+        RecordPaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecordPaymentMutationOptions(options));
+    }
+
+export const getReversePaymentUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/reversals`
+}
+
+export const reversePayment = async (id: number,
+    reversalInput: ReversalInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getReversePaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reversalInput)
+  }
+);}
+
+
+
+
+
+export const getReversePaymentMutationKey = () => ['reversePayment'] as const;
+
+export const getReversePaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reversePayment>>, TError,ReversePaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reversePayment>>, TError,ReversePaymentMutationVariables, TContext> => {
+
+const mutationKey = getReversePaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reversePayment>>, ReversePaymentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reversePayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReversePaymentMutationResult = NonNullable<Awaited<ReturnType<typeof reversePayment>>>
+    export type ReversePaymentMutationBody = BodyType<ReversalInput>
+    export type ReversePaymentMutationError = ErrorType<unknown>
+    export type ReversePaymentMutationVariables = {id: number;data: BodyType<ReversalInput>}
+
+    export const useReversePayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reversePayment>>, TError,ReversePaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reversePayment>>,
+        TError,
+        ReversePaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReversePaymentMutationOptions(options));
+    }
+
+export const getSetYearHoldUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/holds`
+}
+
+export const setYearHold = async (id: number,
+    holdInput: HoldInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDetail>(getSetYearHoldUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(holdInput)
+  }
+);}
+
+
+
+
+
+export const getSetYearHoldMutationKey = () => ['setYearHold'] as const;
+
+export const getSetYearHoldMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setYearHold>>, TError,SetYearHoldMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setYearHold>>, TError,SetYearHoldMutationVariables, TContext> => {
+
+const mutationKey = getSetYearHoldMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setYearHold>>, SetYearHoldMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setYearHold(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetYearHoldMutationResult = NonNullable<Awaited<ReturnType<typeof setYearHold>>>
+    export type SetYearHoldMutationBody = BodyType<HoldInput>
+    export type SetYearHoldMutationError = ErrorType<unknown>
+    export type SetYearHoldMutationVariables = {id: number;data: BodyType<HoldInput>}
+
+    export const useSetYearHold = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setYearHold>>, TError,SetYearHoldMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setYearHold>>,
+        TError,
+        SetYearHoldMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetYearHoldMutationOptions(options));
+    }
+
+export const getRequestYearUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/documents/uploads`
+}
+
+export const requestYearUpload = async (id: number,
+    documentUploadInput: DocumentUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<DocumentUpload> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DocumentUpload>(getRequestYearUploadUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(documentUploadInput)
+  }
+);}
+
+
+
+
+
+export const getRequestYearUploadMutationKey = () => ['requestYearUpload'] as const;
+
+export const getRequestYearUploadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestYearUpload>>, TError,RequestYearUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestYearUpload>>, TError,RequestYearUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestYearUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestYearUpload>>, RequestYearUploadMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  requestYearUpload(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestYearUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestYearUpload>>>
+    export type RequestYearUploadMutationBody = BodyType<DocumentUploadInput>
+    export type RequestYearUploadMutationError = ErrorType<unknown>
+    export type RequestYearUploadMutationVariables = {id: number;data: BodyType<DocumentUploadInput>}
+
+    export const useRequestYearUpload = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestYearUpload>>, TError,RequestYearUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestYearUpload>>,
+        TError,
+        RequestYearUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestYearUploadMutationOptions(options));
+    }
+
+export const getAttachYearDocumentUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/documents`
+}
+
+export const attachYearDocument = async (id: number,
+    documentAttachmentInput: DocumentAttachmentInput, options?: Parameters<typeof customFetch>[1]): Promise<YearDocument> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YearDocument>(getAttachYearDocumentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(documentAttachmentInput)
+  }
+);}
+
+
+
+
+
+export const getAttachYearDocumentMutationKey = () => ['attachYearDocument'] as const;
+
+export const getAttachYearDocumentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachYearDocument>>, TError,AttachYearDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof attachYearDocument>>, TError,AttachYearDocumentMutationVariables, TContext> => {
+
+const mutationKey = getAttachYearDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachYearDocument>>, AttachYearDocumentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  attachYearDocument(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttachYearDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof attachYearDocument>>>
+    export type AttachYearDocumentMutationBody = BodyType<DocumentAttachmentInput>
+    export type AttachYearDocumentMutationError = ErrorType<unknown>
+    export type AttachYearDocumentMutationVariables = {id: number;data: BodyType<DocumentAttachmentInput>}
+
+    export const useAttachYearDocument = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachYearDocument>>, TError,AttachYearDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof attachYearDocument>>,
+        TError,
+        AttachYearDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAttachYearDocumentMutationOptions(options));
+    }
+
+export const getDownloadYearDocumentUrl = (id: number,
+    documentId: number,) => {
+
+
+
+
+  return `/api/years/${id}/documents/${documentId}/file`
+}
+
+export const downloadYearDocument = async (id: number,
+    documentId: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadYearDocumentUrl(id,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadYearDocumentQueryKey = (id: number,
+    documentId: number,) => {
+    return [
+    `/api/years/${id}/documents/${documentId}/file`
+    ] as const;
+    }
+
+
+export const getDownloadYearDocumentQueryOptions = <TData = Awaited<ReturnType<typeof downloadYearDocument>>, TError = ErrorType<unknown>>(id: number,
+    documentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadYearDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadYearDocumentQueryKey(id,documentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadYearDocument>>> = ({ signal }) => downloadYearDocument(id,documentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && documentId !== null && documentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadYearDocument>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadYearDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof downloadYearDocument>>>
+export type DownloadYearDocumentQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadYearDocument<TData = Awaited<ReturnType<typeof downloadYearDocument>>, TError = ErrorType<unknown>>(
+ id: number,
+    documentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadYearDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadYearDocumentQueryOptions(id,documentId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

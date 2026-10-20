@@ -377,3 +377,1242 @@ export const ListAuditResponseItem = zod.object({
 export const ListAuditResponse = zod.array(ListAuditResponseItem)
 
 
+export const ListYearsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})
+export const ListYearsResponse = zod.array(ListYearsResponseItem)
+
+
+export const openYearBodyCalendarYearMin = 1900;
+export const openYearBodyCalendarYearMax = 9999;
+
+
+
+
+
+export const OpenYearBody = zod.object({
+  "calendarYear": zod.number().int().min(openYearBodyCalendarYearMin).max(openYearBodyCalendarYearMax),
+  "snapshotId": zod.number().int().min(1),
+  "note": zod.string().min(1)
+})
+
+export const OpenYearResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const GetYearParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetYearResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const SaveYearFiguresParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const saveYearFiguresBodyGrossCentsRegExp = new RegExp('^\\d{1,15}$');
+
+export const saveYearFiguresBodyCostsItemLabelMax = 200;
+
+export const saveYearFiguresBodyCostsItemAmountCentsRegExp = new RegExp('^\\d{1,15}$');
+
+export const saveYearFiguresBodyCostsMax = 100;
+
+
+
+
+export const SaveYearFiguresBody = zod.object({
+  "grossCents": zod.string().regex(saveYearFiguresBodyGrossCentsRegExp),
+  "grossDocumentId": zod.number().int().min(1),
+  "costs": zod.array(zod.object({
+  "label": zod.string().min(1).max(saveYearFiguresBodyCostsItemLabelMax),
+  "amountCents": zod.string().regex(saveYearFiguresBodyCostsItemAmountCentsRegExp),
+  "documentId": zod.number().int().min(1)
+})).max(saveYearFiguresBodyCostsMax),
+  "note": zod.string().min(1)
+})
+
+export const SaveYearFiguresResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const DeclareYearParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const declareYearBodyDeclaredPerShareCentsRegExp = new RegExp('^\\d{1,15}$');
+export const declareYearBodyDeclarationDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+
+export const DeclareYearBody = zod.object({
+  "declaredPerShareCents": zod.string().regex(declareYearBodyDeclaredPerShareCentsRegExp),
+  "declarationDate": zod.string().regex(declareYearBodyDeclarationDateRegExp),
+  "note": zod.string().min(1)
+})
+
+export const DeclareYearResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const FinalizeYearParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const finalizeYearBodyNoteMax = 5000;
+
+
+
+export const FinalizeYearBody = zod.object({
+  "note": zod.string().min(1).max(finalizeYearBodyNoteMax)
+})
+
+export const FinalizeYearResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const CorrectYearParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const correctYearBodyAmountCentsRegExp = new RegExp('^-?\\d{1,15}$');
+export const correctYearBodyDeclarationDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const correctYearBodyNoteMax = 5000;
+
+
+
+export const CorrectYearBody = zod.object({
+  "kind": zod.enum(['note', 'grossAdjustment', 'costAdjustment', 'declaredPerShareAdjustment']),
+  "amountCents": zod.string().regex(correctYearBodyAmountCentsRegExp).nullish(),
+  "documentId": zod.number().int().nullish(),
+  "declarationDate": zod.string().regex(correctYearBodyDeclarationDateRegExp).nullish(),
+  "note": zod.string().min(1).max(correctYearBodyNoteMax)
+})
+
+export const CorrectYearResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const RecordPaymentParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const recordPaymentBodyAmountCentsRegExp = new RegExp('^\\d{1,15}$');
+export const recordPaymentBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const recordPaymentBodyMethodMax = 200;
+
+export const recordPaymentBodyNoteMax = 5000;
+
+
+
+export const RecordPaymentBody = zod.object({
+  "personId": zod.string().min(1),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string().regex(recordPaymentBodyAmountCentsRegExp),
+  "date": zod.string().regex(recordPaymentBodyDateRegExp),
+  "method": zod.string().max(recordPaymentBodyMethodMax).optional(),
+  "note": zod.string().max(recordPaymentBodyNoteMax).optional()
+})
+
+export const RecordPaymentResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const ReversePaymentParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const reversePaymentBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const reversePaymentBodyNoteMax = 5000;
+
+
+
+export const ReversePaymentBody = zod.object({
+  "entryId": zod.number().int().min(1),
+  "date": zod.string().regex(reversePaymentBodyDateRegExp),
+  "note": zod.string().min(1).max(reversePaymentBodyNoteMax)
+})
+
+export const ReversePaymentResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const SetYearHoldParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const setYearHoldBodyNoteMax = 5000;
+
+
+
+export const SetYearHoldBody = zod.object({
+  "personId": zod.string().min(1),
+  "held": zod.boolean(),
+  "note": zod.string().min(1).max(setYearHoldBodyNoteMax)
+})
+
+export const SetYearHoldResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable()
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+}))
+}))
+
+
+export const RequestYearUploadParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const requestYearUploadBodyFilenameMax = 200;
+
+export const requestYearUploadBodySizeMax = 20971520;
+
+
+
+export const RequestYearUploadBody = zod.object({
+  "filename": zod.string().min(1).max(requestYearUploadBodyFilenameMax),
+  "contentType": zod.enum(['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'image/gif']),
+  "size": zod.number().int().min(1).max(requestYearUploadBodySizeMax)
+})
+
+export const RequestYearUploadResponse = zod.object({
+  "uploadId": zod.number().int(),
+  "uploadURL": zod.string()
+})
+
+
+export const AttachYearDocumentParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+export const AttachYearDocumentBody = zod.object({
+  "uploadId": zod.number().int().min(1)
+})
+
+export const AttachYearDocumentResponse = zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})
+
+
+export const DownloadYearDocumentParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "documentId": zod.coerce.number().int()
+})
+
+export const DownloadYearDocumentResponse = zod.unknown()
+
+

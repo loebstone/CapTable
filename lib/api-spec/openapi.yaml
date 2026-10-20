@@ -208,8 +208,426 @@ paths:
           content:
             application/json:
               schema: {type: array, items: {$ref: "#/components/schemas/AuditEntry"}}
+  /years:
+    get:
+      operationId: listYears
+      responses:
+        "200":
+          description: Distribution years
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/YearSummary"}}
+    post:
+      operationId: openYear
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/YearInput"}
+      responses:
+        "201":
+          description: Year opened with frozen snapshot
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: getYear
+      responses:
+        "200":
+          description: Figures, worked arithmetic, holder calculations, ledger and history
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/figures:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: saveYearFigures
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/YearFiguresInput"}
+      responses:
+        "201":
+          description: New draft figures revision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/declaration:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: declareYear
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DeclarationInput"}
+      responses:
+        "201":
+          description: Declared per-share amount and date recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/finalize:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: finalizeYear
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/NoteInput"}
+      responses:
+        "201":
+          description: Finalized and locked
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/corrections:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: correctYear
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/YearCorrectionInput"}
+      responses:
+        "201":
+          description: Append-only correction to frozen inputs, original preserved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/payments:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: recordPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PaymentInput"}
+      responses:
+        "201":
+          description: Cash paid or retained APIC recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/reversals:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: reversePayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ReversalInput"}
+      responses:
+        "201":
+          description: Negative reversal appended
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/holds:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: setYearHold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/HoldInput"}
+      responses:
+        "201":
+          description: Hold or release recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/documents/uploads:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: requestYearUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DocumentUploadInput"}
+      responses:
+        "201":
+          description: Private staging upload reserved; PUT bytes directly to uploadURL
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DocumentUpload"}
+  /years/{id}/documents:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: attachYearDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DocumentAttachmentInput"}
+      responses:
+        "201":
+          description: File verified, sealed and attached with filename and upload date
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDocument"}
+  /years/{id}/documents/{documentId}/file:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      - {name: documentId, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: downloadYearDocument
+      responses:
+        "200":
+          description: Authenticated private document download
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary}
 components:
   schemas:
+    NoteInput:
+      type: object
+      required: [note]
+      properties:
+        note: {type: string, minLength: 1, maxLength: 5000}
+    YearInput:
+      type: object
+      required: [calendarYear, snapshotId, note]
+      properties:
+        calendarYear: {type: integer, minimum: 1900, maximum: 9999}
+        snapshotId: {type: integer, minimum: 1}
+        note: {type: string, minLength: 1}
+    YearSummary:
+      type: object
+      required: [id, calendarYear, snapshotId, status, createdAt, createdBy]
+      properties:
+        id: {type: integer}
+        calendarYear: {type: integer}
+        snapshotId: {type: integer}
+        status: {type: string, enum: [draft, finalized, corrected]}
+        createdAt: {type: string}
+        createdBy: {type: string}
+    CostLineInput:
+      type: object
+      required: [label, amountCents, documentId]
+      properties:
+        label: {type: string, minLength: 1, maxLength: 200}
+        amountCents: {type: string, pattern: '^\d{1,15}$'}
+        documentId: {type: integer, minimum: 1}
+    YearFiguresInput:
+      type: object
+      required: [grossCents, grossDocumentId, costs, note]
+      properties:
+        grossCents: {type: string, pattern: '^\d{1,15}$'}
+        grossDocumentId: {type: integer, minimum: 1}
+        costs: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/CostLineInput"}}
+        note: {type: string, minLength: 1}
+    YearFigures:
+      type: object
+      required: [grossCents, grossDocumentId, costs, note]
+      properties:
+        grossCents: {type: string}
+        grossDocumentId: {type: integer}
+        note: {type: string}
+        costs:
+          type: array
+          items:
+            type: object
+            required: [label, amountCents, documentId]
+            properties:
+              label: {type: string}
+              amountCents: {type: string}
+              documentId: {type: integer}
+    DeclarationInput:
+      type: object
+      required: [declaredPerShareCents, declarationDate, note]
+      properties:
+        declaredPerShareCents: {type: string, pattern: '^\d{1,15}$'}
+        declarationDate: {type: string, pattern: '^\d{4}-\d{2}-\d{2}$'}
+        note: {type: string, minLength: 1}
+    YearCorrectionInput:
+      type: object
+      required: [kind, note]
+      properties:
+        kind: {type: string, enum: [note, grossAdjustment, costAdjustment, declaredPerShareAdjustment]}
+        amountCents: {type: [string, "null"], pattern: '^-?\d{1,15}$'}
+        documentId: {type: [integer, "null"]}
+        declarationDate: {type: [string, "null"], pattern: '^\d{4}-\d{2}-\d{2}$'}
+        note: {type: string, minLength: 1, maxLength: 5000}
+    PaymentInput:
+      type: object
+      required: [personId, kind, amountCents, date]
+      properties:
+        personId: {type: string, minLength: 1}
+        kind: {type: string, enum: [cash, apic]}
+        amountCents: {type: string, pattern: '^\d{1,15}$'}
+        date: {type: string, pattern: '^\d{4}-\d{2}-\d{2}$'}
+        method: {type: string, maxLength: 200}
+        note: {type: string, maxLength: 5000}
+    ReversalInput:
+      type: object
+      required: [entryId, date, note]
+      properties:
+        entryId: {type: integer, minimum: 1}
+        date: {type: string, pattern: '^\d{4}-\d{2}-\d{2}$'}
+        note: {type: string, minLength: 1, maxLength: 5000}
+    HoldInput:
+      type: object
+      required: [personId, held, note]
+      properties:
+        personId: {type: string, minLength: 1}
+        held: {type: boolean}
+        note: {type: string, minLength: 1, maxLength: 5000}
+    DocumentUploadInput:
+      type: object
+      required: [filename, contentType, size]
+      properties:
+        filename: {type: string, minLength: 1, maxLength: 200}
+        contentType: {type: string, enum: [application/pdf, image/png, image/jpeg, image/webp, image/gif]}
+        size: {type: integer, minimum: 1, maximum: 20971520}
+    DocumentUpload:
+      type: object
+      required: [uploadId, uploadURL]
+      properties:
+        uploadId: {type: integer}
+        uploadURL: {type: string}
+    DocumentAttachmentInput:
+      type: object
+      required: [uploadId]
+      properties:
+        uploadId: {type: integer, minimum: 1}
+    YearDocument:
+      type: object
+      required: [id, filename, contentType, size, uploadedAt, uploadedBy, downloadUrl]
+      properties:
+        id: {type: integer}
+        filename: {type: string}
+        contentType: {type: string}
+        size: {type: integer}
+        uploadedAt: {type: string}
+        uploadedBy: {type: string}
+        downloadUrl: {type: string}
+    YearBlocker:
+      type: object
+      required: [personId, displayName, reason]
+      properties:
+        personId: {type: [string, "null"]}
+        displayName: {type: string}
+        reason: {type: string}
+    YearCalculation:
+      type: object
+      required: [grossCents, costTotalCents, netProfitCents, federalRate, highestState, highestStateRate, combinedRate, poolCents, proposedPerShareCents, declaredPoolCents, sumNominalCents, residualCents]
+      properties:
+        grossCents: {type: string}
+        costTotalCents: {type: string}
+        netProfitCents: {type: string}
+        federalRate: {type: string}
+        highestState: {type: [string, "null"]}
+        highestStateRate: {type: [string, "null"]}
+        combinedRate: {type: [string, "null"]}
+        poolCents: {type: [string, "null"]}
+        proposedPerShareCents: {type: [string, "null"]}
+        declaredPoolCents: {type: [string, "null"]}
+        sumNominalCents: {type: [string, "null"]}
+        residualCents: {type: [string, "null"]}
+    YearHolder:
+      type: object
+      required: [personId, displayName, shareClass, shares, stateCode, residenceConfirmed, isUnsettled, stateRate, nominalCents, shareOfGainCents, estimatedTaxCents, surplusCents, paidCents, retainedCents, remainingCents, status, holdNote]
+      properties:
+        personId: {type: string}
+        displayName: {type: string}
+        shareClass: {type: string}
+        shares: {type: string}
+        stateCode: {type: [string, "null"]}
+        residenceConfirmed: {type: boolean}
+        isUnsettled: {type: boolean}
+        stateRate: {type: [string, "null"]}
+        nominalCents: {type: [string, "null"]}
+        shareOfGainCents: {type: [string, "null"]}
+        estimatedTaxCents: {type: [string, "null"]}
+        surplusCents: {type: [string, "null"]}
+        paidCents: {type: string}
+        retainedCents: {type: string}
+        remainingCents: {type: [string, "null"]}
+        status: {type: string, enum: [open, held, complete]}
+        holdNote: {type: [string, "null"]}
+    PaymentEntry:
+      type: object
+      required: [id, personId, kind, amountCents, date, method, note, reversesEntryId, createdAt, createdBy]
+      properties:
+        id: {type: integer}
+        personId: {type: string}
+        kind: {type: string, enum: [cash, apic]}
+        amountCents: {type: string}
+        date: {type: string}
+        method: {type: [string, "null"]}
+        note: {type: string}
+        reversesEntryId: {type: [integer, "null"]}
+        createdAt: {type: string}
+        createdBy: {type: string}
+    YearHistory:
+      type: object
+      required: [id, kind, note, amountCents, createdAt, createdBy]
+      properties:
+        id: {type: string}
+        kind: {type: string}
+        note: {type: string}
+        amountCents: {type: [string, "null"]}
+        createdAt: {type: string}
+        createdBy: {type: string}
+    YearTotals:
+      type: object
+      required: [nominalCents, paidCents, retainedCents, remainingCents, openCount, heldCount, completeCount]
+      properties:
+        nominalCents: {type: string}
+        paidCents: {type: string}
+        retainedCents: {type: string}
+        remainingCents: {type: string}
+        openCount: {type: integer}
+        heldCount: {type: integer}
+        completeCount: {type: integer}
+    YearDetail:
+      allOf:
+        - {$ref: "#/components/schemas/YearSummary"}
+        - type: object
+          required: [figures, declaredPerShareCents, declarationDate, rateTableId, finalizedAt, calculation, originalCalculation, blockers, holders, totals, documents, payments, history]
+          properties:
+            figures:
+              anyOf:
+                - {$ref: "#/components/schemas/YearFigures"}
+                - {type: "null"}
+            declaredPerShareCents: {type: [string, "null"]}
+            declarationDate: {type: [string, "null"]}
+            rateTableId: {type: integer}
+            finalizedAt: {type: [string, "null"]}
+            calculation:
+              anyOf:
+                - {$ref: "#/components/schemas/YearCalculation"}
+                - {type: "null"}
+            originalCalculation:
+              anyOf:
+                - {$ref: "#/components/schemas/YearCalculation"}
+                - {type: "null"}
+            blockers: {type: array, items: {$ref: "#/components/schemas/YearBlocker"}}
+            holders: {type: array, items: {$ref: "#/components/schemas/YearHolder"}}
+            totals: {$ref: "#/components/schemas/YearTotals"}
+            documents: {type: array, items: {$ref: "#/components/schemas/YearDocument"}}
+            payments: {type: array, items: {$ref: "#/components/schemas/PaymentEntry"}}
+            history: {type: array, items: {$ref: "#/components/schemas/YearHistory"}}
     HealthStatus:
       type: object
       required: [status]
