@@ -13,13 +13,14 @@ import { finalizedFixture } from "./stage3-fixture.mjs";
 const h = await stage2Harness();
 const { call, expect, client, record, results } = h;
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jA1sAAAAASUVORK5CYII=", "base64");
-async function watermarked(bytes) {
+async function watermarked(bytes, expectedSource) {
   const task = getDocument({ data: new Uint8Array(bytes), useSystemFonts: true });
   const pdf = await task.promise;
   try {
     for (let page = 1; page <= pdf.numPages; page++) {
       const text = (await (await pdf.getPage(page)).getTextContent()).items.filter((x) => "str" in x).map((x) => x.str).join(" ").replace(/\s+/g, " ");
       assert.ok(text.includes("PRACTICE — NOT A STATEMENT"), `Missing text-layer watermark on page ${page}`);
+      if (expectedSource) assert.ok(text.split(expectedSource).length - 1 >= 2, "Gross and cost must both show the practice source label");
     }
     return pdf.numPages;
   } finally { await task.destroy(); }
@@ -37,7 +38,10 @@ try {
   const practiceId = fixture.detail.id, snapshotId = fixture.detail.snapshotId;
   assert.equal(fixture.detail.isPractice, true);
   // Preserve multiple revisions, not just the latest, until an explicit reset.
-  expect(await call("post", `${base}/figures`, cookie, { ...fixture.detail.figures, note: "STUB second figures revision" }), 201);
+  const noDocuments = { grossCents: "11000000", costs: [{ label: "Zero-cost line", amountCents: "0" }], note: "STUB practice figures without source documents" };
+  const withoutSource = expect(await call("post", `${base}/figures`, cookie, noDocuments), 201);
+  assert.equal(withoutSource.figures.grossDocumentId, null);
+  assert.equal(withoutSource.figures.costs[0].documentId, null);
   expect(await call("post", `${base}/declaration`, cookie, { declaredPerShareCents: "7783", declarationDate: "2026-10-20", note: "STUB second declaration revision" }), 201);
   const detail = await fixture.finalizeWithLedger();
   const holder = detail.holders.find((x) => x.displayName === "Forster Nancy Anne");
@@ -54,6 +58,25 @@ try {
   const extra = expect(await call("post", "/api/years", cookie, { calendarYear: 2026, isPractice: true, snapshotId, note: "STUB another practice in same calendar year" }), 201);
   expect(await call("post", "/api/years", cookie, { calendarYear: 2026, snapshotId, note: "STUB real duplicate refused" }), 409);
   const realBase = `/api/years/${real.id}`, realDocument = await upload(realBase, cookie);
+  const auditCount = async () => Number((await client.query("SELECT count(*) AS n FROM audit_log")).rows[0].n);
+  const beforeRejectedFigures = await auditCount();
+  const missingSourceMessage = "Every figure must reference an uploaded source document attached to this year";
+  for (const body of [
+    noDocuments,
+    { ...noDocuments, isPractice: true, grossDocumentId: null },
+    { ...noDocuments, grossDocumentId: realDocument.id },
+    { ...noDocuments, costs: [{ ...noDocuments.costs[0], documentId: realDocument.id }] },
+  ]) {
+    const refused = await call("post", `${realBase}/figures`, cookie, body);
+    expect(refused, 400); assert.equal(refused.body.error, missingSourceMessage);
+  }
+  assert.equal(await auditCount(), beforeRejectedFigures);
+  const explicitNull = expect(await call("post", `/api/years/${extra.id}/figures`, cookie, { ...noDocuments, grossDocumentId: null, costs: [{ ...noDocuments.costs[0], documentId: null }] }), 201);
+  assert.equal(explicitNull.documents.length, 0);
+  assert.equal(explicitNull.figures.grossDocumentId, null); assert.equal(explicitNull.figures.costs[0].documentId, null);
+  const invalidReference = await call("post", `/api/years/${extra.id}/figures`, cookie, { ...noDocuments, grossDocumentId: realDocument.id });
+  expect(invalidReference, 400); assert.equal(invalidReference.body.error, missingSourceMessage);
+  record("Optional practice sources / required real sources", { practiceOmitted: 201, practiceExplicitNull: 201, practiceGrossAndCostReferences: null, realMissingGrossOrCost: 400, spoofedPracticeFlag: 400, existingMessagePreserved: true, rejectedRealWrites: 0, providedCrossYearReference: 400 });
   expect(await call("post", `${realBase}/figures`, cookie, { grossCents: "11000000", grossDocumentId: realDocument.id, costs: [{ label: "Zero", amountCents: "0", documentId: realDocument.id }], note: "STUB real figures must survive" }), 201);
   expect(await call("post", `${realBase}/declaration`, cookie, { declaredPerShareCents: "7783", declarationDate: "2026-10-20", note: "STUB real declaration" }), 201);
   const realFinal = expect(await call("post", `${realBase}/finalize`, cookie, { note: "STUB real finalization" }), 201);
@@ -84,7 +107,7 @@ try {
   const statementPages = await watermarked(statement.body);
   const board = await call("get", `${base}/reports/board.pdf`, cookie);
   expect(board, 200); assert.match(board.headers["content-disposition"], /_Practice_Board_Summary_/);
-  const boardPages = await watermarked(board.body);
+  const boardPages = await watermarked(board.body, "none (practice)");
   const workbook = await call("get", `${base}/reports/ledger.xlsx`, cookie);
   expect(workbook, 200); assert.match(workbook.headers["content-disposition"], /_Practice_Ledger_/);
   const book = new ExcelJS.Workbook(); await book.xlsx.load(workbook.body);

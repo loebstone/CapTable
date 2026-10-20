@@ -65,18 +65,18 @@ router.post("/years/:id/figures", async (req, res): Promise<void> => {
   const data = SaveYearFiguresBody.parse(req.body);
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
     await assertAccess(actor, tx);
-    await requireDraft(tx, id);
-    await requireDocument(tx, id, data.grossDocumentId);
+    const year = await requireDraft(tx, id);
+    if (!year.isPractice || data.grossDocumentId != null) await requireDocument(tx, id, data.grossDocumentId);
     for (const cost of data.costs) {
       if (!cost.label.trim()) throw new HttpError(400, "Each cost line needs a nonblank label");
-      await requireDocument(tx, id, cost.documentId);
+      if (!year.isPractice || cost.documentId != null) await requireDocument(tx, id, cost.documentId);
     }
     const figures = await append(tx, actor, yearFigures, {
-      yearId: id, grossCents: BigInt(data.grossCents), grossDocumentId: data.grossDocumentId,
+      yearId: id, grossCents: BigInt(data.grossCents), grossDocumentId: data.grossDocumentId ?? null,
       note: requiredNote(data.note), createdBy: actor,
     });
     for (const cost of data.costs) await append(tx, actor, yearCosts, {
-      figuresId: figures.id, label: cost.label.trim(), amountCents: BigInt(cost.amountCents), documentId: cost.documentId,
+      figuresId: figures.id, label: cost.label.trim(), amountCents: BigInt(cost.amountCents), documentId: cost.documentId ?? null,
     });
     return yearDetail(tx, id);
   });

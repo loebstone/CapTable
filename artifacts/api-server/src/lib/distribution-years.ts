@@ -21,8 +21,9 @@ export async function getFinalization(database: Database, yearId: number) {
   return row ?? null;
 }
 export async function requireDraft(database: Database, yearId: number) {
-  await requireYear(database, yearId);
+  const year = await requireYear(database, yearId);
   if (await getFinalization(database, yearId)) throw new HttpError(409, "This year is finalized and locked; append a correction with a note instead");
+  return year;
 }
 export async function requireFinalized(database: Database, yearId: number) {
   await requireYear(database, yearId);
@@ -30,7 +31,8 @@ export async function requireFinalized(database: Database, yearId: number) {
   if (!row) throw new HttpError(409, "Finalize this year before recording corrections, payments or holds");
   return row;
 }
-export async function requireDocument(database: Database, yearId: number, documentId: number) {
+export async function requireDocument(database: Database, yearId: number, documentId: number | null | undefined) {
+  if (documentId == null) throw new HttpError(400, "Every figure must reference an uploaded source document attached to this year");
   const [document] = await database.select().from(yearDocuments).where(eq(yearDocuments.id, documentId)).limit(1);
   if (!document || document.yearId !== yearId) throw new HttpError(400, "Every figure must reference an uploaded source document attached to this year");
   return document;

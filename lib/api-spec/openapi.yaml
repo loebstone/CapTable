@@ -567,17 +567,17 @@ components:
         createdBy: {type: string}
     CostLineInput:
       type: object
-      required: [label, amountCents, documentId]
+      required: [label, amountCents]
       properties:
         label: {type: string, minLength: 1, maxLength: 200}
         amountCents: {type: string, pattern: '^\d{1,15}$'}
-        documentId: {type: integer, minimum: 1}
+        documentId: {type: [integer, "null"], minimum: 1}
     YearFiguresInput:
       type: object
-      required: [grossCents, grossDocumentId, costs, note]
+      required: [grossCents, costs, note]
       properties:
         grossCents: {type: string, pattern: '^\d{1,15}$'}
-        grossDocumentId: {type: integer, minimum: 1}
+        grossDocumentId: {type: [integer, "null"], minimum: 1}
         costs: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/CostLineInput"}}
         note: {type: string, minLength: 1}
     YearFigures:
@@ -585,7 +585,7 @@ components:
       required: [grossCents, grossDocumentId, costs, note]
       properties:
         grossCents: {type: string}
-        grossDocumentId: {type: integer}
+        grossDocumentId: {type: [integer, "null"]}
         note: {type: string}
         costs:
           type: array
@@ -595,7 +595,7 @@ components:
             properties:
               label: {type: string}
               amountCents: {type: string}
-              documentId: {type: integer}
+              documentId: {type: [integer, "null"]}
     DeclarationInput:
       type: object
       required: [declaredPerShareCents, declarationDate, note]

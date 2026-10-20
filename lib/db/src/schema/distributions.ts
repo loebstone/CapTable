@@ -41,7 +41,7 @@ export const yearFigures = pgTable("year_figures", {
   id: serial("id").primaryKey(),
   yearId: integer("year_id").notNull().references(() => distributionYears.id),
   grossCents: bigint("gross_cents", { mode: "bigint" }).notNull(),
-  grossDocumentId: integer("gross_document_id").notNull().references(() => yearDocuments.id),
+  grossDocumentId: integer("gross_document_id").references(() => yearDocuments.id),
   createdAt: instant("created_at"),
   createdBy: text("created_by").notNull(),
   note: text("note").notNull(),
@@ -51,7 +51,7 @@ export const yearCosts = pgTable("year_costs", {
   figuresId: integer("figures_id").notNull().references(() => yearFigures.id),
   label: text("label").notNull(),
   amountCents: bigint("amount_cents", { mode: "bigint" }).notNull(),
-  documentId: integer("document_id").notNull().references(() => yearDocuments.id),
+  documentId: integer("document_id").references(() => yearDocuments.id),
 }, (t) => [check("cost_nonnegative", sql`${t.amountCents} >= 0`)]);
 export const yearDeclarations = pgTable("year_declarations", {
   id: serial("id").primaryKey(),
@@ -69,7 +69,7 @@ export type FrozenYearInputs = {
   rows: StoredHolding[];
   residences: { personId: string; stateCode: string | null; confirmed: boolean; revisionId: number | null }[];
   rates: { id: number; federalRate: string; states: { stateCode: string; rate: string; sourceNote: string }[] };
-  figures: { grossCents: string; grossDocumentId: number; costs: { label: string; amountCents: string; documentId: number }[]; note: string } | null;
+  figures: { grossCents: string; grossDocumentId: number | null; costs: { label: string; amountCents: string; documentId: number | null }[]; note: string } | null;
   declaration: { declaredPerShareCents: string; declarationDate: string } | null;
 };
 export const yearFinalizations = pgTable("year_finalizations", {

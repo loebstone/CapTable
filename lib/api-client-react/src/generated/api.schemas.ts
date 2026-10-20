@@ -64,15 +64,21 @@ export interface CostLineInput {
   label: string;
   /** @pattern ^\d{1,15}$ */
   amountCents: string;
-  /** @minimum 1 */
-  documentId: number;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  documentId?: number | null;
 }
 
 export interface YearFiguresInput {
   /** @pattern ^\d{1,15}$ */
   grossCents: string;
-  /** @minimum 1 */
-  grossDocumentId: number;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  grossDocumentId?: number | null;
   /** @maxItems 100 */
   costs: CostLineInput[];
   /** @minLength 1 */
@@ -82,12 +88,14 @@ export interface YearFiguresInput {
 export type YearFiguresCostsItem = {
   label: string;
   amountCents: string;
-  documentId: number;
+  /** @nullable */
+  documentId: number | null;
 };
 
 export interface YearFigures {
   grossCents: string;
-  grossDocumentId: number;
+  /** @nullable */
+  grossDocumentId: number | null;
   note: string;
   costs: YearFiguresCostsItem[];
 }

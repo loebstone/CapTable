@@ -76,7 +76,7 @@ export function statementHtml(context: ReportContext, holder: ReportHolder) {
 }
 export function boardHtml(context: ReportContext) {
   const year = context.year, c = year.calculation;
-  const sourceName = (id: number) => year.documents.find((d) => d.id === id)?.filename ?? "Missing document";
+  const sourceName = (id: number | null) => id === null && year.isPractice ? "none (practice)" : year.documents.find((d) => d.id === id)?.filename ?? "Missing document";
   const figureRows = year.figures ? valueRow(`Gross timber revenue — ${sourceName(year.figures.grossDocumentId)}`, dollars(year.figures.grossCents)) +
     year.figures.costs.map((line) => valueRow(`${line.label} — ${sourceName(line.documentId)}`, dollars(line.amountCents))).join("") +
     valueRow("Net timbering profit (gross minus costs)", dollars(c!.netProfitCents), true) : valueRow("Year figures", "Not recorded");

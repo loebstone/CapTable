@@ -10,8 +10,11 @@ import type { CostLineInput } from './costLineInput';
 export interface YearFiguresInput {
   /** @pattern ^\d{1,15}$ */
   grossCents: string;
-  /** @minimum 1 */
-  grossDocumentId: number;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  grossDocumentId?: number | null;
   /** @maxItems 100 */
   costs: CostLineInput[];
   /** @minLength 1 */

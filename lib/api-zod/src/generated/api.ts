@@ -501,12 +501,12 @@ export const OpenYearResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -637,12 +637,12 @@ export const ResetPracticeYearResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -757,12 +757,12 @@ export const GetYearResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -879,11 +879,11 @@ export const saveYearFiguresBodyCostsMax = 100;
 
 export const SaveYearFiguresBody = zod.object({
   "grossCents": zod.string().regex(saveYearFiguresBodyGrossCentsRegExp),
-  "grossDocumentId": zod.number().int().min(1),
+  "grossDocumentId": zod.number().int().min(1).nullish(),
   "costs": zod.array(zod.object({
   "label": zod.string().min(1).max(saveYearFiguresBodyCostsItemLabelMax),
   "amountCents": zod.string().regex(saveYearFiguresBodyCostsItemAmountCentsRegExp),
-  "documentId": zod.number().int().min(1)
+  "documentId": zod.number().int().min(1).nullish()
 })).max(saveYearFiguresBodyCostsMax),
   "note": zod.string().min(1)
 })
@@ -899,12 +899,12 @@ export const SaveYearFiguresResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -1030,12 +1030,12 @@ export const DeclareYearResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -1158,12 +1158,12 @@ export const FinalizeYearResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -1292,12 +1292,12 @@ export const CorrectYearResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -1430,12 +1430,12 @@ export const RecordPaymentResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -1562,12 +1562,12 @@ export const ReversePaymentResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),
@@ -1693,12 +1693,12 @@ export const SetYearHoldResponse = zod.object({
 }).and(zod.object({
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
-  "grossDocumentId": zod.number().int(),
+  "grossDocumentId": zod.number().int().nullable(),
   "note": zod.string(),
   "costs": zod.array(zod.object({
   "label": zod.string(),
   "amountCents": zod.string(),
-  "documentId": zod.number().int()
+  "documentId": zod.number().int().nullable()
 }))
 }),zod.null()]),
   "declaredPerShareCents": zod.string().nullable(),

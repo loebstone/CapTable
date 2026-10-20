@@ -14,6 +14,9 @@ export interface CostLineInput {
   label: string;
   /** @pattern ^\d{1,15}$ */
   amountCents: string;
-  /** @minimum 1 */
-  documentId: number;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  documentId?: number | null;
 }

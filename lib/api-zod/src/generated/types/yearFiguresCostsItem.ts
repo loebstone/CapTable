@@ -9,5 +9,6 @@
 export type YearFiguresCostsItem = {
   label: string;
   amountCents: string;
-  documentId: number;
+  /** @nullable */
+  documentId: number | null;
 };

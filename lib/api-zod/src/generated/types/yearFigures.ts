@@ -9,7 +9,8 @@ import type { YearFiguresCostsItem } from './yearFiguresCostsItem';
 
 export interface YearFigures {
   grossCents: string;
-  grossDocumentId: number;
+  /** @nullable */
+  grossDocumentId: number | null;
   note: string;
   costs: YearFiguresCostsItem[];
 }

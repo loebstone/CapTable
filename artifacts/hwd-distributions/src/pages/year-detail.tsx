@@ -174,7 +174,7 @@ function WorkedTable({ c, declared, date, muted }: { c: YearCalculation; declare
 }
 
 function docName(y: YearDetail, id: number | null | undefined) {
-  return y.documents.find((d) => d.id === id)?.filename ?? (id ? `Document #${id}` : "—");
+  return y.documents.find((d) => d.id === id)?.filename ?? (id ? `Document #${id}` : y.isPractice ? "no source document (practice)" : "—");
 }
 
 function FiguresCard({ y }: { y: YearDetail }) {
@@ -433,10 +433,10 @@ function FormShell({ title, desc, children, error, pending, valid, submit, onDon
   );
 }
 
-function DocSelect({ y, value, onChange, test }: { y: YearDetail; value: string; onChange: (v: string) => void; test: string }) {
+function DocSelect({ y, value, onChange, test, optionalPractice = false }: { y: YearDetail; value: string; onChange: (v: string) => void; test: string; optionalPractice?: boolean }) {
   return (
     <select className={inputCls} value={value} onChange={(e) => onChange(e.target.value)} data-testid={test}>
-      <option value="">Source document…</option>
+      <option value="">{optionalPractice && y.isPractice ? "no source document (practice)" : "Source document…"}</option>
       {y.documents.map((d) => <option key={d.id} value={d.id}>#{d.id} {d.filename}</option>)}
     </select>
   );
@@ -453,24 +453,24 @@ function FiguresForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const { toast } = useToast();
   const f = y.figures;
   const [gross, setGross] = useState(centsToInput(f?.grossCents));
-  const [grossDoc, setGrossDoc] = useState(f ? String(f.grossDocumentId) : "");
-  const [costs, setCosts] = useState<CostDraft[]>(f?.costs.map((c) => ({ label: c.label, amount: centsToInput(c.amountCents), doc: String(c.documentId) })) ?? []);
+  const [grossDoc, setGrossDoc] = useState(f?.grossDocumentId == null ? "" : String(f.grossDocumentId));
+  const [costs, setCosts] = useState<CostDraft[]>(f?.costs.map((c) => ({ label: c.label, amount: centsToInput(c.amountCents), doc: c.documentId == null ? "" : String(c.documentId) })) ?? []);
   const [note, setNote] = useState("");
   const save = useSaveYearFigures({ mutation: { onSuccess: () => { inval(); toast({ title: "Figures saved", description: "Previous figures remain in the history." }); onDone(); } } });
   const grossC = parseDollars(gross);
-  const parsed: (CostLineInput | null)[] = costs.map((c) => { const a = parseDollars(c.amount); return c.label.trim() && a && c.doc ? { label: c.label.trim().slice(0, 200), amountCents: a, documentId: Number(c.doc) } : null; });
+  const parsed: (CostLineInput | null)[] = costs.map((c) => { const a = parseDollars(c.amount); return c.label.trim() && a && (c.doc || y.isPractice) ? { label: c.label.trim().slice(0, 200), amountCents: a, documentId: c.doc ? Number(c.doc) : null } : null; });
   const costTotal = sumCents(parsed.map((p) => p?.amountCents));
-  const valid = !!grossC && !!grossDoc && parsed.every(Boolean) && !!note.trim() && costs.length <= 100;
+  const valid = !!grossC && (!!grossDoc || y.isPractice) && parsed.every(Boolean) && !!note.trim() && costs.length <= 100;
   const upd = (i: number, p: Partial<CostDraft>) => setCosts((xs) => xs.map((x, j) => (j === i ? { ...x, ...p } : x)));
   return (
-    <FormShell title={f ? "Revise figures" : "Enter figures"} desc="Each amount is tied to an uploaded document. Saving appends a revision; nothing is deleted. Net profit is computed by the server." error={save.error} pending={save.isPending} valid={valid} submit="Save figures" onDone={onDone}
-      onSubmit={() => save.mutate({ id: y.id, data: { grossCents: grossC!, grossDocumentId: Number(grossDoc), costs: parsed as CostLineInput[], note: note.trim() } })}>
-      {y.documents.length === 0 && <div className="rounded-md bg-[hsl(38_70%_94%)] px-3 py-2 text-xs text-[hsl(30_60%_28%)]">Upload the source documents first, from the Source documents panel.</div>}
+    <FormShell title={f ? "Revise figures" : "Enter figures"} desc={y.isPractice ? "Source documents are optional in practice years only. Saving appends a revision; net profit is computed by the server." : "Each amount is tied to an uploaded document. Saving appends a revision; nothing is deleted. Net profit is computed by the server."} error={save.error} pending={save.isPending} valid={valid} submit="Save figures" onDone={onDone}
+      onSubmit={() => save.mutate({ id: y.id, data: { grossCents: grossC!, grossDocumentId: grossDoc ? Number(grossDoc) : null, costs: parsed as CostLineInput[], note: note.trim() } })}>
+      {!y.isPractice && y.documents.length === 0 && <div className="rounded-md bg-[hsl(38_70%_94%)] px-3 py-2 text-xs text-[hsl(30_60%_28%)]">Upload the source documents first, from the Source documents panel.</div>}
       <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
         <Field label="Gross income ($)" error={gross && !grossC ? "Dollars and cents, e.g. 48213.07" : null} hint={grossC ? fmtCents(grossC) : undefined}>
           <input className={inputCls + " num"} value={gross} onChange={(e) => setGross(e.target.value)} placeholder="0.00" inputMode="decimal" data-testid="input-gross" />
         </Field>
-        <Field label="Gross source"><DocSelect y={y} value={grossDoc} onChange={setGrossDoc} test="select-gross-document" /></Field>
+        <Field label="Gross source"><DocSelect y={y} value={grossDoc} onChange={setGrossDoc} test="select-gross-document" optionalPractice /></Field>
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -482,7 +482,7 @@ function FiguresForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
           <div key={i} className="grid grid-cols-[1fr_110px_32px] gap-2 sm:grid-cols-[1fr_120px_1fr_32px]" data-testid={`row-cost-input-${i}`}>
             <input className={inputCls} value={c.label} maxLength={200} onChange={(e) => upd(i, { label: e.target.value })} placeholder="Label" data-testid={`input-cost-label-${i}`} />
             <input className={cn(inputCls, "num", c.amount && !parseDollars(c.amount) && "border-destructive")} value={c.amount} onChange={(e) => upd(i, { amount: e.target.value })} placeholder="0.00" inputMode="decimal" data-testid={`input-cost-amount-${i}`} />
-            <div className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto"><DocSelect y={y} value={c.doc} onChange={(v) => upd(i, { doc: v })} test={`select-cost-document-${i}`} /></div>
+            <div className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto"><DocSelect y={y} value={c.doc} onChange={(v) => upd(i, { doc: v })} test={`select-cost-document-${i}`} optionalPractice /></div>
             <button type="button" className="mt-2 text-muted-foreground hover:text-destructive" aria-label="Remove cost line" onClick={() => setCosts((x) => x.filter((_, j) => j !== i))} data-testid={`button-remove-cost-${i}`}><Trash2 className="h-4 w-4" /></button>
           </div>
         ))}
