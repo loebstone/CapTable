@@ -1,36 +1,372 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
+  description: HWD Distributions foundation API
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+              schema: {$ref: "#/components/schemas/HealthStatus"}
+  /auth/link:
+    post:
+      operationId: requestSignIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EmailInput"}
+      responses:
+        "200":
+          description: Link requested
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /auth/verify:
+    get:
+      operationId: verifySignIn
+      parameters:
+        - {name: token, in: query, required: true, schema: {type: string}}
+      responses:
+        "303": {description: Signed in and redirected}
+  /auth/session:
+    get:
+      operationId: getSession
+      responses:
+        "200":
+          description: Current identity and environment
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Session"}
+  /auth/logout:
+    post:
+      operationId: signOut
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /holdings:
+    get:
+      operationId: getHoldings
+      responses:
+        "200":
+          description: Last fetched holdings, or null before first load
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/HoldingsResult"}
+  /holdings/fetch:
+    post:
+      operationId: fetchHoldings
+      responses:
+        "200":
+          description: Fetch, validate, and store current Roster holdings
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Holdings"}
+  /snapshots:
+    get:
+      operationId: listSnapshots
+      responses:
+        "200":
+          description: Immutable snapshots
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Snapshot"}}
+    post:
+      operationId: takeSnapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SnapshotInput"}
+      responses:
+        "201":
+          description: Snapshot created from stored fetch
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Snapshot"}
+  /snapshots/{id}:
+    get:
+      operationId: getSnapshot
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Snapshot including every row
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Holdings"}
+  /residences:
+    get:
+      operationId: listResidences
+      responses:
+        "200":
+          description: Current residence per person; history is retained
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Residence"}}
+    post:
+      operationId: saveResidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ResidenceInput"}
+      responses:
+        "201":
+          description: New residence revision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Residence"}
+  /rates:
+    get:
+      operationId: listRates
+      responses:
+        "200":
+          description: Current revision of each tax year
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/RateTable"}}
+    post:
+      operationId: saveRates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RateInput"}
+      responses:
+        "201":
+          description: New annual rate revision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RateTable"}
+  /rates/copy:
+    post:
+      operationId: copyRates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RateCopyInput"}
+      responses:
+        "201":
+          description: New year copied exactly from prior year
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RateTable"}
+  /access:
+    get:
+      operationId: listAccess
+      responses:
+        "200":
+          description: Current and removed access entries
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/AccessEntry"}}
+    post:
+      operationId: addAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AccessInput"}
+      responses:
+        "201":
+          description: Roster-verified person added
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AccessEntry"}
+  /access/remove:
+    post:
+      operationId: removeAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AccessRemovalInput"}
+      responses:
+        "201":
+          description: Removal recorded as new revision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AccessEntry"}
+  /audit:
+    get:
+      operationId: listAudit
+      responses:
+        "200":
+          description: Most recent 100 append-only write events
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/AuditEntry"}}
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
+      properties: {status: {type: string}}
+    Message:
+      type: object
+      required: [message]
+      properties: {message: {type: string}}
+    EmailInput:
+      type: object
+      required: [email]
+      properties: {email: {type: string, format: email}}
+    Session:
+      type: object
+      required: [personId, displayName, environment, databaseName, serverAddress]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        personId: {type: string}
+        displayName: {type: string}
+        environment: {type: string}
+        databaseName: {type: string}
+        serverAddress: {type: [string, "null"]}
+    Holding:
+      type: object
+      required: [personId, displayName, shareClass, shares, isUnsettled, note, addressState]
+      properties:
+        personId: {type: string}
+        displayName: {type: string}
+        shareClass: {type: string, enum: [A, B, C, D]}
+        shares: {type: string, pattern: '^\d{1,6}\.\d{4}$'}
+        isUnsettled: {type: boolean}
+        note: {type: [string, "null"]}
+        addressState: {type: [string, "null"]}
+    ClassTotal:
+      type: object
+      required: [shareClass, totalShares, holderCount]
+      properties:
+        shareClass: {type: string, enum: [A, B, C, D]}
+        totalShares: {type: string}
+        holderCount: {type: integer}
+    Holdings:
+      type: object
+      required: [id, holdings, classes, grandTotal, asOf, fetchedAt]
+      properties:
+        id: {type: integer}
+        holdings: {type: array, items: {$ref: "#/components/schemas/Holding"}}
+        classes: {type: array, items: {$ref: "#/components/schemas/ClassTotal"}}
+        grandTotal: {type: string}
+        asOf: {type: string}
+        fetchedAt: {type: string}
+    HoldingsResult:
+      type: object
+      required: [holdings]
+      properties:
+        holdings:
+          anyOf:
+            - {$ref: "#/components/schemas/Holdings"}
+            - {type: "null"}
+    SnapshotInput:
+      type: object
+      required: [fetchId, note]
+      properties:
+        fetchId: {type: integer}
+        note: {type: string, minLength: 1}
+    Snapshot:
+      type: object
+      required: [id, fetchId, asOf, createdAt, createdBy, rowCount, grandTotal, note]
+      properties:
+        id: {type: integer}
+        fetchId: {type: integer}
+        asOf: {type: string}
+        createdAt: {type: string}
+        createdBy: {type: string}
+        rowCount: {type: integer}
+        grandTotal: {type: string}
+        note: {type: string}
+    ResidenceInput:
+      type: object
+      required: [personId, stateCode, confirmed, note]
+      properties:
+        personId: {type: string}
+        stateCode: {type: string, pattern: '^(NONE|[A-Z]{2})$'}
+        confirmed: {type: boolean}
+        note: {type: string, minLength: 1}
+    Residence:
+      type: object
+      required: [id, personId, displayName, stateCode, confirmed, confirmedBy, confirmedAt, note]
+      properties:
+        id: {type: integer}
+        personId: {type: string}
+        displayName: {type: string}
+        stateCode: {type: [string, "null"]}
+        confirmed: {type: boolean}
+        confirmedBy: {type: [string, "null"]}
+        confirmedAt: {type: [string, "null"]}
+        note: {type: string}
+    StateRate:
+      type: object
+      required: [stateCode, rate, sourceNote]
+      properties:
+        stateCode: {type: string, pattern: '^(NONE|[A-Z]{2})$'}
+        rate: {type: string, pattern: '^(0\.\d{4}|1\.0000)$'}
+        sourceNote: {type: string, minLength: 1}
+    RateInput:
+      type: object
+      required: [taxYear, federalRate, federalSourceNote, states, note]
+      properties:
+        taxYear: {type: integer, minimum: 1900, maximum: 9999}
+        federalRate: {type: string, pattern: '^(0\.\d{4}|1\.0000)$'}
+        federalSourceNote: {type: string, minLength: 1}
+        states: {type: array, items: {$ref: "#/components/schemas/StateRate"}}
+        note: {type: string, minLength: 1}
+    RateCopyInput:
+      type: object
+      required: [fromYear, toYear, note]
+      properties:
+        fromYear: {type: integer, minimum: 1900, maximum: 9999}
+        toYear: {type: integer, minimum: 1900, maximum: 9999}
+        note: {type: string, minLength: 1}
+    RateTable:
+      allOf:
+        - {$ref: "#/components/schemas/RateInput"}
+        - type: object
+          required: [id, createdAt, createdBy]
+          properties:
+            id: {type: integer}
+            createdAt: {type: string}
+            createdBy: {type: string}
+    AccessInput:
+      type: object
+      required: [email, note]
+      properties:
+        email: {type: string, format: email}
+        note: {type: string, minLength: 1}
+    AccessRemovalInput:
+      type: object
+      required: [personId, note]
+      properties:
+        personId: {type: string}
+        note: {type: string, minLength: 1}
+    AccessEntry:
+      type: object
+      required: [id, personId, displayName, addedBy, addedAt, removedAt, note]
+      properties:
+        id: {type: integer}
+        personId: {type: string}
+        displayName: {type: string}
+        addedBy: {type: string}
+        addedAt: {type: string}
+        removedAt: {type: [string, "null"]}
+        note: {type: string}
+    AuditEntry:
+      type: object
+      required: [id, occurredAt, actor, entity, operation, recordId]
+      properties:
+        id: {type: integer}
+        occurredAt: {type: string}
+        actor: {type: string}
+        entity: {type: string}
+        operation: {type: string}
+        recordId: {type: string}
