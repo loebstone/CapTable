@@ -2555,3 +2555,292 @@ export function useDownloadYearDocument<TData = Awaited<ReturnType<typeof downlo
 
 
 
+export const getDownloadStatementUrl = (id: number,
+    personId: string,) => {
+
+
+
+
+  return `/api/years/${id}/reports/statement/${personId}.pdf`
+}
+
+export const downloadStatement = async (id: number,
+    personId: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadStatementUrl(id,personId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadStatementQueryKey = (id: number,
+    personId: string,) => {
+    return [
+    `/api/years/${id}/reports/statement/${personId}.pdf`
+    ] as const;
+    }
+
+
+export const getDownloadStatementQueryOptions = <TData = Awaited<ReturnType<typeof downloadStatement>>, TError = ErrorType<unknown>>(id: number,
+    personId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadStatement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadStatementQueryKey(id,personId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadStatement>>> = ({ signal }) => downloadStatement(id,personId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && personId !== null && personId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadStatement>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadStatementQueryResult = NonNullable<Awaited<ReturnType<typeof downloadStatement>>>
+export type DownloadStatementQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadStatement<TData = Awaited<ReturnType<typeof downloadStatement>>, TError = ErrorType<unknown>>(
+ id: number,
+    personId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadStatement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadStatementQueryOptions(id,personId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadStatementsZipUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/reports/statements.zip`
+}
+
+export const downloadStatementsZip = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadStatementsZipUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadStatementsZipQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/reports/statements.zip`
+    ] as const;
+    }
+
+
+export const getDownloadStatementsZipQueryOptions = <TData = Awaited<ReturnType<typeof downloadStatementsZip>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadStatementsZip>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadStatementsZipQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadStatementsZip>>> = ({ signal }) => downloadStatementsZip(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadStatementsZip>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadStatementsZipQueryResult = NonNullable<Awaited<ReturnType<typeof downloadStatementsZip>>>
+export type DownloadStatementsZipQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadStatementsZip<TData = Awaited<ReturnType<typeof downloadStatementsZip>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadStatementsZip>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadStatementsZipQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadBoardSummaryUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/reports/board.pdf`
+}
+
+export const downloadBoardSummary = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadBoardSummaryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadBoardSummaryQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/reports/board.pdf`
+    ] as const;
+    }
+
+
+export const getDownloadBoardSummaryQueryOptions = <TData = Awaited<ReturnType<typeof downloadBoardSummary>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadBoardSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadBoardSummaryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadBoardSummary>>> = ({ signal }) => downloadBoardSummary(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadBoardSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadBoardSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof downloadBoardSummary>>>
+export type DownloadBoardSummaryQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadBoardSummary<TData = Awaited<ReturnType<typeof downloadBoardSummary>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadBoardSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadBoardSummaryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadLedgerUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/reports/ledger.xlsx`
+}
+
+export const downloadLedger = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadLedgerUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadLedgerQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/reports/ledger.xlsx`
+    ] as const;
+    }
+
+
+export const getDownloadLedgerQueryOptions = <TData = Awaited<ReturnType<typeof downloadLedger>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadLedger>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadLedgerQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadLedger>>> = ({ signal }) => downloadLedger(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadLedger>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadLedgerQueryResult = NonNullable<Awaited<ReturnType<typeof downloadLedger>>>
+export type DownloadLedgerQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadLedger<TData = Awaited<ReturnType<typeof downloadLedger>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadLedger>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadLedgerQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+

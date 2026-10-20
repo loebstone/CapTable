@@ -1616,3 +1616,32 @@ export const DownloadYearDocumentParams = zod.object({
 export const DownloadYearDocumentResponse = zod.unknown()
 
 
+export const DownloadStatementParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "personId": zod.coerce.string()
+})
+
+export const DownloadStatementResponse = zod.unknown()
+
+
+export const DownloadStatementsZipParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DownloadStatementsZipResponse = zod.unknown()
+
+
+export const DownloadBoardSummaryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DownloadBoardSummaryResponse = zod.unknown()
+
+
+export const DownloadLedgerParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DownloadLedgerResponse = zod.unknown()
+
+

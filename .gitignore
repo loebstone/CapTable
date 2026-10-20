@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+/generated-artifacts/
+/.pythonlibs/
+__pycache__/
+*.pyc

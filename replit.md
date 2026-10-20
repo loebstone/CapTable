@@ -2,7 +2,7 @@
 
 Private distribution recordkeeping for Horace W. Davis Realty Corp. (“HWD Farm”), a Massachusetts S-corporation with approximately 47 family shareholders and 400 shares: Classes A, B, C and D, each with 100 shares.
 
-Stage 1 provides delegated passwordless sign-in, shared access management, current Roster holdings, immutable snapshots, persistent tax residence, annual capital-gains rate tables, and an append-only write audit. Stage 2 adds distribution years, private source documents, exact-cent calculations, frozen finalizations, corrections and the cash-paid/APIC ledger. Stage 3 will add statements. Shareholders do not sign in.
+Stage 1 provides delegated passwordless sign-in, shared access management, current Roster holdings, immutable snapshots, persistent tax residence, annual capital-gains rate tables, and an append-only write audit. Stage 2 adds distribution years, private source documents, exact-cent calculations, frozen finalizations, corrections and the cash-paid/APIC ledger. Stage 3 adds shareholder statements, a board summary, the accountant ledger workbook, ZIP downloads and a signed-in home page. Shareholders do not sign in.
 
 ## Run & operate
 
@@ -14,7 +14,10 @@ Stage 1 provides delegated passwordless sign-in, shared access management, curre
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate the API client and validation schemas after any contract change.
 - `pnpm --filter @workspace/db run push` — **development schema only**. Confirm environment and observed database identity first.
 - `pnpm --filter @workspace/api-server run verify:stage1` — development-only integration checks using the supplied local Roster **STUB**. The development foundation must be uninitialized (no access entries). All test records are rolled back. PostgreSQL sequence numbers can advance despite rollback.
-- `pnpm --filter @workspace/api-server run verify:stage2` — development-only Stage 2 acceptance checks against the **same STUB fixture**, with real private App Storage upload/download. Requires an uninitialized development access list. All database test records roll back; small, clearly labeled storage test files remain private (no hard deletes). The suite exits nonzero if the requested approximate surplus examples conflict with the specified arithmetic; see verification notes below.
+- `pnpm --filter @workspace/api-server run verify:stage2` — development-only Stage 2 acceptance checks against the **same STUB fixture**, with real private App Storage upload/download. Requires an uninitialized development access list. All database test records roll back; small, clearly labeled storage test files remain private (no hard deletes). Esmond and Holmes acceptance targets were corrected to the formula values with $0.05 tolerance; the original hand-spreadsheet approximations are retained below for context. The suite should exit zero.
+- `pnpm --filter @workspace/api-server run verify:stage3` — development-only actual Chromium PDF, ZIP, XLSX readback and export-authorization verification. Recreates the finalized Stage 2 fixture in a rollback transaction; Roster is explicitly a **STUB**, PostgreSQL and App Storage are real development services. All four report routes are checked with anonymous and removed-access sessions. Small STUB inspection outputs are saved under ignored `generated-artifacts/stage3-verification/`.
+- Optional visual inspection: after Stage 3 verification, run `uv run python artifacts/api-server/tests/render-report-previews.py` to render the two test PDFs to PNG with the development-only PyMuPDF helper. Python dependencies are managed by root `pyproject.toml`/`uv.lock`; the application and exports themselves are Node/TypeScript, not Python.
+- Chromium is a configured Nix system dependency. Runtime PDF creation uses `puppeteer-core` and locates `chromium` on `PATH`; it never downloads a browser at request time. If the dependency is unavailable, PDF export fails explicitly with 503 rather than inventing a file.
 - No seeds run at startup. No DDL runs at startup or in publish/build commands.
 - Schema reaches the managed production database **only through Publish**. Never push schema or run data writes against production from the agent.
 - Never select Publish’s overwrite-data option to copy test data into production.
@@ -111,6 +114,10 @@ The example above illustrates field shapes, not a complete response or applicati
 - `artifacts/api-server/src/lib/distribution-math.ts` — exact rational calculations and Class-total checks.
 - `artifacts/api-server/src/lib/distribution-years.ts` — draft/frozen year read models, explicit corrections and history.
 - `artifacts/api-server/src/lib/year-document-store.ts` — private staging uploads, immutable sealed copies and PDF/image signature verification.
+- `artifacts/api-server/src/lib/reports/` — consistent read-only report context, HTML templates, Chromium rendering, exact formatting and numeric workbook generation.
+- `artifacts/api-server/src/routes/reports.ts` — private individual statements, statement ZIP, board summary and ledger downloads.
+- `artifacts/hwd-distributions/src/pages/home.tsx` — signed-in home page; no automatic Roster fetch.
+- `artifacts/hwd-distributions/src/components/year-exports.tsx` — year-page export controls; `download-button.tsx` handles binary downloads, server errors and revoked-session cache clearing.
 - `artifacts/api-server/src/routes/` — auth, access, holdings/snapshots, residences, rates and recent audit endpoints.
 - `lib/db/src/schema/` — Drizzle source of truth; decimal precision, unique row constraints and foreign keys.
 - `lib/api-spec/openapi.yaml` — API contract; generated hooks and Zod schemas in `lib/api-client-react` and `lib/api-zod`.
@@ -142,13 +149,46 @@ The Stage 1 suite exercises the actual Express routes, Roster HTTP client and de
 - Status is `complete` whenever remaining is zero; otherwise `held` for a manually noted hold (or the default from an unsettled snapshot row); otherwise `open`. Holds/releases are append-only and noted. Held is a status marker, not an extra authorization rule; recording a valid paid/retained entry does not require silently altering the hold.
 - All new database records are appended and audited inside the same transaction. Year and payment writes recheck local access inside the serialized transaction; the shared middleware also checks live Roster permission on every request, including all source-document routes.
 
-### Stage 2 verification arithmetic caveat
+### Stage 2 acceptance-figure resolution
 
 The specified acceptance inputs yield exactly 7,782.5 cents proposed, rounded to **7,783 cents ($77.83)** declared per share. With that declaration and the specified CT/NONE rates:
 
-| Holder | Exact nominal | Rounded estimated tax | Calculated surplus | Requested approximate example |
+| Holder | Exact nominal | Rounded estimated tax | Corrected acceptance surplus | Original approximate example |
 | --- | ---: | ---: | ---: | ---: |
 | Esmond Robert III | $3,891.50 | $3,023.63 | **$867.87** | $866 ± $1 |
 | Holmes Brette Kameny | $1,245.28 | $660.00 | **$585.28** | $584 ± $1 |
 
-Those two requested approximate examples are outside their $1 tolerance. The suite reports this as a partial acceptance result and exits nonzero; it does not change the specified rates, declared amount, or formula to force a pass. The remaining requested surplus examples, CA near-zero surpluses and both unsettled holds are checked separately. Signed-in UI rendering is not verified by an anonymous screenshot; authenticated route tests verify the underlying behavior without weakening authentication.
+The user confirmed that the formula was correct and the original two examples were approximate, reverse-engineered from a hand spreadsheet. The acceptance figures for Esmond and Holmes were therefore corrected to **$867.87 and $585.28**, each with **$0.05 tolerance**, computed from the declared amount. Rates, declaration and calculation code were not changed to force a pass. The remaining requested surplus examples retain their original $1 tolerance. CA near-zero surpluses and both unsettled holds are checked separately. Signed-in UI rendering is not verified by an anonymous screenshot; authenticated route tests verify the underlying behavior without weakening authentication.
+
+## Stage 3: statements, summary, accountant export and home
+
+- The signed-in root `/` is a plain home page showing the latest **stored** holdings Class summaries, shares and headcounts; distribution years with status; and links to Holdings, Tax residence, Annual rates, Access list and Audit log. It does not invent holdings or automatically call the Roster. `/holdings` remains available.
+- Reports are reached from each year page. Individual shareholder statements and the ZIP require a finalized/corrected year (draft requests are refused with 409). Board summaries and accountant workbooks are also available for open years, clearly labeled as not finalized. Missing draft declarations are shown as missing/blank, not silently treated as a declaration of zero.
+- Every report endpoint is behind the same live Roster-plus-local-access server gate as other business routes. Local access is checked again before releasing generated bytes, including after a longer ZIP generation. No role, officer name or officer title is introduced. No bank/card/account fields are introduced. All downloads are `private, no-store`, with attachment filenames.
+- Generation is **read-only and on demand**: a repeatable-read database transaction captures one consistent year/ledger context, the observed `SELECT current_database(), inet_server_addr()` results and generation time. Rendering happens after that transaction closes. All 47 ZIP statements share the same captured context and UTC generation date. No year, ledger, audit or financial record is changed by reading/exporting; there are no scheduled jobs or date-triggered changes.
+- Export bytes are generated in memory and downloaded; no PDF/ZIP/XLSX bytes are stored in PostgreSQL or as persistent deployed local files. Existing source documents remain private in App Storage. This stage does **not** add an archive of past generated statement versions; the permanent input, correction and ledger histories remain append-only.
+- PDFs are actual HTML templates rendered by **headless Chromium**, never a substitute PDF renderer. Both statement and board summary are one-page US Letter documents. Print scaling fits the complete content; if content would require scaling below the readability floor, the route explicitly refuses with 409 rather than truncating or silently creating multiple pages. Two simultaneous PDF batches are allowed; further requests receive a clear 429. A batch closes its browser in `finally`.
+- Each shareholder statement is issued by **Horace W. Davis Realty Corp.**, names only that shareholder, and includes the year, Class/shares, net timbering profit, declared amount/date, nominal distribution, federal/state estimated tax with both rates and state, dated cash/APIC/reversal entries, paid/retained totals and remaining amount. It renders no free-text methods, internal notes, hold notes or correction notes that could mention a different shareholder. Federal and state components round independently; any cent difference from the recorded combined-tax total is displayed explicitly as a rounding adjustment.
+- Every statement contains this caveat **in full**: “This is an estimate at the highest rates the Corporation plans on. Your own return may differ, and the Corporation does not give tax advice.”
+- Use **“time frame”**, not “window”, when describing a span of time in product/report copy.
+- The board summary shows the figures with source filenames; proposed worked arithmetic; declaration/date; reconciliation/residual; nominal/paid/retained/remaining totals and status counts; and all shareholder rows (name, Class, state, shares, nominal, estimated tax, surplus, status). Class headcounts appear plainly and are never flagged.
+- The workbook has `Ledger` (one row per cash/APIC/reversal entry), `Shareholder summary` (one row per holder plus numeric totals) and `Report information` (environment, observed identity, status, snapshot, date semantics and generation time). Monetary/share arithmetic remains exact BigInt arithmetic. **Required Excel numeric-cell serialization is the only floating-point conversion boundary**, after calculation; currency cells are numeric dollars with two-decimal formatting, shares have four decimals. Values exceeding Excel's 15-digit precision or failing exact display round-trip are refused, not silently rounded. Dates are real Excel date cells. Reversed APIC rows keep the original letter-received date alongside the reversal's entry date.
+- Every PDF and the workbook metadata state **ENVIRONMENT** and observed database/server identity. SQL NULL remains “SQL NULL”, never an inferred hostname.
+- Filenames use the UTC generation date (not the declaration/payment date):
+  - `HWD_Distribution_<year>_Statement_<LastName>_<FirstName>_<yyyy-mm-dd>.pdf`
+  - `HWD_Distribution_<year>_Board_Summary_<yyyy-mm-dd>.pdf`
+  - `HWD_Distribution_<year>_Ledger_<yyyy-mm-dd>.xlsx`
+  - ZIP: `HWD_Distribution_<year>_Statements_<yyyy-mm-dd>.zip`
+- **Explicit filename inference:** the Roster contract provides only `displayName`, not structured first/last names. Matching the supplied surname-first fixture, the first token is inferred as LastName and the second as FirstName; the full name remains unchanged inside the PDF. Filename components are sanitized. If two inferred filenames collide, ZIP generation refuses instead of replacing a statement. This inference should be revisited if the Roster starts supplying structured names or changes its naming convention.
+- The distinct app cookie remains **`hwd_distributions_session`**. This app does not share another Farm app's cookie, database, code or deployment. All six manually managed service/session secret names remain documented above: `ROSTER_BASE_URL`, `DISTRIBUTIONS_SERVICE_KEY`, `BOOTSTRAP_PERSON_ID`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SESSION_SECRET`.
+
+### Stage 3 verification coverage
+
+The Stage 3 suite reconstructs the exact 47-holder Stage 2 fixture, including Natalie GA, confirmed residences, specified rates, $110,000 net profit, $77.83 declaration, Forster's cash/APIC/full cash reversal, and a note-only correction. It confirms:
+
+- Forster's PDF has one page, nominal $1,556.60, estimated federal $825.00 and MA tax $275.00 (combined $1,100.00), the complete caveat, relevant dates/balances and no other shareholder name—even when her internal ledger notes/method contain other names.
+- Open and finalized board PDFs have one page; the final summary includes 47 shareholder names/rows, source filename, all totals, Class headcounts and the −$0.02 residual.
+- The XLSX reopens successfully; every entry's amount/date/note/id and every holder's paid/retained sums match database rows; numeric summary totals match the recorded calculation.
+- The ZIP contains 47 distinct PDFs, all one page, each naming only its own shareholder and carrying the full caveat.
+- Every report route returns 401 anonymously and 403 to a Roster-allowed but locally removed person. Draft statement/ZIP generation is refused. The year/ledger record is identical before and after all exports.
+- All fixture database writes roll back, never hard-delete. Generated visual-inspection files are test-only and excluded from Git and Publish; small labeled storage source fixtures remain private. Real Roster/Resend verification remains separate.

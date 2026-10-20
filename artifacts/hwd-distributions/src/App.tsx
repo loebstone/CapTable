@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import SignIn from '@/pages/sign-in';
 import HoldingsPage from '@/pages/holdings';
+import HomePage from '@/pages/home';
 import { SnapshotsPage, SnapshotDetailPage } from '@/pages/snapshots';
 import ResidencesPage from '@/pages/residences';
 import RatesPage from '@/pages/rates';
@@ -51,7 +52,7 @@ function Gate() {
     <Shell session={session.data}>
       <RoutedErrorBoundary>
         <Switch>
-          <Route path="/" component={HoldingsPage} />
+          <Route path="/" component={HomePage} />
           <Route path="/holdings" component={HoldingsPage} />
           <Route path="/snapshots" component={SnapshotsPage} />
           <Route path="/snapshots/:id" component={SnapshotDetailPage} />

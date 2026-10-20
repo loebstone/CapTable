@@ -1,0 +1,2 @@
+- [Chromium PDF fitting](chromium-pdf-fitting.md) — use print scaling for one-page reports; CSS zoom can reflow rows and push the footer onto another page.
+- [PDF text verification](pdf-text-verification.md) — preserve glyph adjacency when extracting Chromium PDF text; ligatures can be split across adjacent items.

@@ -397,6 +397,51 @@ paths:
           content:
             application/octet-stream:
               schema: {type: string, format: binary}
+  /years/{id}/reports/statement/{personId}.pdf:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      - {name: personId, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: downloadStatement
+      responses:
+        "200":
+          description: One-page private shareholder statement, finalized years only
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+  /years/{id}/reports/statements.zip:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: downloadStatementsZip
+      responses:
+        "200":
+          description: One private PDF per distinct shareholder, finalized years only
+          content:
+            application/zip:
+              schema: {type: string, format: binary}
+  /years/{id}/reports/board.pdf:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: downloadBoardSummary
+      responses:
+        "200":
+          description: One-page board summary for an open or finalized year
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+  /years/{id}/reports/ledger.xlsx:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: downloadLedger
+      responses:
+        "200":
+          description: Numeric cash/APIC/reversal ledger and shareholder summary workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
 components:
   schemas:
     NoteInput:

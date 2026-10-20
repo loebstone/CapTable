@@ -76,7 +76,7 @@ export async function stage2Harness() {
     let req = request(app)[method](path);
     if (cookie) req = req.set("Cookie", cookie);
     if (data !== undefined) req = req.send(data);
-    if (path.endsWith("/file")) req = req.buffer(true).parse((res, done) => {
+    if (path.endsWith("/file") || /\.(pdf|zip|xlsx)$/.test(path)) req = req.buffer(true).parse((res, done) => {
       const chunks = [];
       res.on("data", (chunk) => chunks.push(chunk));
       res.on("end", () => done(null, Buffer.concat(chunks)));

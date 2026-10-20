@@ -92,18 +92,21 @@ try {
   assert.equal(detail.calculation.proposedPerShareCents, "7783");
   record("2. Worked proposed per-share calculation", { ...detail.calculation, exactUnroundedPerShareCents: "7782.5", roundedHalfAwayFromZeroCents: "7783", UI: "WorkedTable renders each returned arithmetic row; signed-in UI not browser-verified" });
   detail = expect(await call("post", `${base}/declaration`, cookie, { declaredPerShareCents: "7783", declarationDate: "2026-10-20", note: "STUB declared equal to rounded proposed per-share" }), 201);
-  const expectedSurpluses = { "Forster Nancy Anne": 45600n, "Pieropan Nancy": 30700n, "Davis Kiel": 27700n, "Esmond Robert III": 86600n, "Holmes Brette Kameny": 58400n };
+  // User-corrected acceptance targets: exact formula values from the declared
+  // $77.83; the original two hand-spreadsheet approximations were superseded.
+  const expectedSurpluses = { "Forster Nancy Anne": 45600n, "Pieropan Nancy": 30700n, "Davis Kiel": 27700n, "Esmond Robert III": 86787n, "Holmes Brette Kameny": 58528n };
   const comparisons = Object.entries(expectedSurpluses).map(([name, expectedCents]) => {
     const holder = detail.holders.find((r) => r.displayName === name);
     const actual = BigInt(holder.surplusCents);
-    return { holder: name, expectedApproxCents: expectedCents.toString(), observedCents: actual.toString(), differenceCents: (actual - expectedCents).toString(), withinOneDollar: absolute(actual - expectedCents) <= 100n, nominalCents: holder.nominalCents, shareOfGainCents: holder.shareOfGainCents, estimatedTaxCents: holder.estimatedTaxCents, stateRate: holder.stateRate };
+    const toleranceCents = ["Esmond Robert III", "Holmes Brette Kameny"].includes(name) ? 5n : 100n;
+    return { holder: name, expectedCents: expectedCents.toString(), observedCents: actual.toString(), differenceCents: (actual - expectedCents).toString(), toleranceCents: toleranceCents.toString(), withinTolerance: absolute(actual - expectedCents) <= toleranceCents, nominalCents: holder.nominalCents, shareOfGainCents: holder.shareOfGainCents, estimatedTaxCents: holder.estimatedTaxCents, stateRate: holder.stateRate };
   });
   const ca = detail.holders.filter((r) => r.stateCode === "CA");
   assert.ok(ca.every((r) => absolute(BigInt(r.surplusCents)) <= 100n));
   const held = detail.holders.filter((r) => r.status === "held").map((r) => r.displayName).sort();
   assert.deepEqual(held, ["Adorno Marco", "Kneisel Geoffrey"]);
-  const discrepancies = comparisons.filter((r) => !r.withinOneDollar);
-  record("3. Per-holder surplus and unsettled holds", { ca: ca.map((r) => ({ holder: r.displayName, surplusCents: r.surplusCents })), requestedExamples: comparisons, automaticallyHeld: held, explanation: "Specified rates and declared $77.83 mathematically yield Esmond $867.87 and Holmes $585.28; requested $866/$584 ±$1 examples conflict with the formula." }, discrepancies.length ? "PARTIAL: two requested approximate examples exceed $1 tolerance; exact formula preserved" : "PASS");
+  const discrepancies = comparisons.filter((r) => !r.withinTolerance);
+  record("3. Per-holder surplus and unsettled holds", { ca: ca.map((r) => ({ holder: r.displayName, surplusCents: r.surplusCents })), requestedExamples: comparisons, automaticallyHeld: held, explanation: "User-corrected targets: Esmond $867.87 and Holmes $585.28, each ±$0.05; other original targets remain ±$1." }, discrepancies.length ? "FAIL: surplus outside accepted tolerance" : "PASS");
 
   expect(await call("post", "/api/rates", cookie, { ...rateInput, states: rateInput.states.filter((r) => r.stateCode !== "GA"), note: "STUB omit GA as required by acceptance test" }), 201);
   const blocked = expect(await call("post", `${base}/finalize`, cookie, { note: "Must name Natalie and missing GA rate" }), 409);

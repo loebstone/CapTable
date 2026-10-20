@@ -12,6 +12,7 @@ import { ArrowLeft, FileUp, FileText, Download, Plus, Trash2, Lock, PencilLine, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { PageHeader, SkeletonRows, ErrorPanel, Empty, Btn, Field, inputCls, Tag } from "@/components/bits";
 import { StatusTag } from "@/pages/years";
+import { YearExports } from "@/components/year-exports";
 import { fmtDate, errMessage, ratePct } from "@/lib/format";
 import { fmtCents, parseDollars, centsToInput, isNeg, todayISO, fmtBytes, sumCents } from "@/lib/money";
 import { useToast } from "@/hooks/use-toast";
@@ -88,6 +89,7 @@ export default function YearDetailPage() {
 
       <Holders y={y} onAction={setModal} />
       {!draft && <Ledger y={y} onReverse={(entry) => setModal({ k: "reverse", entry })} />}
+      <YearExports y={y} />
       <History y={y} />
 
       <Dialog open={!!modal} onOpenChange={(o) => !o && close()}>

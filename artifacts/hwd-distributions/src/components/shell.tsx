@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSignOut, type Session } from "@workspace/api-client-react";
-import { Layers, Archive, MapPin, Percent, KeyRound, ScrollText, LogOut, TreePine } from "lucide-react";
+import { Home, Layers, Archive, MapPin, Percent, KeyRound, ScrollText, LogOut, TreePine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
+  { href: "/", label: "Home", icon: Home },
   { href: "/years", label: "Distribution years", icon: TreePine },
   { href: "/holdings", label: "Holdings", icon: Layers },
   { href: "/snapshots", label: "Snapshots", icon: Archive },
@@ -46,12 +47,12 @@ export function Shell({ session, children }: { session: Session; children: React
         </div>
         <nav className="flex gap-0.5 overflow-x-auto px-2 pb-2 md:flex-col md:overflow-visible">
           {NAV.map(({ href, label, icon: Icon }) => {
-            const active = loc === href || loc.startsWith(href + "/") || (href === "/holdings" && loc === "/");
+            const active = href === "/" ? loc === "/" : loc === href || loc.startsWith(href + "/");
             return (
               <Link
                 key={href}
                 href={href}
-                data-testid={`link-nav-${href.slice(1)}`}
+                data-testid={`link-nav-${href.slice(1) || "home"}`}
                 className={cn(
                   "group relative flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
                   active ? "bg-sidebar-accent text-[hsl(40_40%_97%)]" : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
