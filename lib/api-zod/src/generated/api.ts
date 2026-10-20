@@ -464,6 +464,12 @@ export const ListAuditResponseItem = zod.object({
 export const ListAuditResponse = zod.array(ListAuditResponseItem)
 
 
+export const BackupConfirmationResponse = zod.unknown()
+
+
+export const DownloadBackupResponse = zod.unknown()
+
+
 export const ListYearsResponseItem = zod.object({
   "id": zod.number().int(),
   "calendarYear": zod.number().int(),

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { PageHeader, SkeletonRows, ErrorPanel, Empty, Btn, Field, Tag, inputCls } from "@/components/bits";
 import { fmtDate, errMessage } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
+import { BackupDownload } from "@/components/backup-download";
 
 export default function AccessPage() {
   const qc = useQueryClient();
@@ -26,6 +27,7 @@ export default function AccessPage() {
 
   return (
     <div className="space-y-8">
+      <BackupDownload />
       <PageHeader kicker="Who can sign in" title="Access">
         Add a family member by email; the server matches the address against the roster. The last person with access cannot be removed.
       </PageHeader>

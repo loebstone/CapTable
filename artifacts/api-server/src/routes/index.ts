@@ -11,6 +11,7 @@ import yearsRouter from "./years";
 import paymentsRouter from "./payments";
 import yearDocumentsRouter from "./year-documents";
 import reportsRouter from "./reports";
+import backupRouter from "./backup";
 import { requireAccess } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -29,6 +30,7 @@ router.use(yearsRouter);
 router.use(paymentsRouter);
 router.use(yearDocumentsRouter);
 router.use(reportsRouter);
+router.use(backupRouter);
 router.use((_req, res) => { res.status(404).json({ error: "API route not found" }); });
 
 export default router;

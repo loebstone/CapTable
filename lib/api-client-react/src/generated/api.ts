@@ -1818,6 +1818,145 @@ export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TErr
 
 
 
+export const getBackupConfirmationUrl = () => {
+
+
+
+
+  return `/api/backup/confirm`
+}
+
+export const backupConfirmation = async ( options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getBackupConfirmationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getBackupConfirmationQueryKey = () => {
+    return [
+    `/api/backup/confirm`
+    ] as const;
+    }
+
+
+export const getBackupConfirmationQueryOptions = <TData = Awaited<ReturnType<typeof backupConfirmation>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof backupConfirmation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBackupConfirmationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof backupConfirmation>>> = ({ signal }) => backupConfirmation({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof backupConfirmation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type BackupConfirmationQueryResult = NonNullable<Awaited<ReturnType<typeof backupConfirmation>>>
+export type BackupConfirmationQueryError = ErrorType<unknown>
+
+
+
+export function useBackupConfirmation<TData = Awaited<ReturnType<typeof backupConfirmation>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof backupConfirmation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getBackupConfirmationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadBackupUrl = () => {
+
+
+
+
+  return `/api/backup`
+}
+
+export const downloadBackup = async ( options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadBackupUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadBackupMutationKey = () => ['downloadBackup'] as const;
+
+export const getDownloadBackupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadBackup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof downloadBackup>>, TError,void, TContext> => {
+
+const mutationKey = getDownloadBackupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof downloadBackup>>, void> = () => {
+
+
+          return  downloadBackup(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DownloadBackupMutationResult = NonNullable<Awaited<ReturnType<typeof downloadBackup>>>
+
+    export type DownloadBackupMutationError = ErrorType<void>
+
+
+    export const useDownloadBackup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadBackup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof downloadBackup>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDownloadBackupMutationOptions(options));
+    }
+
 export const getListYearsUrl = () => {
 
 

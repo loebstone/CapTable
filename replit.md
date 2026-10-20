@@ -242,3 +242,68 @@ The Stage 3 suite reconstructs the exact 47-holder Stage 2 fixture, including Na
 - The ZIP contains 47 distinct PDFs, all one page, each naming only its own shareholder and carrying the full caveat.
 - Every report route returns 401 anonymously and 403 to a Roster-allowed but locally removed person. Draft statement/ZIP generation is refused. The year/ledger record is identical before and after all exports.
 - All fixture database writes roll back, never hard-delete. Generated visual-inspection files are test-only and excluded from Git and Publish; small labeled storage source fixtures remain private. Real Roster/Resend verification remains separate.
+
+## On-demand backup
+
+- **Access list → Download backup** opens an access-checked confirmation page.
+  GET never exports or writes. Its origin-preserving referrer policy lets the
+  native confirmation form send a same-origin POST to `/api/backup`. Both routes
+  require the usual valid session, current Roster allowance and active local
+  access. Foreign or missing origin metadata is rejected by the existing CSRF
+  middleware. No raw token or configuration is put into the link.
+- The browser downloads directly, without a JavaScript Blob. The server streams
+  an uncompressed ZIP; neither an archive nor a temporary dump is stored.
+  `backup.ts` coordinates it; `backup-postgres.ts` handles the logical SQL.
+- Contents: environment/timestamp-named plain SQL, every attached sealed source
+  document as `documents/<yearId>/<documentId>_<safe original filename>`,
+  `manifest.json`, and `RESTORE.md`. The manifest records observed database
+  identity, every physical table count, document bytes and original private
+  object-path mapping, optional Git commit, and exact SQL/archive byte counts.
+  The latter counts are fixed-width decimal strings to preserve ZIP length
+  between passes. Upload reservations are database rows; abandoned staging
+  objects are not attached source documents and are not included.
+- A dedicated repeatable-read transaction exports a PostgreSQL snapshot.
+  `pg_dump` uses it, including schema/data, constraints, indexes and sequences
+  while omitting ownership/grants. Its connection credentials are passed only
+  in child-process environment, never argv, output, or logs. If unavailable,
+  the catalog-based exporter preserves this app's ordinary tables, enums,
+  serials, defaults, nullability, constraints and indexes, with text-preserving
+  cursor batches. It refuses unsupported views, routines, user triggers,
+  partitions/inheritance and identity/generated columns rather than silently
+  producing an incomplete backup. The configured PostgreSQL 16 tools are
+  available in this development runtime.
+- The common application advisory write lock is held for the export so practice
+  reset cannot remove a source file during download. Object generations are
+  pinned. An audit connection is reserved before locking to avoid pool
+  starvation. Writes may wait during a backup; reads remain permitted.
+- A counting/credential-check pass is streamed to a discard sink before any ZIP
+  response headers. It rejects archives above **500,000,000 bytes (500 MB)**,
+  then regenerates from the same snapshot/files and streams with backpressure.
+  The delivered stream is checked again. Memory is bounded by stream buffers
+  and directory/manifest metadata, not SQL/document contents. There is at most
+  one backup per server process, a ten-minute request deadline and a safe
+  100,000-document directory limit, each failing explicitly.
+- No runtime configuration, raw email/session tokens, service credentials or
+  environment variables are serialized. Hashed authentication records and
+  ordinary business identity IDs/email addresses ARE part of the complete
+  database and remain private. Configuration names and raw authentication
+  credentials are checked in the output; a match rejects the backup rather
+  than modifying its data. SQL `PRIMARY KEY`/`FOREIGN KEY` are necessary schema
+  syntax, not leaked keys. Backups must be handled as private family records.
+- Exactly one `BACKUP_DOWNLOAD` audit event records actor, timestamp, bytes,
+  environment and document count after successful streaming. Its own event is
+  necessarily later than the exported snapshot; the live audit table gains
+  that one row after the manifest's point-in-time count. Failed/aborted
+  downloads are not completed backups. No scheduled task was added.
+- Verification: `pnpm --filter @workspace/api-server run verify:backup`.
+  Uses the development database read-only for the full-data dump; authentication
+  and audit writes use temporary test tables that roll back. It creates only
+  randomly named scratch databases, restores the unchanged SQL with `psql`
+  and checks every table against both manifest and source. A separate scratch
+  fixture uses the local Roster stub and a real private practice source image;
+  its ZIP bytes must equal the stored object. The catalog engine, Unicode/
+  quoting round-trip, size-cap rejection, audit count, and anonymous/inactive/
+  cross-origin refusals are exercised. Scratch databases are dropped, and the
+  practice fixture's file is removed only through the guarded practice reset.
+  No real Roster call or email is needed. This test requires development
+  `CREATEDB` permission and PostgreSQL client tools; never run it in production.

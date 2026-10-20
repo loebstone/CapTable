@@ -13,4 +13,9 @@ if (!process.env.DATABASE_URL) {
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
+// Dedicated sessions for snapshot export; never share a pool transaction.
+export function createDatabaseClient() {
+  return new pg.Client({ connectionString: process.env.DATABASE_URL });
+}
+
 export * from "./schema";

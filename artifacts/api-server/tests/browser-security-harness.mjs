@@ -9,8 +9,12 @@ import { finalizedFixture } from "./stage3-fixture.mjs";
 import { createWebApp } from "../../hwd-distributions/server.mjs";
 
 const h = await stage2Harness();
-const fixture = await finalizedFixture(h);
-await fixture.finalizeWithLedger();
+if (!process.argv.includes("--backup")) {
+  const fixture = await finalizedFixture(h);
+  await fixture.finalizeWithLedger();
+} else {
+  await h.login(); // Access-only backup flow needs no extra stored fixture file.
+}
 if (process.argv.includes("--practice")) {
   const practice = await finalizedFixture(h, { isPractice: true });
   await practice.finalizeWithLedger();
