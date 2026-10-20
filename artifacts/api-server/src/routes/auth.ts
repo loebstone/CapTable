@@ -7,21 +7,15 @@ import { eligible, bootstrapOnVerifiedSignIn } from "../lib/access";
 import { append, write } from "../lib/records";
 import { hash, randomToken, requireAccess, currentIdentity, signedCookie, COOKIE_NAME, publicOrigin } from "../lib/auth";
 import { HttpError } from "../lib/errors";
+import { authLimit } from "../lib/auth-limits";
+import { html } from "../lib/reports/format";
 
 const router: IRouter = Router();
-const attempts = new Map<string, { count: number; start: number }>();
 
 router.post("/auth/link", async (req, res): Promise<void> => {
   const data = RequestSignInBody.parse(req.body);
   const email = data.email.trim().toLowerCase();
-  const ip = req.ip || "unknown";
-  const recent = attempts.get(ip);
-  const counter = recent && Date.now() - recent.start < 60000 ? recent : { count: 0, start: Date.now() };
-  counter.count += 1;
-  attempts.set(ip, counter);
-  if (counter.count > 20) throw new HttpError(429, "Too many sign-in attempts; please wait a minute");
-  // Opportunistic cleanup only; no timers or scheduled jobs.
-  if (attempts.size > 2000) for (const [key, value] of attempts) if (Date.now() - value.start >= 60000) attempts.delete(key);
+  authLimit(`request-ip:${req.ip || "unknown"}`, 20);
   const person = await signInCheck(email);
   await eligible(person.personId);
   const key = process.env.RESEND_API_KEY;
@@ -61,11 +55,32 @@ router.post("/auth/link", async (req, res): Promise<void> => {
 });
 
 router.get("/auth/verify", async (req, res): Promise<void> => {
-  res.setHeader("Referrer-Policy", "no-referrer");
+  // no-referrer makes Chromium send Origin:null for native form POSTs.
+  // strict-origin keeps Origin intact without disclosing the token-bearing URL.
+  res.setHeader("Referrer-Policy", "strict-origin");
   const { token } = VerifySignInQueryParams.parse(req.query);
   if (!/^[a-f0-9]{64}$/.test(token)) throw new HttpError(401, "Invalid or expired sign-in link");
+  // A GET (including an email preview/scanner) never consumes a token or creates a session.
+  res.type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+    <title>Continue to HWD Cap Table</title><style>
+    body{font:17px system-ui,sans-serif;background:#f8f5ef;color:#172b31;margin:0;padding:12vh 24px}
+    main{max-width:440px;margin:auto}button{font:inherit;padding:14px 20px;background:#172b31;color:white;border:0;border-radius:6px;cursor:pointer}
+    </style></head><body><main><h1>HWD Farm</h1><p>Continue to complete your sign-in. This single-use link expires 15 minutes after it was requested.</p>
+    <form method="post" action="${html(publicOrigin(req))}/api/auth/verify">
+    <input type="hidden" name="token" value="${token}"><button type="submit">Continue to HWD Cap Table</button>
+    </form></main></body></html>`);
+});
+
+router.post("/auth/verify", async (req, res): Promise<void> => {
+  authLimit(`redeem-ip:${req.ip || "unknown"}`, 10);
+  const { token } = VerifySignInQueryParams.parse(req.body);
+  if (!/^[a-f0-9]{64}$/.test(token)) throw new HttpError(401, "Invalid or expired sign-in link");
+  authLimit(`redeem-token:${hash(token)}`, 10);
   const [link] = await db.select().from(magicLinks).where(eq(magicLinks.tokenHash, hash(token))).limit(1);
   if (!link || new Date(link.expiresAt).getTime() <= Date.now()) throw new HttpError(401, "Invalid or expired sign-in link");
+  const [consumed] = await db.select().from(linkConsumptions).where(eq(linkConsumptions.linkId, link.id)).limit(1);
+  if (consumed) throw new HttpError(401, "This sign-in link has already been used");
   const person = await signInCheck(link.email);
   if (person.personId !== link.personId) throw new HttpError(403, "Roster identity no longer matches this link");
   const sessionToken = randomToken();

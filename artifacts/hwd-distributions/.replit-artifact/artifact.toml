@@ -8,20 +8,20 @@ router = "path"
 
 [[services]]
 name = "web"
-paths = [ "/" ]
+paths = ["/"]
 localPort = 22889
 
 [services.development]
 run = "pnpm --filter @workspace/hwd-distributions run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/hwd-distributions", "run", "build" ]
-serve = "static"
-publicDir = "artifacts/hwd-distributions/dist/public"
+build = ["pnpm", "--filter", "@workspace/hwd-distributions", "run", "build"]
 
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
+[services.production.run]
+args = ["node", "artifacts/hwd-distributions/server.mjs"]
+
+[services.production.run.env]
+NODE_ENV = "production"
 
 [services.env]
 PORT = "22889"

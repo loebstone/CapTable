@@ -34,6 +34,8 @@ export * from './paymentInputKind';
 export * from './rateCopyInput';
 export * from './rateInput';
 export * from './rateTable';
+export * from './redeemSignInBodyOne';
+export * from './redeemSignInBodyTwo';
 export * from './residence';
 export * from './residenceInput';
 export * from './reversalInput';

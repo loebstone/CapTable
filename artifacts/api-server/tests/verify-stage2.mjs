@@ -66,9 +66,21 @@ try {
   const downloaded = await call("get", document.downloadUrl, cookie);
   assert.equal(downloaded.status, 200); assert.deepEqual(downloaded.body, pdf);
   assert.match(downloaded.headers["cache-control"], /no-store/);
+  const { yearDocumentStore } = await import("../src/lib/year-document-store.ts");
+  const { ObjectStorageService } = await import("../src/lib/objectStorage.ts");
+  const storage = new ObjectStorageService();
+  const stagingPath = storage.normalizeObjectEntityPath(slot.uploadURL);
+  await assert.rejects(storage.getObjectEntityFile(stagingPath), { name: "ObjectNotFoundError" });
+  const sealedPath = (await client.query("SELECT object_path FROM year_documents WHERE id=$1", [document.id])).rows[0].object_path;
+  const sealed = await yearDocumentStore.getFile(sealedPath);
+  const unsigned = await fetch(sealed.publicUrl(), { redirect: "error" });
+  assert.ok([401, 403].includes(unsigned.status), `Unsigned sealed-object fetch returned ${unsigned.status}`);
+  record("N2. Sealed object not publicly readable", { authenticatedAppDownload: 200, unsignedStorageFetch: unsigned.status, objectExists: true, urlNotPrinted: true, stagingRemovedAfterSeal: true });
   const overwrite = await fetch(slot.uploadURL, { method: "PUT", headers: { "Content-Type": "application/pdf" }, body: pdfDocument("Changed staging bytes must not change sealed attachment.") });
   assert.ok(overwrite.ok);
   assert.deepEqual((await call("get", document.downloadUrl, cookie)).body, pdf);
+  // The deliberately reused signed PUT can recreate staging, never the sealed file.
+  await (await storage.getObjectEntityFile(stagingPath)).delete({ ignoreNotFound: true });
   expect(await call("get", document.downloadUrl), 401);
   record("Real private source-document storage", { filename: document.filename, uploadedAt: document.uploadedAt, bytes: pdf.length, directPUT: put.status, authenticatedDownload: 200, anonymousDownload: 401, stagingOverwriteCannotAlterAttachment: true, storageSource: "REAL APP STORAGE (Roster remains STUB)" });
   const figures = { grossCents: "11000000", grossDocumentId: document.id, costs: [{ label: "Zero-cost test line", amountCents: "0", documentId: document.id }], note: "STUB net profit $110,000.00 with one zero-cost line" };

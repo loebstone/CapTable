@@ -26,6 +26,8 @@ Stage 1 provides delegated passwordless sign-in, shared access management, curre
 
 Read outside-service configuration directly from Replit Secrets through `process.env`. Do **not** connect or propose Replit integrations/connections for outside services. Peter stores secrets manually. Do not set production secret values during development or testing.
 
+The security update adds `APP_ORIGIN` to the original six secret names. Peter supplies its actual value through Secrets; examples are not authoritative deployment URLs. Never log its value.
+
 | Name | Purpose |
 | --- | --- |
 | `DATABASE_URL` | This project's own runtime-managed PostgreSQL database |
@@ -33,6 +35,7 @@ Read outside-service configuration directly from Replit Secrets through `process
 | `ROSTER_BASE_URL` | Roster HTTP base URL; no direct Roster database access |
 | `DISTRIBUTIONS_SERVICE_KEY` | Bearer credential for the two Roster service endpoints |
 | `BOOTSTRAP_PERSON_ID` | Only Roster person allowed to initialize a never-used access list |
+| `APP_ORIGIN` | Trusted app origin; mandatory HTTPS origin in production; production never infers it from forwarded headers |
 | `RESEND_API_KEY` | Plain Resend HTTP API credential |
 | `RESEND_FROM_EMAIL` | Verified Resend sender address (required when an API key is present) |
 | `NODE_ENV` | Must equal `production` in the published API; controls development-only fallback |
@@ -50,6 +53,22 @@ Frontend tooling also reads runtime-managed `REPL_ID` and Vite-provided `BASE_UR
 1. **Only when `NODE_ENV !== "production"` and `RESEND_API_KEY` is absent**, the server writes the single-use magic-link URL to its server log instead of sending mail. The browser receives a clear development-only message, not the URL. In production, a missing key yields HTTP 503 and **never** logs a login URL.
 2. An unset `ROSTER_BASE_URL` always fails clearly with HTTP 503, in every environment. There is no application fixture/fallback. Verification alone starts a local stub server and points its own test process at it. Test code refuses to run when `NODE_ENV === "production"` and never changes persisted secrets.
 3. The exact supplied 47-holder fixture lives under `artifacts/api-server/tests/`, is not imported by application code, and is not seeded into the app. It has A/B/C/D headcounts 2/22/14/9, each Class 100.0000 shares and 400.0000 total. A separate supplemental GA probe verifies residence proposals without changing that base fixture.
+
+## Security update: current behavior
+
+These rules supersede the earlier auth/setup/test-harness descriptions; historical notes remain below.
+
+- **Origin:** `APP_ORIGIN` is an origin only, with no credentials/path/query/fragment. Production requires HTTPS and refuses startup when it is absent/invalid. Magic links and write Origin comparisons use it exclusively, ignoring Host and forwarded headers. Development alone permits the old forwarded-host fallback when unset, with one startup warning that does not print values.
+- **Writes:** missing Origin is refused unless `Sec-Fetch-Site` explicitly says `same-origin`. Foreign Origins and cross-site metadata are refused. Browser fetch POST/PUT requests and the native confirmation form supply Origin automatically; JavaScript must not try to set this browser-controlled header. Non-browser clients must supply the trusted Origin.
+- **Confirmation:** GET `/api/auth/verify?token=...` only renders a single “Continue to HWD Cap Table” button. It never consumes a token, creates a session or bootstraps. The same-origin-checked POST `/api/auth/verify` receives the token in its body and rechecks Roster, identity, access/bootstrap, 15-minute expiry and single-use. This mitigates link scanners, **not forwarding**: anyone possessing an unused forwarded link can still press Continue. It is not independent recipient identity proof.
+- The confirmation page alone uses `Referrer-Policy: strict-origin`: native Chromium form POSTs otherwise send `Origin: null` under `no-referrer` and are correctly refused by the fail-closed check. Only the origin, never the token-bearing query/path, is sent as a referrer. Other app responses retain `no-referrer`.
+- Rollback verification also namespaces the advisory write lock per test process; otherwise its long-lived outer transaction would block real development writes for the full test run. The application lock and production behavior are unchanged.
+- **Limits:** link requests allow 20/minute/IP plus the existing one-second per-email interval; redemption allows 10/minute/IP and 10/minute/token hash. Counters are process-local, reset on restart, and are opportunistically cleaned without scheduled jobs. They are not shared across instances.
+- **Upload sealing:** verify actual metadata (1 byte–20 MiB, matching reservation) and allowed PDF/image magic bytes BEFORE copying. Validation and copying use the same immutable source generation to prevent concurrent PUT replacement. Delete ephemeral staging bytes on rejection and seal success; never delete attached documents or business/audit rows. Abandoned uploads, failed cleanup and staging recreated using a still-valid PUT URL may remain; there is no scheduled cleanup. The signed PUT itself is not byte-limited.
+- **Headers:** API and web responses set CSP, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, self-only forms, `base-uri 'none'` and `object-src 'none'`. UI CSP permits bundled scripts, inline styles, Google Fonts and direct Google Storage uploads. Development additionally permits Vite inline preambles/HMR websockets; production disallows inline scripts. Strict anti-framing intentionally blocks embedded previews: open development in a top-level browser tab.
+- **Web server:** Vite supplies development headers; production serves the existing frontend build through `artifacts/hwd-distributions/server.mjs` and `security-headers.mjs`, not headerless static hosting. The server binds the artifact PORT. API and web production run configurations explicitly set NODE_ENV=production. No production secrets were set during development.
+- **Verification:** the original `pnpm --filter @workspace/api-server run verify:stage1`, `verify:stage2`, `verify:stage3` commands remain; also run `pnpm --filter @workspace/api-server run verify:security` and root `pnpm run typecheck`. All use labeled local Roster stubs and send no email. The suites now shadow public tables with transaction-local temporary tables, preserving indexes/checks/foreign keys/triggers and using independent temporary sequences. They roll back without modifying the Farm's development records or sequences; an empty access list is no longer required despite older notes below.
+- **Evidence:** focused oversized/wrong-type rejection probes are labeled storage mocks; Stage 2 checks actual private storage, staging cleanup and an unsigned sealed-object fetch. Sealed, labeled test documents remain private. `tests/browser-security-harness.mjs` is a development-only loopback helper using the production-built UI, temporary tables and stub Roster, never a runtime service. It captures only Origin presence/match booleans, never token values, and rolls back on SIGTERM.
 
 ## Product rules
 

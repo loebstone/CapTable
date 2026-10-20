@@ -39,6 +39,8 @@ import type {
   RateCopyInput,
   RateInput,
   RateTable,
+  RedeemSignInBodyOne,
+  RedeemSignInBodyTwo,
   Residence,
   ResidenceInput,
   ReversalInput,
@@ -249,9 +251,9 @@ export const getVerifySignInUrl = (params: VerifySignInParams,) => {
   return stringifiedParams.length > 0 ? `/api/auth/verify?${stringifiedParams}` : `/api/auth/verify`
 }
 
-export const verifySignIn = async (params: VerifySignInParams, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+export const verifySignIn = async (params: VerifySignInParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
 
-  return customFetch<unknown>(getVerifySignInUrl(params),
+  return customFetch<string>(getVerifySignInUrl(params),
   {
     ...options,
     method: 'GET'
@@ -271,7 +273,7 @@ export const getVerifySignInQueryKey = (params?: VerifySignInParams,) => {
     }
 
 
-export const getVerifySignInQueryOptions = <TData = Awaited<ReturnType<typeof verifySignIn>>, TError = ErrorType<void>>(params: VerifySignInParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifySignIn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getVerifySignInQueryOptions = <TData = Awaited<ReturnType<typeof verifySignIn>>, TError = ErrorType<unknown>>(params: VerifySignInParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifySignIn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -290,11 +292,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type VerifySignInQueryResult = NonNullable<Awaited<ReturnType<typeof verifySignIn>>>
-export type VerifySignInQueryError = ErrorType<void>
+export type VerifySignInQueryError = ErrorType<unknown>
 
 
 
-export function useVerifySignIn<TData = Awaited<ReturnType<typeof verifySignIn>>, TError = ErrorType<void>>(
+export function useVerifySignIn<TData = Awaited<ReturnType<typeof verifySignIn>>, TError = ErrorType<unknown>>(
  params: VerifySignInParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifySignIn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -311,6 +313,74 @@ export function useVerifySignIn<TData = Awaited<ReturnType<typeof verifySignIn>>
 
 
 
+
+export const getRedeemSignInUrl = () => {
+
+
+
+
+  return `/api/auth/verify`
+}
+
+export const redeemSignIn = async (redeemSignInBody: RedeemSignInBodyOne | RedeemSignInBodyTwo, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getRedeemSignInUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: JSON.stringify(redeemSignInBody)
+  }
+);}
+
+
+
+
+
+export const getRedeemSignInMutationKey = () => ['redeemSignIn'] as const;
+
+export const getRedeemSignInMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemSignIn>>, TError,RedeemSignInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof redeemSignIn>>, TError,RedeemSignInMutationVariables, TContext> => {
+
+const mutationKey = getRedeemSignInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redeemSignIn>>, RedeemSignInMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  redeemSignIn(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RedeemSignInMutationResult = NonNullable<Awaited<ReturnType<typeof redeemSignIn>>>
+    export type RedeemSignInMutationBody = BodyType<RedeemSignInBodyOne | RedeemSignInBodyTwo>
+    export type RedeemSignInMutationError = ErrorType<void>
+    export type RedeemSignInMutationVariables = {data: BodyType<RedeemSignInBodyOne | RedeemSignInBodyTwo>}
+
+    export const useRedeemSignIn = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemSignIn>>, TError,RedeemSignInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof redeemSignIn>>,
+        TError,
+        RedeemSignInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRedeemSignInMutationOptions(options));
+    }
 
 export const getGetSessionUrl = () => {
 

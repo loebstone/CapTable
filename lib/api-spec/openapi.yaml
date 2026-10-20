@@ -35,7 +35,30 @@ paths:
       parameters:
         - {name: token, in: query, required: true, schema: {type: string}}
       responses:
-        "303": {description: Signed in and redirected}
+        "200":
+          description: Confirmation page; GET never consumes the token or creates a session
+          content:
+            text/html:
+              schema: {type: string}
+    post:
+      operationId: redeemSignIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: {type: string}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: {type: string}
+      responses:
+        "303": {description: Token consumed; signed in and redirected}
   /auth/session:
     get:
       operationId: getSession

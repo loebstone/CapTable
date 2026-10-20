@@ -26,7 +26,14 @@ export const VerifySignInQueryParams = zod.object({
   "token": zod.coerce.string()
 })
 
-export const VerifySignInResponse = zod.void()
+export const VerifySignInResponse = zod.unknown()
+
+
+export const RedeemSignInBody = zod.object({
+  "token": zod.string()
+})
+
+export const RedeemSignInResponse = zod.void()
 
 
 export const GetSessionResponse = zod.object({

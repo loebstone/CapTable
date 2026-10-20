@@ -1,5 +1,9 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { initializeOrigin } from "./lib/origin";
+
+// Fail startup closed when production has no trusted origin. Never log its value.
+initializeOrigin();
 
 const rawPort = process.env["PORT"];
 

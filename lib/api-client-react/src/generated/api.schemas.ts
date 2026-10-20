@@ -532,3 +532,11 @@ export type VerifySignInParams = {
 token: string;
 };
 
+export type RedeemSignInBodyOne = {
+  token: string;
+};
+
+export type RedeemSignInBodyTwo = {
+  token: string;
+};
+

@@ -22,17 +22,27 @@ export const yearDocumentStore = {
   },
   async seal(objectPath: string, contentType: string, size: number) {
     const source = await storage.getObjectEntityFile(objectPath);
-    const destinationPath = `/objects/year-documents/${randomUUID()}`;
-    // The sealed destination NEVER has a signed PUT URL. Reusing a staging URL
-    // cannot overwrite a document already attached to a year.
-    const privatePrefix = storage.getPrivateObjectDir().split("/").filter(Boolean).slice(1).join("/");
-    const destination = source.bucket.file(`${privatePrefix}/year-documents/${destinationPath.split("/").pop()}`);
-    await source.copy(destination, { preconditionOpts: { ifGenerationMatch: 0 }, metadata: { contentType } });
-    const [metadata] = await destination.getMetadata();
-    if (String(metadata.size) !== String(size)) throw new HttpError(400, "Uploaded file size does not match the reserved source document");
-    const [header] = await destination.download({ start: 0, end: 15 });
-    if (!contentMatches(header, contentType)) throw new HttpError(400, "Uploaded file contents do not match an allowed PDF or image type");
-    return destinationPath;
+    // Clean staging bytes only, never attached documents or append-only records.
+    try {
+      const [metadata] = await source.getMetadata();
+      const actual = BigInt(metadata.size ?? "0");
+      if (actual < 1n || actual > 20971520n) throw new HttpError(400, "Uploaded source document must be between 1 byte and 20 MiB");
+      if (actual !== BigInt(size)) throw new HttpError(400, "Uploaded file size does not match the reserved source document");
+      // Pin validation AND copying to one immutable object generation to avoid a PUT race.
+      const generation = metadata.generation;
+      if (!generation) throw new HttpError(502, "Upload generation could not be verified");
+      const pinned = source.bucket.file(source.name, { generation });
+      const [header] = await pinned.download({ start: 0, end: 15 });
+      if (!contentMatches(header, contentType)) throw new HttpError(400, "Uploaded file contents do not match an allowed PDF or image type");
+      const destinationPath = `/objects/year-documents/${randomUUID()}`;
+      const privatePrefix = storage.getPrivateObjectDir().split("/").filter(Boolean).slice(1).join("/");
+      const destination = source.bucket.file(`${privatePrefix}/year-documents/${destinationPath.split("/").pop()}`);
+      await pinned.copy(destination, { preconditionOpts: { ifGenerationMatch: 0 }, metadata: { contentType } });
+      return destinationPath;
+    } finally {
+      // No scheduled cleanup. Abandoned or later recreated staging uploads may remain.
+      await source.delete({ ignoreNotFound: true });
+    }
   },
   async getFile(objectPath: string) {
     return storage.getObjectEntityFile(objectPath);

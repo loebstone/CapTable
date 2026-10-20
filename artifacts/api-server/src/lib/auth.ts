@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm";
 import { HttpError } from "./errors";
 import { signInCheck } from "./roster";
 import { assertAccess } from "./access";
+import { publicOrigin } from "./origin";
+export { publicOrigin } from "./origin";
 
 export const COOKIE_NAME = "hwd_distributions_session";
 export type Identity = { personId: string; displayName: string; email: string; sessionId: number };
@@ -45,18 +47,14 @@ export function currentIdentity(req: Request): Identity {
   if (!req.identity) throw new HttpError(401, "Sign in required");
   return req.identity;
 }
-export function publicOrigin(req: Request): string {
-  // Host comes from the platform proxy; never use a user-provided return URL.
-  const forwarded = req.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwarded || req.get("host");
-  if (!host || !/^[a-zA-Z0-9.:[\]-]+$/.test(host)) throw new HttpError(400, "Invalid application host");
-  const proto = req.get("x-forwarded-proto")?.split(",")[0]?.trim() || req.protocol;
-  return `${proto === "https" ? "https" : "http"}://${host}`;
-}
 export const sameOrigin: RequestHandler = (req, _res, next) => {
-  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) { next(); return; }
-  const origin = req.get("origin");
-  if (origin && origin !== publicOrigin(req)) { next(new HttpError(403, "Cross-origin writes are not allowed")); return; }
-  if (req.get("sec-fetch-site") === "cross-site") { next(new HttpError(403, "Cross-site writes are not allowed")); return; }
-  next();
+  try {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) { next(); return; }
+    const expected = publicOrigin(req);
+    const origin = req.get("origin"), site = req.get("sec-fetch-site");
+    if (!origin && site !== "same-origin") throw new HttpError(403, "Write requests require same-origin browser headers");
+    if (origin && origin !== expected) throw new HttpError(403, "Cross-origin writes are not allowed");
+    if (site === "cross-site") throw new HttpError(403, "Cross-site writes are not allowed");
+    next();
+  } catch (error) { next(error); }
 };

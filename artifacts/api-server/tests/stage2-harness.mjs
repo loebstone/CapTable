@@ -9,6 +9,7 @@ import { once } from "node:events";
 import request from "supertest";
 import pino from "pino";
 import { rosterFixture } from "./roster-fixture.ts";
+import { isolateTables } from "./isolate-tables.mjs";
 
 export async function stage2Harness() {
   if (process.env.NODE_ENV === "production") throw new Error("Verification is forbidden in production");
@@ -18,6 +19,7 @@ export async function stage2Harness() {
   process.env.BOOTSTRAP_PERSON_ID = "test-bootstrap";
   delete process.env.RESEND_API_KEY;
   delete process.env.RESEND_FROM_EMAIL;
+  process.env.APP_ORIGIN = "http://hwd-verification.test";
   let holdings = structuredClone(rosterFixture);
   let calls = 0;
   const stub = createServer(async (req, res) => {
@@ -49,11 +51,15 @@ export async function stage2Harness() {
     return originalStreamWrite.call(this, line, ...args);
   };
   await client.query("BEGIN");
+  await isolateTables(client);
   let index = 0;
   const savepoints = [];
   const adapter = {
     query: async (...args) => {
       const text = (typeof args[0] === "string" ? args[0] : args[0].text).toLowerCase().trim();
+      // The outer rollback transaction otherwise holds the application's global
+      // write lock for the whole browser run and blocks real development users.
+      if (text.includes("pg_advisory_xact_lock")) return client.query("SELECT pg_advisory_xact_lock($1)", [-process.pid]);
       // Includes Drizzle's BEGIN ISOLATION LEVEL ... READ ONLY.
       if (text.startsWith("begin")) {
         const name = `stage2_${++index}`; savepoints.push(name);
@@ -74,6 +80,7 @@ export async function stage2Harness() {
   const results = [];
   const call = async (method, path, cookie, data) => {
     let req = request(app)[method](path);
+    req = req.set("Origin", process.env.APP_ORIGIN);
     if (cookie) req = req.set("Cookie", cookie);
     if (data !== undefined) req = req.send(data);
     if (path.endsWith("/file") || /\.(pdf|zip|xlsx)$/.test(path)) req = req.buffer(true).parse((res, done) => {
@@ -90,7 +97,11 @@ export async function stage2Harness() {
     expect(await call("post", "/api/auth/link", null, { email }), 200);
     assert.ok(loggedLink);
     const url = new URL(loggedLink);
-    const response = await call("get", url.pathname + url.search);
+    const landing = await call("get", url.pathname + url.search);
+    expect(landing, 200);
+    assert.equal(landing.headers["set-cookie"], undefined);
+    assert.match(landing.text, /Continue to HWD Cap Table/);
+    const response = await call("post", url.pathname, null, { token: url.searchParams.get("token") });
     expect(response, 303);
     return response.headers["set-cookie"].map((s) => s.split(";")[0]).join("; ");
   }
@@ -104,5 +115,5 @@ export async function stage2Harness() {
     await pool.end();
     console.log(JSON.stringify(results, null, 2));
   };
-  return { client, call, login, expect, record, results, finish, setHoldings: (value) => { holdings = structuredClone(value); } };
+  return { app, client, call, login, expect, record, results, finish, getLoggedLink: () => loggedLink, setHoldings: (value) => { holdings = structuredClone(value); } };
 }

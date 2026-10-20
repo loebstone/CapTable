@@ -11,6 +11,7 @@ import { once } from "node:events";
 import request from "supertest";
 import pino from "pino";
 import { rosterFixture } from "./roster-fixture.ts";
+import { isolateTables } from "./isolate-tables.mjs";
 
 if (process.env.NODE_ENV === "production") throw new Error("Verification is forbidden in production");
 process.env.NODE_ENV = "test";
@@ -19,6 +20,7 @@ process.env.DISTRIBUTIONS_SERVICE_KEY = randomBytes(32).toString("hex");
 process.env.BOOTSTRAP_PERSON_ID = "test-bootstrap";
 delete process.env.RESEND_API_KEY;
 delete process.env.RESEND_FROM_EMAIL;
+process.env.APP_ORIGIN = "http://hwd-verification.test";
 
 let currentHoldings = structuredClone(rosterFixture);
 const rosterCalls = [];
@@ -70,11 +72,13 @@ const client = await pool.connect();
 const originalConnect = pool.connect;
 const originalQuery = pool.query;
 await client.query("BEGIN");
+await isolateTables(client);
 let savepointIndex = 0;
 const savepoints = [];
 const adapter = {
   query: async (...args) => {
     const text = typeof args[0] === "string" ? args[0] : args[0].text;
+    if (text.toLowerCase().includes("pg_advisory_xact_lock")) return client.query("SELECT pg_advisory_xact_lock($1)", [-process.pid]);
     if (text.toLowerCase() === "begin") {
       const name = `verification_${++savepointIndex}`; savepoints.push(name);
       return client.query(`SAVEPOINT ${name}`);
@@ -97,6 +101,7 @@ const record = (check, evidence) => results.push({ check, result: "PASS", source
 const cookieHeader = (response) => response.headers["set-cookie"].map((value) => value.split(";")[0]).join("; ");
 const call = async (method, path, cookie, data) => {
   let req = request(app)[method](path);
+  req = req.set("Origin", process.env.APP_ORIGIN);
   if (cookie) req = req.set("Cookie", cookie);
   if (data !== undefined) req = req.send(data);
   return req;
@@ -118,7 +123,13 @@ async function login(email) {
   assert.ok(link.body.message.startsWith("Development only:"));
   assert.ok(loggedLink, "Magic link must be written to server logging sink");
   const url = new URL(loggedLink);
-  const verified = await call("get", url.pathname + url.search);
+  const before = await count("hwd_sessions");
+  const landing = await call("get", url.pathname + url.search);
+  assert.equal(landing.status, 200);
+  assert.equal(landing.headers["set-cookie"], undefined);
+  assert.equal(await count("hwd_sessions"), before);
+  assert.match(landing.text, /Continue to HWD Cap Table/);
+  const verified = await call("post", url.pathname, null, { token: url.searchParams.get("token") });
   assert.equal(verified.status, 303, JSON.stringify(verified.body));
   return { cookie: cookieHeader(verified), url };
 }
@@ -147,7 +158,7 @@ try {
   const bootstrap = await login("bootstrap@example.test");
   assert.equal(await count("access_entries"), 1);
   assert.equal((await client.query("SELECT person_id FROM access_entries")).rows[0].person_id, "test-bootstrap");
-  const replay = await call("get", bootstrap.url.pathname + bootstrap.url.search);
+  const replay = await call("post", bootstrap.url.pathname, null, { token: bootstrap.url.searchParams.get("token") });
   assert.equal(replay.status, 401);
   record("(c) Bootstrap identity restriction", "Other allowed identity -> 403 and zero access rows; verified bootstrap identity -> exactly one entry; link replay -> 401");
 
@@ -258,6 +269,7 @@ try {
 
   // Production fallback guard, still inside this test process and rollback.
   process.env.NODE_ENV = "production";
+  process.env.APP_ORIGIN = "https://hwd-verification.test";
   await new Promise((resolve) => setTimeout(resolve, 1100));
   loggedLink = undefined;
   const productionMail = await call("post", "/api/auth/link", null, { email: "bootstrap@example.test" });
@@ -265,6 +277,7 @@ try {
   assert.match(productionMail.body.error, /RESEND_API_KEY is required in production/);
   assert.equal(loggedLink, undefined);
   process.env.NODE_ENV = "test";
+  process.env.APP_ORIGIN = "http://hwd-verification.test";
   record("Production mail fallback forbidden", "NODE_ENV=production + missing RESEND_API_KEY -> 503; no logged magic link");
   const logout = await call("post", "/api/auth/logout", bootstrap.cookie);
   assert.equal(logout.status, 200);
