@@ -5,7 +5,7 @@ import {
 import { DownloadButton } from "@/components/download-button";
 
 export function YearExports({ y }: { y: YearDetail }) {
-  const final = y.status === "finalized" || y.status === "corrected";
+  const final = y.isPractice || y.status === "finalized" || y.status === "corrected";
   const n = y.holders.length;
   return (
     <section id="exports" className="space-y-3" data-testid="section-exports">
@@ -18,12 +18,12 @@ export function YearExports({ y }: { y: YearDetail }) {
         </div>
         <div className="space-y-2 bg-card p-4">
           <div className="text-sm font-medium">Accountant workbook (XLSX)</div>
-          <p className="text-xs text-muted-foreground">Paid-and-retained ledger and per-shareholder totals, for any year.</p>
-          <DownloadButton url={getDownloadLedgerUrl(y.id)} fallbackName={`ledger-${y.calendarYear}.xlsx`} testId="button-download-ledger">Workbook</DownloadButton>
+          <p className="text-xs text-muted-foreground">{y.isPractice ? "Practice ledger and per-shareholder totals, at any stage." : final ? "Paid-and-retained ledger and per-shareholder totals." : "The workbook is available after finalization."}</p>
+          {final && <DownloadButton url={getDownloadLedgerUrl(y.id)} fallbackName={`ledger-${y.calendarYear}.xlsx`} testId="button-download-ledger">Workbook</DownloadButton>}
         </div>
         <div className="space-y-2 bg-card p-4">
           <div className="text-sm font-medium">All statements (ZIP)</div>
-          <p className="text-xs text-muted-foreground">{final ? `One PDF per holder, ${n} in all. This can take a little while.` : "Shareholder statements are available only after the year is finalized."}</p>
+          <p className="text-xs text-muted-foreground">{final ? `${y.isPractice ? "Practice previews at any stage. " : ""}One PDF per holder, ${n} in all. This can take a little while.` : "Shareholder statements are available only after the year is finalized."}</p>
           {final && <DownloadButton url={getDownloadStatementsZipUrl(y.id)} fallbackName={`statements-${y.calendarYear}.zip`} busyLabel={`Building ${n} statements…`} testId="button-download-statements-zip">All statements</DownloadButton>}
         </div>
       </div>

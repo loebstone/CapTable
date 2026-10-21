@@ -51,7 +51,7 @@ router.get("/years/:id/reports/board.pdf", async (req, res): Promise<void> => {
 });
 router.get("/years/:id/reports/ledger.xlsx", async (req, res): Promise<void> => {
   const { id } = DownloadLedgerParams.parse(req.params);
-  const context = await reportContext(id);
+  const context = await reportContext(id); finalized(context, "ledger");
   await sendReport(req, res, reportFilename(context, "ledger"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", await ledgerWorkbook(context));
 });
 export default router;

@@ -64,12 +64,15 @@ try {
   const forsterBefore = fixture.detail.holders.find((p) => p.displayName === "Forster Nancy Anne");
   const draftStatement = await call("get", `${base}/reports/statement/${forsterBefore.personId}.pdf`, cookie);
   assert.equal(draftStatement.status, 409);
+  assert.equal(JSON.parse(draftStatement.body.toString("utf8")).error, "Shareholder statements require a finalized year");
   const draftZip = await call("get", `${base}/reports/statements.zip`, cookie);
   assert.equal(draftZip.status, 409);
+  const draftLedger = await call("get", `${base}/reports/ledger.xlsx`, cookie);
+  assert.equal(draftLedger.status, 409);
   const draftBoard = await call("get", `${base}/reports/board.pdf`, cookie);
   assert.equal(draftBoard.status, 200);
   assert.equal((await inspectPdf(draftBoard.body)).pages, 1);
-  record("Open-year export rules", "Draft board PDF -> 200 / one page; draft individual statement and ZIP -> 409");
+  record("Open-year export rules", "Real draft board PDF -> 200 / one page; real draft individual statement, ZIP and ledger XLSX -> 409; statement refusal message unchanged");
 
   const detail = await fixture.finalizeWithLedger();
   const forster = detail.holders.find((p) => p.displayName === "Forster Nancy Anne");

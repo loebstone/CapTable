@@ -19,8 +19,9 @@ export async function reportContext(id: number) {
     };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
-export function finalized(context: ReportContext) {
-  if (context.year.status === "draft") throw new HttpError(409, "Shareholder statements require a finalized year");
+export function finalized(context: ReportContext, kind: "statements" | "ledger" = "statements") {
+  if (context.year.status === "draft" && !context.year.isPractice) throw new HttpError(409,
+    kind === "statements" ? "Shareholder statements require a finalized year" : "Ledger exports require a finalized year");
 }
 export function reportHolder(context: ReportContext, personId: string) {
   const holder = context.year.holders.find((h) => h.personId === personId);

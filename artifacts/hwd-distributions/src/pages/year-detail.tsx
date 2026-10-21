@@ -92,7 +92,7 @@ export default function YearDetailPage() {
       </div>
 
       <Holders y={y} onAction={setModal} />
-      {!draft && <Ledger y={y} onReverse={(entry) => setModal({ k: "reverse", entry })} />}
+      {(!draft || y.isPractice) && <Ledger y={y} onReverse={(entry) => setModal({ k: "reverse", entry })} />}
       <YearExports y={y} />
       <History y={y} />
 
@@ -274,11 +274,12 @@ function statusTag(h: YearHolder) {
 }
 
 function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void }) {
-  const ledger = y.status !== "draft";
+  const ledger = y.isPractice || y.status !== "draft";
   const t = y.totals;
   return (
     <section className="rise rise-d3 space-y-3">
       <SectionTitle right={<div className="num flex gap-3 text-xs text-muted-foreground"><span>on hold: {t.heldCount}</span><span>paid in full: {t.completeCount}</span><span>to pay: {t.openCount}</span></div>}>Holders</SectionTitle>
+      {y.isPractice && y.status === "draft" && <p className="text-xs text-muted-foreground">Practice payments and APIC entries are available before finalization once a per-share amount is declared. Holds can be changed now.</p>}
       {y.holders.length === 0 ? <Empty title="No holders in this snapshot." /> : (
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <table className="w-full min-w-[1180px] text-sm" data-testid="table-year-holders">
@@ -311,8 +312,8 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
                     <div data-testid={`text-instruction-${h.personId}`}>{statusTag(h)}</div>
                     {ledger && (
                       <div className="flex justify-end gap-0.5">
-                         <IconBtn title="Record cash payment" disabled={h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "cash" })} test={`button-pay-${h.personId}`}><Banknote className="h-4 w-4" /></IconBtn>
-                         <IconBtn title="Record APIC retained" disabled={h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "apic" })} test={`button-apic-${h.personId}`}><Landmark className="h-4 w-4" /></IconBtn>
+                         <IconBtn title={h.nominalCents === null ? "Declare a per-share amount before recording payments" : "Record cash payment"} disabled={h.nominalCents === null || h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "cash" })} test={`button-pay-${h.personId}`}><Banknote className="h-4 w-4" /></IconBtn>
+                         <IconBtn title={h.nominalCents === null ? "Declare a per-share amount before recording APIC" : "Record APIC retained"} disabled={h.nominalCents === null || h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "apic" })} test={`button-apic-${h.personId}`}><Landmark className="h-4 w-4" /></IconBtn>
                         <IconBtn title={h.isOnHold ? "Remove hold" : "Put on hold"} onClick={() => onAction({ k: "hold", holder: h })} test={`button-hold-${h.personId}`}><Hand className={cn("h-4 w-4", h.isOnHold && "text-[hsl(30_60%_38%)]")} /></IconBtn>
                       </div>
                     )}

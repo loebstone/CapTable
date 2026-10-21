@@ -33,12 +33,17 @@ function valueRow(label: string, value: string, strong = false) {
 }
 export function statementHtml(context: ReportContext, holder: ReportHolder) {
   const year = context.year;
-  const c = year.calculation!;
-  const numerator = BigInt(c.netProfitCents) * shareUnits(holder.shares);
+  const c = year.calculation;
+  const draftPractice = year.isPractice && year.status === "draft";
+  const undeclared = draftPractice && year.declaredPerShareCents === null;
+  const numerator = c ? BigInt(c.netProfitCents) * shareUnits(holder.shares) : null;
   const denominator = 4000000n * 10000n;
-  const federal = rounded(numerator * rateUnits(c.federalRate), denominator);
-  const state = rounded(numerator * rateUnits(holder.stateRate!), denominator);
-  const rounding = BigInt(holder.estimatedTaxCents!) - federal - state;
+  const federal = numerator === null || !c ? null : rounded(numerator * rateUnits(c.federalRate), denominator);
+  const state = numerator === null || holder.stateRate === null ? null : rounded(numerator * rateUnits(holder.stateRate), denominator);
+  const rounding = holder.estimatedTaxCents === null || federal === null || state === null ? null : BigInt(holder.estimatedTaxCents) - federal - state;
+  const proposedPerShare = c?.proposedPerShareCents ?? null;
+  const proposedDistribution = proposedPerShare === null ? null : rounded(BigInt(proposedPerShare) * shareUnits(holder.shares), 10000n);
+  const proposedSurplus = proposedDistribution === null || holder.estimatedTaxCents === null ? null : proposedDistribution - BigInt(holder.estimatedTaxCents);
   // Privacy boundary: render only this holder's records. Do not render free-text
   // ledger/hold/correction notes or methods that could name a different person.
   const entries = year.payments.filter((e) => e.personId === holder.personId);
@@ -48,23 +53,24 @@ export function statementHtml(context: ReportContext, holder: ReportHolder) {
   const body = `<header><div class="eyebrow">Shareholder distribution statement · ${year.calendarYear}</div>
     <h1>${ISSUER}</h1><p>Timber revenue distribution for ${year.calendarYear}</p></header>
     <div class="sub"><div><h2>${html(holder.displayName)}</h2><p>Class ${html(holder.shareClass)} · ${html(holder.shares)} shares</p></div>
-    <div class="right muted"><p>Statement as of ${html(context.generatedAt.slice(0, 10))} (UTC)</p><p>${year.status === "corrected" ? "Includes recorded corrections" : "Finalized distribution record"}</p></div></div>
-    <div class="box">Your distribution <strong class="hero amount">${html(dollars(holder.nominalCents))}</strong>
-    <p>This is the amount declared for your shares, before accounting for cash already paid or amounts you directed the Corporation to retain.</p></div>
+    <div class="right muted"><p>Statement as of ${html(context.generatedAt.slice(0, 10))} (UTC)</p><p>${draftPractice ? "Proposed practice preview — not finalized" : year.status === "corrected" ? "Includes recorded corrections" : "Finalized distribution record"}</p></div></div>
+    <div class="box">Your distribution <strong class="hero amount">${html(undeclared ? "not yet declared" : dollars(holder.nominalCents))}</strong>
+    <p>${undeclared ? "No distribution has been declared. Proposed amounts below are for practice only." : "This is the amount declared for your shares, before accounting for cash already paid or amounts you directed the Corporation to retain."}</p></div>
     <div class="grid"><section><h2>How your amount was determined</h2><table>
-    ${valueRow("Net timbering profit for the year", dollars(c.netProfitCents))}
-    ${valueRow("Declared amount per share", dollars(year.declaredPerShareCents))}
+    ${valueRow("Net timbering profit for the year", dollars(c?.netProfitCents ?? null))}
+    ${valueRow("Declared amount per share", undeclared ? "not yet declared" : dollars(year.declaredPerShareCents))}
+    ${undeclared ? valueRow("Proposed amount per share", dollars(proposedPerShare)) + valueRow("Proposed distribution for your shares", dollars(proposedDistribution)) : ""}
     ${valueRow("Declaration date", dateLabel(year.declarationDate))}
     ${valueRow("Your shares", holder.shares)}
     ${valueRow("Allocated profit", dollars(holder.shareOfGainCents))}
-    ${valueRow("Distribution", dollars(holder.nominalCents), true)}</table></section>
-    <section><h2>Your estimated tax</h2><table>
-    ${valueRow(`Federal tax at ${percent(c.federalRate)}`, dollars(federal))}
-    ${valueRow(`State tax: ${holder.stateCode} at ${percent(holder.stateRate)}`, dollars(state))}
-    ${rounding === 0n ? "" : valueRow("Cent rounding adjustment", dollars(rounding))}
-    ${valueRow("Estimated tax", dollars(holder.estimatedTaxCents), true)}
-    ${valueRow("Surplus/Deficit", dollars(holder.surplusCents))}</table>
-    <p class="muted">Estimated from your share of the year's net timbering profit, using the rates recorded for this finalized year.</p></section></div>
+    ${valueRow("Distribution", undeclared ? "not yet declared" : dollars(holder.nominalCents), true)}</table></section>
+    <section><h2>Your estimated tax${draftPractice ? " (proposed)" : ""}</h2><table>
+    ${valueRow(c ? `Federal tax at ${percent(c.federalRate)}` : "Federal tax (awaiting figures)", dollars(federal))}
+    ${valueRow(`State tax: ${holder.stateCode ?? "missing"} at ${percent(holder.stateRate)}`, dollars(state))}
+    ${rounding === null || rounding === 0n ? "" : valueRow("Cent rounding adjustment", dollars(rounding))}
+    ${valueRow(draftPractice ? "Estimated tax (proposed)" : "Estimated tax", dollars(holder.estimatedTaxCents), true)}
+    ${valueRow(undeclared ? "Surplus/Deficit (proposed)" : "Surplus/Deficit", dollars(undeclared ? proposedSurplus : holder.surplusCents))}</table>
+    <p class="muted">Estimated from your share of the year's net timbering profit, using ${draftPractice ? "proposed practice inputs, not finalized figures. Missing amounts are not recorded, not zero" : "the rates recorded for this finalized year"}.</p></section></div>
     <p class="caveat">${TAX_CAVEAT}</p>
     <h2>Paid and APIC retained</h2>
     ${holder.isOnHold ? '<p>Your distribution is being held pending resolution; the Corporation will be in touch.</p>' : `

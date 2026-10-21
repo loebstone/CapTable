@@ -91,7 +91,9 @@ router.post("/years/:id/declaration", async (req, res): Promise<void> => {
       yearId: id, declaredPerShareCents: BigInt(data.declaredPerShareCents),
       declarationDate: calendarDate(data.declarationDate), note: requiredNote(data.note), createdBy: actor,
     });
-    return yearDetail(tx, id);
+    const detail = await yearDetail(tx, id);
+    if (detail.holders.some((h) => h.remainingCents !== null && BigInt(h.remainingCents) < 0n)) throw new HttpError(409, "Declaration would reduce a distribution below its Paid plus APIC retained total; reverse entries first");
+    return detail;
   });
   res.status(201).json(GetYearResponse.parse(result));
 });

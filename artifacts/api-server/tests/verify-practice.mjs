@@ -13,13 +13,14 @@ import { finalizedFixture } from "./stage3-fixture.mjs";
 const h = await stage2Harness();
 const { call, expect, client, record, results } = h;
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jA1sAAAAASUVORK5CYII=", "base64");
-async function watermarked(bytes, expectedSource) {
+async function watermarked(bytes, expectedSource, expectedText = []) {
   const task = getDocument({ data: new Uint8Array(bytes), useSystemFonts: true });
   const pdf = await task.promise;
   try {
     for (let page = 1; page <= pdf.numPages; page++) {
       const text = (await (await pdf.getPage(page)).getTextContent()).items.filter((x) => "str" in x).map((x) => x.str).join(" ").replace(/\s+/g, " ");
       assert.ok(text.includes("PRACTICE — NOT A STATEMENT"), `Missing text-layer watermark on page ${page}`);
+      for (const expected of expectedText) assert.ok(text.includes(expected), `Practice PDF missing ${expected}: ${text}`);
       if (expectedSource) assert.ok(text.split(expectedSource).length - 1 >= 2, "Gross and cost must both show the practice source label");
     }
     return pdf.numPages;
@@ -79,6 +80,14 @@ try {
   record("Optional practice sources / required real sources", { practiceOmitted: 201, practiceExplicitNull: 201, practiceGrossAndCostReferences: null, realMissingGrossOrCost: 400, spoofedPracticeFlag: 400, existingMessagePreserved: true, rejectedRealWrites: 0, providedCrossYearReference: 400 });
   expect(await call("post", `${realBase}/figures`, cookie, { grossCents: "11000000", grossDocumentId: realDocument.id, costs: [{ label: "Zero", amountCents: "0", documentId: realDocument.id }], note: "STUB real figures must survive" }), 201);
   expect(await call("post", `${realBase}/declaration`, cookie, { declaredPerShareCents: "7783", declarationDate: "2026-10-20", note: "STUB real declaration" }), 201);
+  const practiceHolder = fixture.detail.holders.find((x) => x.displayName === "Forster Nancy Anne");
+  const realStatement = expect(await call("get", `${realBase}/reports/statement/${practiceHolder.personId}.pdf?isPractice=true`, cookie), 409);
+  assert.equal(realStatement.error, "Shareholder statements require a finalized year");
+  expect(await call("get", `${realBase}/reports/statements.zip`, cookie), 409);
+  expect(await call("get", `${realBase}/reports/ledger.xlsx`, cookie), 409);
+  const draftEntry = { personId: practiceHolder.personId, kind: "cash", amountCents: "100", date: "2026-10-20", method: "STUB draft payment" };
+  expect(await call("post", `${realBase}/payments`, cookie, { ...draftEntry, isPractice: true }), 409);
+  record("Real draft guards", { statementHTTP: 409, existingStatementMessage: realStatement.error, zipHTTP: 409, ledgerHTTP: 409, spoofedPracticePaymentHTTP: 409 });
   const realFinal = expect(await call("post", `${realBase}/finalize`, cookie, { note: "STUB real finalization" }), 201);
   const realFile = await yearDocumentStore.getFile((await client.query("SELECT object_path FROM year_documents WHERE id=$1", [realDocument.id])).rows[0].object_path);
   const realList = expect(await call("get", "/api/years", cookie), 200);
@@ -88,6 +97,53 @@ try {
   assert.ok(practiceList.every((y) => y.isPractice));
   assert.ok(!realList.some((y) => y.isPractice || y.id === practiceId || y.id === extra.id));
   record("Creation and isolation", { sameCalendarYear: 2026, realYears: realList.length, practiceYears: practiceList.length, sharedSnapshot: snapshotId, duplicateReal: 409 });
+  // Use a dedicated fresh year: the earlier practice fixture already contains
+  // source-validation figures even though it has no declaration.
+  const earlyYear = expect(await call("post", "/api/years", cookie, { calendarYear: 2026, isPractice: true, snapshotId, note: "STUB genuinely empty preview year" }), 201);
+  assert.equal(earlyYear.figures, null); assert.equal(earlyYear.declaredPerShareCents, null);
+  const earlyBase = `/api/years/${earlyYear.id}`;
+  const earlyStatementPath = `${earlyBase}/reports/statement/${practiceHolder.personId}.pdf`;
+  const emptyStatement = await call("get", earlyStatementPath, cookie);
+  expect(emptyStatement, 200);
+  assert.equal(await watermarked(emptyStatement.body, null, ["not yet declared", "Estimated tax (proposed)", "Not recorded"]), 1);
+  const emptyBoard = await call("get", `${earlyBase}/reports/board.pdf`, cookie);
+  expect(emptyBoard, 200); assert.equal(await watermarked(emptyBoard.body), 1);
+  const emptyLedger = await call("get", `${earlyBase}/reports/ledger.xlsx`, cookie);
+  expect(emptyLedger, 200);
+  const emptyBook = new ExcelJS.Workbook(); await emptyBook.xlsx.load(emptyLedger.body);
+  for (const sheet of emptyBook.worksheets) assert.equal(sheet.getCell("A1").value, "PRACTICE");
+  let emptyForsterFound = false;
+  emptyBook.getWorksheet("Shareholder summary").eachRow((row) => {
+    if (row.getCell(1).value === practiceHolder.displayName) {
+      emptyForsterFound = true;
+      for (const column of [4, 11, 12, 13]) assert.equal(row.getCell(column).value, null);
+    }
+  });
+  assert.equal(emptyForsterFound, true);
+  expect(await call("post", `${earlyBase}/payments`, cookie, draftEntry), 409);
+  expect(await call("post", `${earlyBase}/figures`, cookie, noDocuments), 201);
+  const undeclaredStatement = await call("get", earlyStatementPath, cookie);
+  expect(undeclaredStatement, 200);
+  assert.equal(await watermarked(undeclaredStatement.body, null, ["not yet declared", "Proposed amount per share", "$77.83", "$1,556.60", "Estimated tax (proposed)", "$1,100.00"]), 1);
+  const earlyZip = await call("get", `${earlyBase}/reports/statements.zip`, cookie);
+  expect(earlyZip, 200); assert.match(earlyZip.headers["content-disposition"], /_Practice_Statements_/);
+  const earlyFiles = Object.values((await JSZip.loadAsync(earlyZip.body)).files).filter((f) => !f.dir);
+  assert.equal(earlyFiles.length, 47);
+  for (const file of earlyFiles) assert.equal(await watermarked(await file.async("nodebuffer"), null, ["not yet declared"]), 1);
+  expect(await call("post", `${earlyBase}/declaration`, cookie, { declaredPerShareCents: "7783", declarationDate: "2026-10-20", note: "STUB draft practice declaration" }), 201);
+  let early = expect(await call("post", `${earlyBase}/payments`, cookie, { ...draftEntry, amountCents: "10000" }), 201);
+  const earlyCash = early.payments[0];
+  early = expect(await call("post", `${earlyBase}/payments`, cookie, { ...draftEntry, kind: "apic", amountCents: "5000" }), 201);
+  assert.equal(early.status, "draft"); assert.equal(early.finalizedAt, null);
+  const afterEarlyEntries = await auditCount();
+  expect(await call("post", `${earlyBase}/declaration`, cookie, { declaredPerShareCents: "1", declarationDate: "2026-10-20", note: "STUB cannot undercut recorded practice payments" }), 409);
+  assert.equal(await auditCount(), afterEarlyEntries);
+  const withEarlyPayments = await call("get", earlyStatementPath, cookie);
+  expect(withEarlyPayments, 200); assert.equal(await watermarked(withEarlyPayments.body, null, ["$100.00", "$50.00"]), 1);
+  expect(await call("post", `${earlyBase}/holds`, cookie, { personId: practiceHolder.personId, held: true, note: "STUB draft practice hold" }), 201);
+  expect(await call("post", `${earlyBase}/payments`, cookie, draftEntry), 409);
+  expect(await call("post", `${earlyBase}/reversals`, cookie, { entryId: earlyCash.id, date: "2026-10-20", note: "STUB reverse draft practice payment" }), 201);
+  record("Practice exports and ledger before finalization", { freshStatementBoardAndWorkbookHTTP: 200, undeclaredStatementHTTP: 200, proposedPerShare: "$77.83", proposedDistribution: "$1,556.60", proposedEstimatedTax: "$1,100.00", undeclaredZipPdfs: earlyFiles.length, everyPdfOnePageAndWatermarked: true, xlsxBanners: emptyBook.worksheets.length, draftCashApicHoldAndReversalHTTP: 201, declarationBelowPaymentsHTTP: 409, realYearFlagSpoofRefused: true });
   // Same Class check and rate requirement as real years.
   await client.query("SAVEPOINT bad_snapshot");
   await client.query("UPDATE snapshot_rows SET shares=shares-1 WHERE id=(SELECT id FROM snapshot_rows WHERE snapshot_id=$1 AND share_class='C' LIMIT 1)", [snapshotId]);
@@ -146,7 +202,9 @@ try {
   assert.equal(Number((await client.query("SELECT count(*) AS n FROM snapshot_rows WHERE snapshot_id=$1", [snapshotId])).rows[0].n), 47);
   for (const file of existingFiles) assert.equal((await file.exists())[0], false);
   expect(await call("get", `${base}/documents/${fixture.source.id}/file`, cookie), 400);
-  expect(await call("get", `${base}/reports/statement/${holder.personId}.pdf`, cookie), 409);
+  const resetStatement = await call("get", `${base}/reports/statement/${holder.personId}.pdf`, cookie);
+  assert.equal(resetStatement.status, 200);
+  assert.equal(await watermarked(resetStatement.body, null, ["not yet declared"]), 1);
   assert.equal(Number((await client.query("SELECT count(*) AS n FROM audit_log")).rows[0].n), auditBefore + 1);
   const audit = (await client.query("SELECT actor, occurred_at, operation FROM audit_log ORDER BY id DESC LIMIT 1")).rows[0];
   const reset = JSON.parse(audit.operation);

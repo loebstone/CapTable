@@ -31,6 +31,11 @@ export async function requireFinalized(database: Database, yearId: number) {
   if (!row) throw new HttpError(409, "Finalize this year before recording corrections, payments or holds");
   return row;
 }
+export async function requireLedgerYear(database: Database, yearId: number) {
+  const year = await requireYear(database, yearId);
+  if (!year.isPractice) await requireFinalized(database, yearId);
+  return year;
+}
 export async function requireDocument(database: Database, yearId: number, documentId: number | null | undefined) {
   if (documentId == null) throw new HttpError(400, "Every figure must reference an uploaded source document attached to this year");
   const [document] = await database.select().from(yearDocuments).where(eq(yearDocuments.id, documentId)).limit(1);
