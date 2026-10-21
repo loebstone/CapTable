@@ -17,6 +17,5 @@ export interface YearFiguresInput {
   grossDocumentId?: number | null;
   /** @maxItems 100 */
   costs: CostLineInput[];
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }

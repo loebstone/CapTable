@@ -6,11 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 export interface NoteInput {
-  /**
-     * @minLength 1
-     * @maxLength 5000
-     */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }
 
 export interface YearInput {
@@ -22,8 +19,7 @@ export interface YearInput {
   isPractice?: boolean;
   /** @minimum 1 */
   snapshotId: number;
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }
 
 export type PracticeResetInputConfirmation = typeof PracticeResetInputConfirmation[keyof typeof PracticeResetInputConfirmation];
@@ -57,11 +53,8 @@ export interface YearSummary {
 }
 
 export interface CostLineInput {
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  label: string;
+  /** @maxLength 200 */
+  label?: string;
   /** @pattern ^\d{1,15}$ */
   amountCents: string;
   /**
@@ -81,8 +74,7 @@ export interface YearFiguresInput {
   grossDocumentId?: number | null;
   /** @maxItems 100 */
   costs: CostLineInput[];
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }
 
 export type YearFiguresCostsItem = {
@@ -105,8 +97,7 @@ export interface DeclarationInput {
   declaredPerShareCents: string;
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
   declarationDate: string;
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }
 
 export type YearCorrectionInputKind = typeof YearCorrectionInputKind[keyof typeof YearCorrectionInputKind];
@@ -133,11 +124,8 @@ export interface YearCorrectionInput {
      * @pattern ^\d{4}-\d{2}-\d{2}$
      */
   declarationDate?: string | null;
-  /**
-     * @minLength 1
-     * @maxLength 5000
-     */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }
 
 export type PaymentInputKind = typeof PaymentInputKind[keyof typeof PaymentInputKind];
@@ -167,22 +155,16 @@ export interface ReversalInput {
   entryId: number;
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
   date: string;
-  /**
-     * @minLength 1
-     * @maxLength 5000
-     */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }
 
 export interface HoldInput {
   /** @minLength 1 */
   personId: string;
   held: boolean;
-  /**
-     * @minLength 1
-     * @maxLength 5000
-     */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }
 
 export type DocumentUploadInputContentType = typeof DocumentUploadInputContentType[keyof typeof DocumentUploadInputContentType];
@@ -445,8 +427,7 @@ export interface HoldingsResult {
 
 export interface SnapshotInput {
   fetchId: number;
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }
 
 export interface Snapshot {
@@ -516,8 +497,7 @@ export interface StateRate {
   stateCode: string;
   /** @pattern ^(0\.\d{4}|1\.0000)$ */
   rate: string;
-  /** @minLength 1 */
-  sourceNote: string;
+  sourceNote?: string;
 }
 
 export interface RateInput {
@@ -528,11 +508,9 @@ export interface RateInput {
   taxYear: number;
   /** @pattern ^(0\.\d{4}|1\.0000)$ */
   federalRate: string;
-  /** @minLength 1 */
-  federalSourceNote: string;
+  federalSourceNote?: string;
   states: StateRate[];
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }
 
 export interface RateCopyInput {
@@ -546,8 +524,7 @@ export interface RateCopyInput {
      * @maximum 9999
      */
   toYear: number;
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }
 
 export type RateTable = RateInput & {
@@ -622,14 +599,14 @@ export interface RateCsvResult {
 
 export interface AccessInput {
   email: string;
-  /** @minLength 1 */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }
 
 export interface AccessRemovalInput {
   personId: string;
-  /** @minLength 1 */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }
 
 export interface AccessEntry {

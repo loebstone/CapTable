@@ -7,9 +7,6 @@
  */
 
 export interface NoteInput {
-  /**
-     * @minLength 1
-     * @maxLength 5000
-     */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }

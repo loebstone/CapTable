@@ -23,7 +23,7 @@ export default function AccessPage() {
 
   const list = [...(q.data ?? [])].sort((a, b) => Number(!!a.removedAt) - Number(!!b.removedAt) || a.displayName.localeCompare(b.displayName));
   const active = list.filter((a) => !a.removedAt);
-  const valid = /^\S+@\S+\.\S+$/.test(email.trim()) && note.trim();
+  const valid = /^\S+@\S+\.\S+$/.test(email.trim());
 
   return (
     <div className="space-y-8">
@@ -34,8 +34,8 @@ export default function AccessPage() {
 
       <form className="rise grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-[1fr_1.4fr_auto] md:items-end" onSubmit={(e) => { e.preventDefault(); if (valid) add.mutate({ data: { email: email.trim(), note: note.trim() } }); }}>
         <Field label="Email"><input type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} data-testid="input-access-email" /></Field>
-        <Field label="Note (required)"><input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why access is being given" data-testid="input-access-note" /></Field>
-        <Btn type="submit" disabled={!valid || add.isPending} data-testid="button-add-access"><UserPlus className="h-4 w-4" /> {add.isPending ? "Adding…" : "Add"}</Btn>
+        <Field label="Note (optional)"><input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional context" data-testid="input-access-note" /></Field>
+        <Btn type="submit" disabled={!valid || add.isPending} disabledReason={add.isPending ? "Adding access; please wait." : "Enter a valid email address."} data-testid="button-add-access"><UserPlus className="h-4 w-4" /> {add.isPending ? "Adding…" : "Add"}</Btn>
         {add.isError && <div className="text-xs text-destructive md:col-span-3">{errMessage(add.error)}</div>}
       </form>
 
@@ -70,16 +70,16 @@ function RemoveForm({ entry, onDone, onSuccess }: { entry: AccessEntry; onDone: 
   const { toast } = useToast();
   const rm = useRemoveAccess({ mutation: { onSuccess: () => { onSuccess(); toast({ title: "Access removed", description: entry.displayName }); onDone(); } } });
   return (
-    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (note.trim()) rm.mutate({ data: { personId: entry.personId, note: note.trim() } }); }}>
+    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (!rm.isPending) rm.mutate({ data: { personId: entry.personId, note: note.trim() } }); }}>
       <DialogHeader>
         <DialogTitle className="font-display text-2xl font-normal">Remove {entry.displayName}?</DialogTitle>
         <DialogDescription>They will no longer be able to sign in. The entry stays on record with its removal date.</DialogDescription>
       </DialogHeader>
-      <Field label="Note (required)"><textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-remove-note" /></Field>
+      <Field label="Note (optional)"><textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-remove-note" /></Field>
       {rm.isError && <div className="text-xs text-destructive">{errMessage(rm.error)}</div>}
       <div className="flex justify-end gap-2">
         <Btn type="button" variant="quiet" onClick={onDone}>Cancel</Btn>
-        <Btn type="submit" variant="danger" disabled={!note.trim() || rm.isPending} data-testid="button-confirm-remove">{rm.isPending ? "Removing…" : "Remove access"}</Btn>
+        <Btn type="submit" variant="danger" disabled={rm.isPending} data-testid="button-confirm-remove">{rm.isPending ? "Removing…" : "Remove access"}</Btn>
       </div>
     </form>
   );

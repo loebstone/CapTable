@@ -115,12 +115,11 @@ export const ListSnapshotsResponseItem = zod.object({
 export const ListSnapshotsResponse = zod.array(ListSnapshotsResponseItem)
 
 
-
-
+export const takeSnapshotBodyNoteDefault = ``;
 
 export const TakeSnapshotBody = zod.object({
   "fetchId": zod.number().int(),
-  "note": zod.string().min(1)
+  "note": zod.string().default(takeSnapshotBodyNoteDefault)
 })
 
 export const TakeSnapshotResponse = zod.object({
@@ -231,23 +230,22 @@ export const listRatesResponseOneTaxYearMin = 1900;
 export const listRatesResponseOneTaxYearMax = 9999;
 
 export const listRatesResponseOneFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
+export const listRatesResponseOneFederalSourceNoteDefault = ``;
 export const listRatesResponseOneStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const listRatesResponseOneStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
-
-
+export const listRatesResponseOneStatesItemSourceNoteDefault = ``;
+export const listRatesResponseOneNoteDefault = ``;
 
 export const ListRatesResponseItem = zod.object({
   "taxYear": zod.number().int().min(listRatesResponseOneTaxYearMin).max(listRatesResponseOneTaxYearMax),
   "federalRate": zod.string().regex(listRatesResponseOneFederalRateRegExp),
-  "federalSourceNote": zod.string().min(1),
+  "federalSourceNote": zod.string().default(listRatesResponseOneFederalSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(listRatesResponseOneStatesItemStateCodeRegExp),
   "rate": zod.string().regex(listRatesResponseOneStatesItemRateRegExp),
-  "sourceNote": zod.string().min(1)
+  "sourceNote": zod.string().default(listRatesResponseOneStatesItemSourceNoteDefault)
 })),
-  "note": zod.string().min(1)
+  "note": zod.string().default(listRatesResponseOneNoteDefault)
 }).and(zod.object({
   "id": zod.number().int(),
   "createdAt": zod.string(),
@@ -260,46 +258,44 @@ export const saveRatesBodyTaxYearMin = 1900;
 export const saveRatesBodyTaxYearMax = 9999;
 
 export const saveRatesBodyFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
+export const saveRatesBodyFederalSourceNoteDefault = ``;
 export const saveRatesBodyStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const saveRatesBodyStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
-
-
+export const saveRatesBodyStatesItemSourceNoteDefault = ``;
+export const saveRatesBodyNoteDefault = ``;
 
 export const SaveRatesBody = zod.object({
   "taxYear": zod.number().int().min(saveRatesBodyTaxYearMin).max(saveRatesBodyTaxYearMax),
   "federalRate": zod.string().regex(saveRatesBodyFederalRateRegExp),
-  "federalSourceNote": zod.string().min(1),
+  "federalSourceNote": zod.string().default(saveRatesBodyFederalSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(saveRatesBodyStatesItemStateCodeRegExp),
   "rate": zod.string().regex(saveRatesBodyStatesItemRateRegExp),
-  "sourceNote": zod.string().min(1)
+  "sourceNote": zod.string().default(saveRatesBodyStatesItemSourceNoteDefault)
 })),
-  "note": zod.string().min(1)
+  "note": zod.string().default(saveRatesBodyNoteDefault)
 })
 
 export const saveRatesResponseOneTaxYearMin = 1900;
 export const saveRatesResponseOneTaxYearMax = 9999;
 
 export const saveRatesResponseOneFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
+export const saveRatesResponseOneFederalSourceNoteDefault = ``;
 export const saveRatesResponseOneStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const saveRatesResponseOneStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
-
-
+export const saveRatesResponseOneStatesItemSourceNoteDefault = ``;
+export const saveRatesResponseOneNoteDefault = ``;
 
 export const SaveRatesResponse = zod.object({
   "taxYear": zod.number().int().min(saveRatesResponseOneTaxYearMin).max(saveRatesResponseOneTaxYearMax),
   "federalRate": zod.string().regex(saveRatesResponseOneFederalRateRegExp),
-  "federalSourceNote": zod.string().min(1),
+  "federalSourceNote": zod.string().default(saveRatesResponseOneFederalSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(saveRatesResponseOneStatesItemStateCodeRegExp),
   "rate": zod.string().regex(saveRatesResponseOneStatesItemRateRegExp),
-  "sourceNote": zod.string().min(1)
+  "sourceNote": zod.string().default(saveRatesResponseOneStatesItemSourceNoteDefault)
 })),
-  "note": zod.string().min(1)
+  "note": zod.string().default(saveRatesResponseOneNoteDefault)
 }).and(zod.object({
   "id": zod.number().int(),
   "createdAt": zod.string(),
@@ -313,36 +309,34 @@ export const copyRatesBodyFromYearMax = 9999;
 export const copyRatesBodyToYearMin = 1900;
 export const copyRatesBodyToYearMax = 9999;
 
-
-
+export const copyRatesBodyNoteDefault = ``;
 
 export const CopyRatesBody = zod.object({
   "fromYear": zod.number().int().min(copyRatesBodyFromYearMin).max(copyRatesBodyFromYearMax),
   "toYear": zod.number().int().min(copyRatesBodyToYearMin).max(copyRatesBodyToYearMax),
-  "note": zod.string().min(1)
+  "note": zod.string().default(copyRatesBodyNoteDefault)
 })
 
 export const copyRatesResponseOneTaxYearMin = 1900;
 export const copyRatesResponseOneTaxYearMax = 9999;
 
 export const copyRatesResponseOneFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
+export const copyRatesResponseOneFederalSourceNoteDefault = ``;
 export const copyRatesResponseOneStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const copyRatesResponseOneStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
-
-
-
+export const copyRatesResponseOneStatesItemSourceNoteDefault = ``;
+export const copyRatesResponseOneNoteDefault = ``;
 
 export const CopyRatesResponse = zod.object({
   "taxYear": zod.number().int().min(copyRatesResponseOneTaxYearMin).max(copyRatesResponseOneTaxYearMax),
   "federalRate": zod.string().regex(copyRatesResponseOneFederalRateRegExp),
-  "federalSourceNote": zod.string().min(1),
+  "federalSourceNote": zod.string().default(copyRatesResponseOneFederalSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(copyRatesResponseOneStatesItemStateCodeRegExp),
   "rate": zod.string().regex(copyRatesResponseOneStatesItemRateRegExp),
-  "sourceNote": zod.string().min(1)
+  "sourceNote": zod.string().default(copyRatesResponseOneStatesItemSourceNoteDefault)
 })),
-  "note": zod.string().min(1)
+  "note": zod.string().default(copyRatesResponseOneNoteDefault)
 }).and(zod.object({
   "id": zod.number().int(),
   "createdAt": zod.string(),
@@ -442,12 +436,14 @@ export const ListAccessResponseItem = zod.object({
 export const ListAccessResponse = zod.array(ListAccessResponseItem)
 
 
+export const addAccessBodyNoteDefault = ``;
+export const addAccessBodyNoteMax = 5000;
 
 
 
 export const AddAccessBody = zod.object({
   "email": zod.string().email(),
-  "note": zod.string().min(1)
+  "note": zod.string().max(addAccessBodyNoteMax).default(addAccessBodyNoteDefault)
 })
 
 export const AddAccessResponse = zod.object({
@@ -461,12 +457,14 @@ export const AddAccessResponse = zod.object({
 })
 
 
+export const removeAccessBodyNoteDefault = ``;
+export const removeAccessBodyNoteMax = 5000;
 
 
 
 export const RemoveAccessBody = zod.object({
   "personId": zod.string(),
-  "note": zod.string().min(1)
+  "note": zod.string().max(removeAccessBodyNoteMax).default(removeAccessBodyNoteDefault)
 })
 
 export const RemoveAccessResponse = zod.object({
@@ -513,14 +511,13 @@ export const openYearBodyCalendarYearMin = 1900;
 export const openYearBodyCalendarYearMax = 9999;
 
 export const openYearBodyIsPracticeDefault = false;
-
-
+export const openYearBodyNoteDefault = ``;
 
 export const OpenYearBody = zod.object({
   "calendarYear": zod.number().int().min(openYearBodyCalendarYearMin).max(openYearBodyCalendarYearMax),
   "isPractice": zod.boolean().default(openYearBodyIsPracticeDefault),
   "snapshotId": zod.number().int().min(1),
-  "note": zod.string().min(1)
+  "note": zod.string().default(openYearBodyNoteDefault)
 })
 
 export const OpenYearResponse = zod.object({
@@ -907,24 +904,24 @@ export const SaveYearFiguresParams = zod.object({
 
 export const saveYearFiguresBodyGrossCentsRegExp = new RegExp('^\\d{1,15}$');
 
+export const saveYearFiguresBodyCostsItemLabelDefault = `Direct cost`;
 export const saveYearFiguresBodyCostsItemLabelMax = 200;
 
 export const saveYearFiguresBodyCostsItemAmountCentsRegExp = new RegExp('^\\d{1,15}$');
 
 export const saveYearFiguresBodyCostsMax = 100;
 
-
-
+export const saveYearFiguresBodyNoteDefault = ``;
 
 export const SaveYearFiguresBody = zod.object({
   "grossCents": zod.string().regex(saveYearFiguresBodyGrossCentsRegExp),
   "grossDocumentId": zod.number().int().min(1).nullish(),
   "costs": zod.array(zod.object({
-  "label": zod.string().min(1).max(saveYearFiguresBodyCostsItemLabelMax),
+  "label": zod.string().max(saveYearFiguresBodyCostsItemLabelMax).default(saveYearFiguresBodyCostsItemLabelDefault),
   "amountCents": zod.string().regex(saveYearFiguresBodyCostsItemAmountCentsRegExp),
   "documentId": zod.number().int().min(1).nullish()
 })).max(saveYearFiguresBodyCostsMax),
-  "note": zod.string().min(1)
+  "note": zod.string().default(saveYearFiguresBodyNoteDefault)
 })
 
 export const SaveYearFiguresResponse = zod.object({
@@ -1051,13 +1048,12 @@ export const DeclareYearParams = zod.object({
 
 export const declareYearBodyDeclaredPerShareCentsRegExp = new RegExp('^\\d{1,15}$');
 export const declareYearBodyDeclarationDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
-
-
+export const declareYearBodyNoteDefault = ``;
 
 export const DeclareYearBody = zod.object({
   "declaredPerShareCents": zod.string().regex(declareYearBodyDeclaredPerShareCentsRegExp),
   "declarationDate": zod.string().regex(declareYearBodyDeclarationDateRegExp),
-  "note": zod.string().min(1)
+  "note": zod.string().default(declareYearBodyNoteDefault)
 })
 
 export const DeclareYearResponse = zod.object({
@@ -1182,12 +1178,13 @@ export const FinalizeYearParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
+export const finalizeYearBodyNoteDefault = ``;
 export const finalizeYearBodyNoteMax = 5000;
 
 
 
 export const FinalizeYearBody = zod.object({
-  "note": zod.string().min(1).max(finalizeYearBodyNoteMax)
+  "note": zod.string().max(finalizeYearBodyNoteMax).default(finalizeYearBodyNoteDefault)
 })
 
 export const FinalizeYearResponse = zod.object({
@@ -1314,6 +1311,7 @@ export const CorrectYearParams = zod.object({
 
 export const correctYearBodyAmountCentsRegExp = new RegExp('^-?\\d{1,15}$');
 export const correctYearBodyDeclarationDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const correctYearBodyNoteDefault = ``;
 export const correctYearBodyNoteMax = 5000;
 
 
@@ -1323,7 +1321,7 @@ export const CorrectYearBody = zod.object({
   "amountCents": zod.string().regex(correctYearBodyAmountCentsRegExp).nullish(),
   "documentId": zod.number().int().nullish(),
   "declarationDate": zod.string().regex(correctYearBodyDeclarationDateRegExp).nullish(),
-  "note": zod.string().min(1).max(correctYearBodyNoteMax)
+  "note": zod.string().max(correctYearBodyNoteMax).default(correctYearBodyNoteDefault)
 })
 
 export const CorrectYearResponse = zod.object({
@@ -1590,6 +1588,7 @@ export const ReversePaymentParams = zod.object({
 
 
 export const reversePaymentBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const reversePaymentBodyNoteDefault = ``;
 export const reversePaymentBodyNoteMax = 5000;
 
 
@@ -1597,7 +1596,7 @@ export const reversePaymentBodyNoteMax = 5000;
 export const ReversePaymentBody = zod.object({
   "entryId": zod.number().int().min(1),
   "date": zod.string().regex(reversePaymentBodyDateRegExp),
-  "note": zod.string().min(1).max(reversePaymentBodyNoteMax)
+  "note": zod.string().max(reversePaymentBodyNoteMax).default(reversePaymentBodyNoteDefault)
 })
 
 export const ReversePaymentResponse = zod.object({
@@ -1723,6 +1722,7 @@ export const SetYearHoldParams = zod.object({
 })
 
 
+export const setYearHoldBodyNoteDefault = ``;
 export const setYearHoldBodyNoteMax = 5000;
 
 
@@ -1730,7 +1730,7 @@ export const setYearHoldBodyNoteMax = 5000;
 export const SetYearHoldBody = zod.object({
   "personId": zod.string().min(1),
   "held": zod.boolean(),
-  "note": zod.string().min(1).max(setYearHoldBodyNoteMax)
+  "note": zod.string().max(setYearHoldBodyNoteMax).default(setYearHoldBodyNoteDefault)
 })
 
 export const SetYearHoldResponse = zod.object({

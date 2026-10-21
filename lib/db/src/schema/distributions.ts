@@ -105,7 +105,7 @@ export const distributionEntries = pgTable("distribution_entries", {
   createdBy: text("created_by").notNull(),
 }, (t) => [
   check("distribution_entry_kind", sql`${t.kind} IN ('cash','apic')`),
-  check("entry_reversal_sign", sql`(${t.amountCents} > 0 AND ${t.reversesEntryId} IS NULL) OR (${t.amountCents} < 0 AND ${t.reversesEntryId} IS NOT NULL AND length(trim(${t.note})) > 0)`),
+  check("entry_reversal_sign", sql`(${t.amountCents} > 0 AND ${t.reversesEntryId} IS NULL) OR (${t.amountCents} < 0 AND ${t.reversesEntryId} IS NOT NULL)`),
 ]);
 export const distributionHolds = pgTable("distribution_holds", {
   id: serial("id").primaryKey(),

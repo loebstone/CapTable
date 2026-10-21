@@ -11,6 +11,5 @@ export interface StateRate {
   stateCode: string;
   /** @pattern ^(0\.\d{4}|1\.0000)$ */
   rate: string;
-  /** @minLength 1 */
-  sourceNote: string;
+  sourceNote?: string;
 }

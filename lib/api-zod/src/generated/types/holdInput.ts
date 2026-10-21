@@ -10,9 +10,6 @@ export interface HoldInput {
   /** @minLength 1 */
   personId: string;
   held: boolean;
-  /**
-     * @minLength 1
-     * @maxLength 5000
-     */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }

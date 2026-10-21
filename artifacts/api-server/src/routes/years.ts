@@ -13,7 +13,7 @@ import { assertAccess } from "../lib/access";
 import { write, append } from "../lib/records";
 import { validateYearSnapshot, calculateYear } from "../lib/distribution-math";
 import {
-  yearDetail, currentYearRates, draftInputs, requireDraft, requireFinalized, requireDocument, requiredNote, calendarDate,
+  yearDetail, currentYearRates, draftInputs, requireDraft, requireFinalized, requireDocument, optionalNote, calendarDate,
 } from "../lib/distribution-years";
 import { HttpError } from "../lib/errors";
 import { resetPracticeYear } from "../lib/practice-years";
@@ -48,7 +48,7 @@ router.post("/years", async (req, res): Promise<void> => {
     if (!rows.length) throw new HttpError(404, "Holdings snapshot not found or empty");
     validateYearSnapshot(rows);
     await currentYearRates(tx, data.calendarYear);
-    const year = await append(tx, actor, distributionYears, { ...data, note: requiredNote(data.note), createdBy: actor });
+    const year = await append(tx, actor, distributionYears, { ...data, note: optionalNote(data.note), createdBy: actor });
     return yearDetail(tx, year.id);
   });
   res.status(201).json(GetYearResponse.parse(result));
@@ -68,15 +68,14 @@ router.post("/years/:id/figures", async (req, res): Promise<void> => {
     const year = await requireDraft(tx, id);
     if (!year.isPractice || data.grossDocumentId != null) await requireDocument(tx, id, data.grossDocumentId);
     for (const cost of data.costs) {
-      if (!cost.label.trim()) throw new HttpError(400, "Each cost line needs a nonblank label");
       if (!year.isPractice || cost.documentId != null) await requireDocument(tx, id, cost.documentId);
     }
     const figures = await append(tx, actor, yearFigures, {
       yearId: id, grossCents: BigInt(data.grossCents), grossDocumentId: data.grossDocumentId ?? null,
-      note: requiredNote(data.note), createdBy: actor,
+      note: optionalNote(data.note), createdBy: actor,
     });
     for (const cost of data.costs) await append(tx, actor, yearCosts, {
-      figuresId: figures.id, label: cost.label.trim(), amountCents: BigInt(cost.amountCents), documentId: cost.documentId ?? null,
+      figuresId: figures.id, label: cost.label?.trim() || "Direct cost", amountCents: BigInt(cost.amountCents), documentId: cost.documentId ?? null,
     });
     return yearDetail(tx, id);
   });
@@ -89,7 +88,7 @@ router.post("/years/:id/declaration", async (req, res): Promise<void> => {
     await assertAccess(actor, tx); await requireDraft(tx, id);
     await append(tx, actor, yearDeclarations, {
       yearId: id, declaredPerShareCents: BigInt(data.declaredPerShareCents),
-      declarationDate: calendarDate(data.declarationDate), note: requiredNote(data.note), createdBy: actor,
+      declarationDate: calendarDate(data.declarationDate), note: optionalNote(data.note), createdBy: actor,
     });
     const detail = await yearDetail(tx, id);
     if (detail.holders.some((h) => h.remainingCents !== null && BigInt(h.remainingCents) < 0n)) throw new HttpError(409, "Declaration would reduce a distribution below its Paid plus APIC retained total; reverse entries first");
@@ -106,7 +105,7 @@ router.post("/years/:id/finalize", async (req, res): Promise<void> => {
     validateYearSnapshot(frozenInputs.rows);
     const { blockers } = calculateYear(frozenInputs);
     if (blockers.length) throw new HttpError(409, `Cannot finalize: ${blockers.map((b) => `${b.displayName}: ${b.reason}`).join("; ")}`);
-    await append(tx, actor, yearFinalizations, { yearId: id, frozenInputs, note: requiredNote(data.note), createdBy: actor });
+    await append(tx, actor, yearFinalizations, { yearId: id, frozenInputs, note: optionalNote(data.note), createdBy: actor });
     return yearDetail(tx, id);
   });
   res.status(201).json(GetYearResponse.parse(result));
@@ -116,7 +115,7 @@ router.post("/years/:id/corrections", async (req, res): Promise<void> => {
   const data = CorrectYearBody.parse(req.body);
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
     await assertAccess(actor, tx); await requireFinalized(tx, id);
-    const note = requiredNote(data.note);
+    const note = optionalNote(data.note);
     if (data.kind !== "note" && (!data.amountCents || BigInt(data.amountCents) === 0n)) throw new HttpError(400, "Amount corrections require a nonzero signed cent adjustment");
     if (data.kind === "note" && data.amountCents != null) throw new HttpError(400, "A note-only correction cannot carry an amount");
     if (data.kind === "grossAdjustment" || data.kind === "costAdjustment") {

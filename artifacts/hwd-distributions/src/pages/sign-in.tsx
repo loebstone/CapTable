@@ -17,7 +17,7 @@ export default function SignIn() {
           <h1 className="font-display text-5xl leading-[1.05] text-[hsl(40_40%_97%)]">HWD Farm<br />distributions ledger</h1>
           <p className="mt-5 max-w-sm text-sm leading-relaxed opacity-75">
             Shareholdings, tax residence and annual rates for the timber income, kept carefully and written down once.
-            Every change is recorded with a note.
+            Every change is recorded in the audit log.
           </p>
         </div>
         <svg viewBox="0 0 400 60" className="w-full max-w-md text-sidebar-primary/50" aria-hidden>
@@ -67,7 +67,7 @@ export default function SignIn() {
                 data-testid="input-email"
               />
               {req.isError && <div className="text-xs text-destructive" data-testid="status-signin-error">{errMessage(req.error)}</div>}
-              <Btn type="submit" className="w-full py-2.5" disabled={!valid || req.isPending} data-testid="button-request-link">
+              <Btn type="submit" className="w-full py-2.5" disabled={!valid || req.isPending} disabledReason={req.isPending ? "Requesting your sign-in link; please wait." : "Enter a valid email address."} data-testid="button-request-link">
                 {req.isPending ? "Sending…" : "Send sign-in link"} <ArrowRight className="h-4 w-4" />
               </Btn>
             </form>

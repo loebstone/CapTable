@@ -17,6 +17,5 @@ export interface RateCopyInput {
      * @maximum 9999
      */
   toYear: number;
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }

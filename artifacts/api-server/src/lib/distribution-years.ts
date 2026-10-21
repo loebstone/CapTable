@@ -22,7 +22,7 @@ export async function getFinalization(database: Database, yearId: number) {
 }
 export async function requireDraft(database: Database, yearId: number) {
   const year = await requireYear(database, yearId);
-  if (await getFinalization(database, yearId)) throw new HttpError(409, "This year is finalized and locked; append a correction with a note instead");
+  if (await getFinalization(database, yearId)) throw new HttpError(409, "This year is finalized and locked; append a correction instead (note optional)");
   return year;
 }
 export async function requireFinalized(database: Database, yearId: number) {
@@ -132,9 +132,8 @@ export async function yearDetail(database: Database, id: number) {
     history,
   };
 }
-export function requiredNote(note: string) {
-  if (!note.trim()) throw new HttpError(400, "A nonblank note is required");
-  return note.trim();
+export function optionalNote(note?: string) {
+  return note?.trim() ?? "";
 }
 export function calendarDate(date: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(`${date}T00:00:00Z`)) || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) {

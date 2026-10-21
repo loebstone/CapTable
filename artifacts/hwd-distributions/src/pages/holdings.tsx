@@ -67,14 +67,14 @@ export default function HoldingsPage() {
             className="rise rise-d3 flex flex-col gap-3 rounded-lg border border-border bg-secondary/50 p-4 md:flex-row md:items-end"
             onSubmit={(e) => {
               e.preventDefault();
-              if (note.trim()) snap.mutate({ data: { fetchId: h.id, note: note.trim() } });
+              if (!snap.isPending) snap.mutate({ data: { fetchId: h.id, note: note.trim() } });
             }}
           >
             <div className="flex-1">
               <div className="mb-1.5 flex items-center gap-2 text-xs font-medium"><Archive className="h-3.5 w-3.5 text-primary" /> Record fetch #{h.id} as a snapshot</div>
-              <input className={inputCls} placeholder="Why this snapshot (required), e.g. year-end register for the 2024 return" value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-snapshot-note" />
+              <input className={inputCls} placeholder="Snapshot note (optional)" value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-snapshot-note" />
             </div>
-            <Btn type="submit" disabled={!note.trim() || snap.isPending} data-testid="button-take-snapshot">{snap.isPending ? "Recording…" : "Record snapshot"}</Btn>
+            <Btn type="submit" disabled={snap.isPending} data-testid="button-take-snapshot">{snap.isPending ? "Recording…" : "Record snapshot"}</Btn>
           </form>
           <p className="text-xs text-muted-foreground">Snapshots cannot be edited once recorded. <Link href="/snapshots" className="text-primary hover:underline">See history</Link>.</p>
         </>

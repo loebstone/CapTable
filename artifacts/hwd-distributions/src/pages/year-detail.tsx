@@ -57,7 +57,7 @@ export default function YearDetailPage() {
         title={`${y.calendarYear}${y.isPractice ? " — Practice" : " timber distribution"}`}
         actions={draft ? <>
           <Btn variant="ghost" onClick={() => setModal({ k: "figures" })} data-testid="button-edit-figures"><PencilLine className="h-4 w-4" /> {y.figures ? "Revise figures" : "Enter figures"}</Btn>
-          <Btn variant="ghost" onClick={() => setModal({ k: "declare" })} disabled={!y.calculation} data-testid="button-declare"><Stamp className="h-4 w-4" /> Declare</Btn>
+          <Btn variant="ghost" onClick={() => setModal({ k: "declare" })} disabled={!y.calculation} disabledReason="Enter the year's figures before declaring an amount." data-testid="button-declare"><Stamp className="h-4 w-4" /> Declare</Btn>
           <Btn onClick={() => setModal({ k: "finalize" })} data-testid="button-finalize"><Lock className="h-4 w-4" /> Finalize</Btn>
         </> : <Btn variant="ghost" onClick={() => setModal({ k: "correct" })} data-testid="button-correct-year"><PencilLine className="h-4 w-4" /> Record correction</Btn>}
       >
@@ -317,6 +317,7 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
                         <IconBtn title={h.isOnHold ? "Remove hold" : "Put on hold"} onClick={() => onAction({ k: "hold", holder: h })} test={`button-hold-${h.personId}`}><Hand className={cn("h-4 w-4", h.isOnHold && "text-[hsl(30_60%_38%)]")} /></IconBtn>
                       </div>
                     )}
+                    {ledger && (h.nominalCents === null || h.instruction === "✓" || h.isOnHold) && <p className="mt-1 max-w-44 whitespace-normal text-xs text-muted-foreground" role="note" data-testid={`text-payment-disabled-reason-${h.personId}`}>{h.isOnHold ? "Remove the hold before recording cash or APIC." : h.nominalCents === null ? "Declare a per-share amount before recording cash or APIC." : "Paid plus APIC already equals this holder's distribution."}</p>}
                   </td>
                 </tr>
               ))}
@@ -414,8 +415,8 @@ function History({ y }: { y: YearDetail }) {
 
 /* ---------- forms ---------- */
 
-function FormShell({ title, desc, children, error, pending, valid, submit, onDone, onSubmit, danger }: {
-  title: string; desc: ReactNode; children: ReactNode; error: unknown; pending: boolean; valid: boolean; submit: string; onDone: () => void; onSubmit: () => void; danger?: boolean;
+function FormShell({ title, desc, children, error, pending, valid, submit, onDone, onSubmit, danger, disabledReason }: {
+  title: string; desc: ReactNode; children: ReactNode; error: unknown; pending: boolean; valid: boolean; submit: string; onDone: () => void; onSubmit: () => void; danger?: boolean; disabledReason?: string;
 }) {
   return (
     <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (valid && !pending) onSubmit(); }}>
@@ -427,7 +428,7 @@ function FormShell({ title, desc, children, error, pending, valid, submit, onDon
       {!!error && <div className="rounded-md bg-destructive/5 px-3 py-2 text-xs text-destructive" data-testid="text-form-error">{errMessage(error)}</div>}
       <div className="flex justify-end gap-2">
         <Btn type="button" variant="quiet" onClick={onDone}>Cancel</Btn>
-        <Btn type="submit" variant={danger ? "danger" : "primary"} disabled={!valid || pending} data-testid="button-submit">{pending ? "Saving…" : submit}</Btn>
+        <Btn type="submit" variant={danger ? "danger" : "primary"} disabled={!valid || pending} disabledReason={pending ? "Saving this record; please wait." : disabledReason} data-testid="button-submit">{pending ? "Saving…" : submit}</Btn>
       </div>
     </form>
   );
@@ -442,7 +443,7 @@ function DocSelect({ y, value, onChange, test, optionalPractice = false }: { y: 
   );
 }
 
-function NoteField({ v, set, label = "Note (required)", hint }: { v: string; set: (s: string) => void; label?: string; hint?: string }) {
+function NoteField({ v, set, label = "Note (optional)", hint }: { v: string; set: (s: string) => void; label?: string; hint?: string }) {
   return <Field label={label} hint={hint}><textarea className={inputCls} rows={2} maxLength={5000} value={v} onChange={(e) => set(e.target.value)} data-testid="input-note" /></Field>;
 }
 
@@ -458,12 +459,12 @@ function FiguresForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const [note, setNote] = useState("");
   const save = useSaveYearFigures({ mutation: { onSuccess: () => { inval(); toast({ title: "Figures saved", description: "Previous figures remain in the history." }); onDone(); } } });
   const grossC = parseDollars(gross);
-  const parsed: (CostLineInput | null)[] = costs.map((c) => { const a = parseDollars(c.amount); return c.label.trim() && a && (c.doc || y.isPractice) ? { label: c.label.trim().slice(0, 200), amountCents: a, documentId: c.doc ? Number(c.doc) : null } : null; });
+  const parsed: (CostLineInput | null)[] = costs.map((c) => { const a = parseDollars(c.amount); return a && (c.doc || y.isPractice) ? { label: c.label.trim().slice(0, 200) || "Direct cost", amountCents: a, documentId: c.doc ? Number(c.doc) : null } : null; });
   const costTotal = sumCents(parsed.map((p) => p?.amountCents));
-  const valid = !!grossC && (!!grossDoc || y.isPractice) && parsed.every(Boolean) && !!note.trim() && costs.length <= 100;
+  const valid = !!grossC && (!!grossDoc || y.isPractice) && parsed.every(Boolean) && costs.length <= 100;
   const upd = (i: number, p: Partial<CostDraft>) => setCosts((xs) => xs.map((x, j) => (j === i ? { ...x, ...p } : x)));
   return (
-    <FormShell title={f ? "Revise figures" : "Enter figures"} desc={y.isPractice ? "Source documents are optional in practice years only. Saving appends a revision; net profit is computed by the server." : "Each amount is tied to an uploaded document. Saving appends a revision; nothing is deleted. Net profit is computed by the server."} error={save.error} pending={save.isPending} valid={valid} submit="Save figures" onDone={onDone}
+    <FormShell title={f ? "Revise figures" : "Enter figures"} desc={y.isPractice ? "Source documents are optional in practice years only. Saving appends a revision; net profit is computed by the server." : "Each amount is tied to an uploaded document. Saving appends a revision; nothing is deleted. Net profit is computed by the server."} error={save.error} pending={save.isPending} valid={valid} disabledReason={!grossC ? "Enter a valid gross amount." : !grossDoc && !y.isPractice ? "Attach a source document to the gross figure." : costs.length > 100 ? "Use at most 100 cost lines." : "Enter a valid amount for every cost line and, for a real year, select each source document."} submit="Save figures" onDone={onDone}
       onSubmit={() => save.mutate({ id: y.id, data: { grossCents: grossC!, grossDocumentId: grossDoc ? Number(grossDoc) : null, costs: parsed as CostLineInput[], note: note.trim() } })}>
       {!y.isPractice && y.documents.length === 0 && <div className="rounded-md bg-[hsl(38_70%_94%)] px-3 py-2 text-xs text-[hsl(30_60%_28%)]">Upload the source documents first, from the Source documents panel.</div>}
       <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
@@ -480,7 +481,7 @@ function FiguresForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
         {costs.length === 0 && <div className="rounded-md border border-dashed border-input px-3 py-3 text-xs text-muted-foreground">No costs. Add forester fees, hauling, road work, and so on.</div>}
         {costs.map((c, i) => (
           <div key={i} className="grid grid-cols-[1fr_110px_32px] gap-2 sm:grid-cols-[1fr_120px_1fr_32px]" data-testid={`row-cost-input-${i}`}>
-            <input className={inputCls} value={c.label} maxLength={200} onChange={(e) => upd(i, { label: e.target.value })} placeholder="Label" data-testid={`input-cost-label-${i}`} />
+            <input className={inputCls} value={c.label} maxLength={200} onChange={(e) => upd(i, { label: e.target.value })} placeholder="Label (optional; defaults to Direct cost)" data-testid={`input-cost-label-${i}`} />
             <input className={cn(inputCls, "num", c.amount && !parseDollars(c.amount) && "border-destructive")} value={c.amount} onChange={(e) => upd(i, { amount: e.target.value })} placeholder="0.00" inputMode="decimal" data-testid={`input-cost-amount-${i}`} />
             <div className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto"><DocSelect y={y} value={c.doc} onChange={(v) => upd(i, { doc: v })} test={`select-cost-document-${i}`} optionalPractice /></div>
             <button type="button" className="mt-2 text-muted-foreground hover:text-destructive" aria-label="Remove cost line" onClick={() => setCosts((x) => x.filter((_, j) => j !== i))} data-testid={`button-remove-cost-${i}`}><Trash2 className="h-4 w-4" /></button>
@@ -501,9 +502,9 @@ function DeclareForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const decl = useDeclareYear({ mutation: { onSuccess: () => { inval(); toast({ title: "Declaration recorded" }); onDone(); } } });
   const c = parseDollars(amt);
   const proposed = y.calculation?.proposedPerShareCents;
-  const valid = !!c && /^\d{4}-\d{2}-\d{2}$/.test(date) && !!note.trim();
+  const valid = !!c && /^\d{4}-\d{2}-\d{2}$/.test(date);
   return (
-    <FormShell title="Declare per-share amount" desc="The declared amount, not the proposal, governs each holder's distribution." error={decl.error} pending={decl.isPending} valid={valid} submit="Record declaration" onDone={onDone}
+    <FormShell title="Declare per-share amount" desc="The declared amount, not the proposal, governs each holder's distribution." error={decl.error} pending={decl.isPending} valid={valid} disabledReason="Enter a valid per-share amount and declaration date." submit="Record declaration" onDone={onDone}
       onSubmit={() => decl.mutate({ id: y.id, data: { declaredPerShareCents: c!, declarationDate: date, note: note.trim() } })}>
       <div className="flex items-center justify-between rounded-md bg-secondary/60 px-3 py-2 text-sm">
         <span>Proposed per share <b className="num ml-2 font-medium">{fmtCents(proposed)}</b>{y.declaredPerShareCents && <span className="ml-3 text-xs text-muted-foreground">current: {fmtCents(y.declaredPerShareCents)}</span>}</span>
@@ -527,7 +528,7 @@ function FinalizeForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const fin = useFinalizeYear({ mutation: { onSuccess: () => { inval(); toast({ title: `${y.calendarYear}${y.isPractice ? " — Practice" : ""} finalized`, description: y.isPractice ? "Inputs are locked until an explicit practice reset; changes go through corrections." : "Figures are now permanent; changes go through corrections." }); onDone(); } } });
   const blocked = y.blockers.length > 0;
   return (
-    <FormShell title={`Finalize ${y.calendarYear}${y.isPractice ? " — Practice" : ""}`} desc={y.isPractice ? "Finalizing freezes the figures, snapshot, residences and rates. Later changes are corrections, unless you explicitly reset this practice year." : "Finalizing freezes the figures, snapshot, residences and rates. It cannot be undone; later changes are recorded as corrections."} error={fin.error} pending={fin.isPending} valid={!blocked && !!note.trim()} submit="Finalize year" onDone={onDone}
+    <FormShell title={`Finalize ${y.calendarYear}${y.isPractice ? " — Practice" : ""}`} desc={y.isPractice ? "Finalizing freezes the figures, snapshot, residences and rates. Later changes are corrections, unless you explicitly reset this practice year." : "Finalizing freezes the figures, snapshot, residences and rates. It cannot be undone; later changes are recorded as corrections."} error={fin.error} pending={fin.isPending} valid={!blocked} disabledReason={y.blockers.map((b) => `${b.displayName}: ${b.reason}`).join("; ")} submit="Finalize year" onDone={onDone}
       onSubmit={() => fin.mutate({ id: y.id, data: { note: note.trim() } })}>
       {blocked ? (
         <ul className="space-y-1 rounded-md border border-[hsl(38_60%_70%)] bg-[hsl(38_70%_94%)] px-3 py-2 text-sm" data-testid="list-finalize-blockers">
@@ -561,9 +562,9 @@ function CorrectionForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const needsAmt = kind !== "note";
   const needsDoc = kind === "grossAdjustment" || kind === "costAdjustment";
   const needsDate = kind === "declaredPerShareAdjustment";
-  const valid = !!note.trim() && (!needsAmt || (!!c && c !== "0")) && (!needsDoc || !!doc) && (!needsDate || /^\d{4}-\d{2}-\d{2}$/.test(date));
+  const valid = (!needsAmt || (!!c && c !== "0")) && (!needsDoc || !!doc) && (!needsDate || /^\d{4}-\d{2}-\d{2}$/.test(date));
   return (
-    <FormShell title="Record a correction" desc="Corrections adjust effective figures on the frozen snapshot, residences and rates. The original finalization stays visible." error={corr.error} pending={corr.isPending} valid={valid} submit="Record correction" onDone={onDone}
+    <FormShell title="Record a correction" desc="Corrections adjust effective figures on the frozen snapshot, residences and rates. The original finalization stays visible." error={corr.error} pending={corr.isPending} valid={valid} disabledReason="Enter a nonzero adjustment and select any source document or declaration date required for this correction type." submit="Record correction" onDone={onDone}
       onSubmit={() => corr.mutate({ id: y.id, data: { kind, note: note.trim(), amountCents: needsAmt ? c : null, documentId: needsDoc ? Number(doc) : null, declarationDate: needsDate ? date : null } })}>
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
         {KINDS.map((o) => (
@@ -594,11 +595,11 @@ function PaymentForm({ y, holder, kind, onDone }: { y: YearDetail; holder: YearH
   const [note, setNote] = useState("");
   const pay = useRecordPayment({ mutation: { onSuccess: () => { inval(); toast({ title: kind === "cash" ? "Payment recorded" : "APIC retention recorded", description: holder.displayName }); onDone(); } } });
   const c = parseDollars(amt);
-  const valid = !!c && c !== "0" && /^\d{4}-\d{2}-\d{2}$/.test(date) && (kind === "cash" ? !!method.trim() : letter);
+  const valid = !!c && c !== "0" && /^\d{4}-\d{2}-\d{2}$/.test(date) && (kind === "cash" || letter);
   return (
     <FormShell title={kind === "cash" ? `Cash payment to ${holder.displayName}` : `Retain as APIC for ${holder.displayName}`}
       desc={<>Remaining <b className="num">{fmtCents(holder.remainingCents)}</b> of distribution <span className="num">{fmtCents(holder.nominalCents)}</span>. Entries are permanent; mistakes are fixed by reversal.</>}
-      error={pay.error} pending={pay.isPending} valid={valid} submit="Record entry" onDone={onDone}
+      error={pay.error} pending={pay.isPending} valid={valid} disabledReason={!c || c === "0" ? "Enter a positive amount." : !/^\d{4}-\d{2}-\d{2}$/.test(date) ? "Enter a valid entry date." : "Confirm that the shareholder's signed direction letter has been received."} submit="Record entry" onDone={onDone}
       onSubmit={() => pay.mutate({ id: y.id, data: { personId: holder.personId, kind, amountCents: c!, date, method: kind === "cash" ? method.trim() : undefined, note: note.trim() || undefined } })}>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Amount ($)" error={amt && (!c || c === "0") ? "Positive dollars and cents" : null} hint={c ? fmtCents(c) : undefined}>
@@ -610,7 +611,7 @@ function PaymentForm({ y, holder, kind, onDone }: { y: YearDetail; holder: YearH
         <Field label={kind === "apic" ? "Direction letter received date" : "Cash payment date"}><input type="date" className={inputCls + " num"} value={date} onChange={(e) => setDate(e.target.value)} data-testid="input-payment-date" /></Field>
       </div>
       {kind === "cash" ? (
-        <Field label="Method or check number" hint="e.g. Check 1184, or how it was paid."><input className={inputCls} maxLength={200} value={method} onChange={(e) => setMethod(e.target.value)} data-testid="input-payment-method" /></Field>
+        <Field label="Method or check number (optional)" hint="e.g. Check 1184, or how it was paid."><input className={inputCls} maxLength={200} value={method} onChange={(e) => setMethod(e.target.value)} data-testid="input-payment-method" /></Field>
       ) : (
         <label className="flex items-start gap-2 rounded-md bg-accent/50 px-3 py-2 text-sm text-accent-foreground">
           <input type="checkbox" className="mt-1 accent-[hsl(170_32%_28%)]" checked={letter} onChange={(e) => setLetter(e.target.checked)} data-testid="checkbox-direction-letter" />
@@ -629,8 +630,8 @@ function HoldForm({ y, holder, onDone }: { y: YearDetail; holder: YearHolder; on
   const [note, setNote] = useState("");
   const m = useSetYearHold({ mutation: { onSuccess: () => { inval(); toast({ title: held ? "Remove hold" : "Put on hold", description: holder.displayName }); onDone(); } } });
   return (
-    <FormShell title={held ? `Remove hold: ${holder.displayName}` : `Put on hold: ${holder.displayName}`} desc={held ? <>Currently on hold{holder.holdNote ? `: ${holder.holdNote}` : "."}{holder.isUnsettled && " This holding is unsettled."}</> : "Put this holder on hold and record a note. Existing entries remain unchanged."}
-      error={m.error} pending={m.isPending} valid={!!note.trim()} submit={held ? "Remove hold" : "Put on hold"} onDone={onDone}
+    <FormShell title={held ? `Remove hold: ${holder.displayName}` : `Put on hold: ${holder.displayName}`} desc={held ? <>Currently on hold{holder.holdNote ? `: ${holder.holdNote}` : "."}{holder.isUnsettled && " This holding is unsettled."}</> : "Put this holder on hold. A note is optional. Existing entries remain unchanged."}
+      error={m.error} pending={m.isPending} valid={true} submit={held ? "Remove hold" : "Put on hold"} onDone={onDone}
       onSubmit={() => m.mutate({ id: y.id, data: { personId: holder.personId, held: !held, note: note.trim() } })}>
       <NoteField v={note} set={setNote} />
     </FormShell>
@@ -645,7 +646,7 @@ function ReverseForm({ y, entry, onDone }: { y: YearDetail; entry: PaymentEntry;
   const m = useReversePayment({ mutation: { onSuccess: () => { inval(); toast({ title: `Entry #${entry.id} reversed` }); onDone(); } } });
   return (
     <FormShell danger title={`Reverse entry #${entry.id}`} desc={<>Creates a new entry of exactly <b className="num">{fmtCents(`-${entry.amountCents}`)}</b>. The original stays in the ledger.</>}
-      error={m.error} pending={m.isPending} valid={/^\d{4}-\d{2}-\d{2}$/.test(date) && !!note.trim()} submit="Reverse entry" onDone={onDone}
+      error={m.error} pending={m.isPending} valid={/^\d{4}-\d{2}-\d{2}$/.test(date)} disabledReason="Enter a valid reversal date." submit="Reverse entry" onDone={onDone}
       onSubmit={() => m.mutate({ id: y.id, data: { entryId: entry.id, date, note: note.trim() } })}>
       <div className="rounded-md bg-secondary/60 px-3 py-2 text-sm">{entry.kind === "cash" ? "Cash" : "APIC"} {fmtCents(entry.amountCents)} on {fmtDate(entry.date)}{entry.method && ` · ${entry.method}`}</div>
       <Field label="Reversal date"><input type="date" className={inputCls + " num w-48"} value={date} onChange={(e) => setDate(e.target.value)} data-testid="input-reversal-date" /></Field>

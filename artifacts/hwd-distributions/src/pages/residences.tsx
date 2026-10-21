@@ -111,7 +111,7 @@ function ResidenceForm({ r, onDone }: { r: Residence; onDone: () => void }) {
       {save.isError && <div className="text-xs text-destructive">{errMessage(save.error)}</div>}
       <div className="flex justify-end gap-2">
         <Btn type="button" variant="quiet" onClick={onDone}>Cancel</Btn>
-        <Btn type="submit" disabled={!valid || save.isPending} data-testid="button-save-residence">{save.isPending ? "Saving…" : "Save"}</Btn>
+        <Btn type="submit" disabled={!valid || save.isPending} disabledReason={save.isPending ? "Saving this residence; please wait." : "Choose a valid state code or NONE before confirming."} data-testid="button-save-residence">{save.isPending ? "Saving…" : "Save"}</Btn>
       </div>
     </form>
   );

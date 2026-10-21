@@ -15,6 +15,5 @@ export interface YearInput {
   isPractice?: boolean;
   /** @minimum 1 */
   snapshotId: number;
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }

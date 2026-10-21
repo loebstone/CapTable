@@ -7,11 +7,8 @@
  */
 
 export interface CostLineInput {
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  label: string;
+  /** @maxLength 200 */
+  label?: string;
   /** @pattern ^\d{1,15}$ */
   amountCents: string;
   /**

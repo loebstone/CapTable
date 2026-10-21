@@ -17,7 +17,7 @@ router.post("/access", async (req, res): Promise<void> => {
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
     await assertAccess(actor, tx);
     if (await activeEntry(person.personId, tx)) throw new HttpError(409, "This person already has access");
-    return append(tx, actor, accessEntries, { ...person, addedBy: actor, note: data.note });
+    return append(tx, actor, accessEntries, { ...person, addedBy: actor, note: data.note.trim() });
   });
   res.status(201).json(AddAccessResponse.parse(result));
 });
@@ -31,7 +31,7 @@ router.post("/access/remove", async (req, res): Promise<void> => {
     if (active.length <= 1) throw new HttpError(409, "Cannot remove the last remaining person");
     return append(tx, actor, accessEntries, {
       personId: entry.personId, displayName: entry.displayName, addedBy: entry.addedBy,
-      addedAt: entry.addedAt, removedAt: new Date().toISOString(), note: data.note,
+      addedAt: entry.addedAt, removedAt: new Date().toISOString(), note: data.note.trim(),
     });
   });
   res.status(201).json(RemoveAccessResponse.parse(result));

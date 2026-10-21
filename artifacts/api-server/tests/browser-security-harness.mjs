@@ -9,7 +9,13 @@ import { finalizedFixture } from "./stage3-fixture.mjs";
 import { createWebApp } from "../../hwd-distributions/server.mjs";
 
 const h = await stage2Harness();
-if (!process.argv.includes("--backup")) {
+if (process.argv.includes("--notes")) {
+  const fixture = await finalizedFixture(h, { isPractice: true });
+  const cookie = await h.login();
+  const base = `/api/years/${fixture.detail.id}`;
+  h.expect(await h.call("post", `${base}/reset-practice`, cookie, { confirmation: "RESET" }), 200);
+  h.expect(await h.call("post", `${base}/figures`, cookie, { grossCents: "11000000", costs: [{ amountCents: "0" }] }), 201);
+} else if (!process.argv.includes("--backup")) {
   const fixture = await finalizedFixture(h);
   await fixture.finalizeWithLedger();
 } else {

@@ -45,7 +45,6 @@ export function parseRateCsv(filename: string, csv: string): CsvRate[] {
     if (!CODES.has(code)) errors.push(`Line ${line}: bad code "${code}"; use FEDERAL, NONE, or a valid US state/territory code`);
     if (seen.has(code)) errors.push(`Line ${line}: duplicate code "${code}"`);
     seen.add(code);
-    if (!sourceNote.trim()) errors.push(`Line ${line}: source_note is required, as in the rate editor`);
     try {
       const rate = rateValue(record[header.indexOf("rate")]);
       if (code === "NONE" && rate !== "0.0000") errors.push(`Line ${line}: NONE must have a zero rate`);

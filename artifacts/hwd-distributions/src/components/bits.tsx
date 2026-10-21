@@ -16,8 +16,8 @@ export function PageHeader({ kicker, title, children, actions }: { kicker: strin
   );
 }
 
-export function Btn({ variant = "primary", className, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" | "quiet" | "danger" }) {
-  return (
+export function Btn({ variant = "primary", className, disabledReason, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" | "quiet" | "danger"; disabledReason?: string }) {
+  const button = (
     <button
       {...p}
       className={cn(
@@ -30,6 +30,11 @@ export function Btn({ variant = "primary", className, ...p }: React.ButtonHTMLAt
       )}
     />
   );
+  if (!p.disabled) return button;
+  return <span className={cn("inline-flex flex-col items-start gap-1", className?.includes("w-full") && "w-full")}>
+    {button}
+    <span className="max-w-sm text-xs font-normal text-muted-foreground" role="note" data-testid={`${p["data-testid" as keyof typeof p] ?? "button"}-disabled-reason`}>{disabledReason || p.title || "Please wait for the current request to finish."}</span>
+  </span>;
 }
 
 export const inputCls =

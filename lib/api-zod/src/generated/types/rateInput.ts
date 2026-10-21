@@ -15,9 +15,7 @@ export interface RateInput {
   taxYear: number;
   /** @pattern ^(0\.\d{4}|1\.0000)$ */
   federalRate: string;
-  /** @minLength 1 */
-  federalSourceNote: string;
+  federalSourceNote?: string;
   states: StateRate[];
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }

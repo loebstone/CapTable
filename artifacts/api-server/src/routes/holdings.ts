@@ -46,7 +46,7 @@ router.post("/snapshots", async (req, res): Promise<void> => {
     const payload = fetch.payload;
     const snapshot = await append(tx, actor, snapshots, {
       fetchId: fetch.id, asOf: payload.asOf, classes: payload.classes, grandTotal: payload.grandTotal,
-      rowCount: payload.holdings.length, createdBy: actor, note: data.note,
+      rowCount: payload.holdings.length, createdBy: actor, note: data.note.trim(),
     });
     for (const holding of payload.holdings) {
       await append(tx, actor, snapshotRows, { snapshotId: snapshot.id, ...holding });

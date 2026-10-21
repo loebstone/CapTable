@@ -124,15 +124,15 @@ try {
   const blocked = expect(await call("post", `${base}/finalize`, cookie, { note: "Must name Natalie and missing GA rate" }), 409);
   assert.match(blocked.error, /Gaston Natalie Davis.*GA/);
   expect(await call("post", "/api/rates", cookie, { ...rateInput, note: "STUB restore GA before finalization" }), 201);
-  detail = expect(await call("post", `${base}/finalize`, cookie, { note: "STUB finalization with all confirmed and all rates present" }), 201);
+  detail = expect(await call("post", `${base}/finalize`, cookie, { note: "" }), 201);
   assert.equal(detail.status, "finalized");
   const originalCalculation = structuredClone(detail.calculation);
   const rejectedEdit = expect(await call("post", `${base}/figures`, cookie, { ...figures, grossCents: "1", note: "Must not modify finalized figure" }), 409);
   const blankCorrection = await call("post", `${base}/corrections`, cookie, { kind: "note", note: "   " });
-  expect(blankCorrection, 400);
+  expect(blankCorrection, 201);
   detail = expect(await call("post", `${base}/corrections`, cookie, { kind: "note", note: "STUB correction: explanatory note added without altering original inputs" }), 201);
   assert.equal(detail.status, "corrected"); assert.deepEqual(detail.calculation, originalCalculation);
-  record("4. Finalization blockers, locking and correction", { missingGAHTTP: 409, missingGAError: blocked.error, restoredFinalizationHTTP: 201, finalizedGrossEditHTTP: 409, editError: rejectedEdit.error, blankCorrectionHTTP: 400, notedCorrectionHTTP: 201, status: detail.status, originalCalculationUnchanged: true });
+  record("4. Finalization blockers, locking and correction", { missingGAHTTP: 409, missingGAError: blocked.error, restoredFinalizationWithBlankNoteHTTP: 201, finalizedGrossEditHTTP: 409, editError: rejectedEdit.error, blankCorrectionHTTP: 201, notedCorrectionHTTP: 201, status: detail.status, originalCalculationUnchanged: true });
   expect(await call("post", "/api/rates", cookie, { ...rateInput, federalRate: "0.0000", note: "STUB later rate revision must not change finalized year" }), 201);
   const natalie = detail.holders.find((r) => r.displayName === "Gaston Natalie Davis");
   expect(await call("post", "/api/residences", cookie, { personId: natalie.personId, stateCode: "NONE", confirmed: true, note: "STUB later residence must not change finalized year" }), 201);
@@ -173,22 +173,21 @@ try {
   assert.equal(detail.holders.find((r) => r.personId === holder.personId).instruction, "✓");
   assert.equal(detail.holders.find((r) => r.personId === holder.personId).status, "complete");
   assert.equal(detail.holders.find((r) => r.personId === holder.personId).remainingCents, "0");
-  expect(await call("post", `${base}/reversals`, cookie, { entryId: cashEntry.id, date: "2026-10-20", note: " " }), 400);
-  detail = expect(await call("post", `${base}/reversals`, cookie, { entryId: cashEntry.id, date: "2026-10-20", note: "STUB reverse mistaken cash entry" }), 201);
+  detail = expect(await call("post", `${base}/reversals`, cookie, { entryId: cashEntry.id, date: "2026-10-20", note: " " }), 201);
+  assert.equal(detail.payments.find((p) => p.reversesEntryId === cashEntry.id).note, "");
   const reopened = detail.holders.find((r) => r.personId === holder.personId);
   assert.equal(reopened.status, "open"); assert.equal(reopened.remainingCents, "100000");
   expect(await call("post", `${base}/reversals`, cookie, { entryId: cashEntry.id, date: "2026-10-20", note: "Duplicate reversal must fail" }), 409);
-  record("6. Paid/APIC cap, completion and reversal", { overpaymentHTTP: 409, error: overpaid.error, nominalCents: holder.nominalCents, cashCents: "100000", retainedCents: apicAmount.toString(), combinedStatus: "complete", reversalCents: "-100000", blankReversalHTTP: 400, duplicateReversalHTTP: 409, afterReversal: { status: reopened.status, remainingCents: reopened.remainingCents }, totals: detail.totals });
+  record("6. Paid/APIC cap, completion and reversal", { overpaymentHTTP: 409, error: overpaid.error, nominalCents: holder.nominalCents, cashCents: "100000", retainedCents: apicAmount.toString(), combinedStatus: "complete", reversalCents: "-100000", blankReversalHTTP: 201, duplicateReversalHTTP: 409, afterReversal: { status: reopened.status, remainingCents: reopened.remainingCents }, totals: detail.totals });
 
   const marco = detail.holders.find((r) => r.displayName === "Adorno Marco");
-  expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: false, note: " " }), 400);
-  detail = expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: false, note: "STUB manual release with note" }), 201);
+  detail = expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: false, note: " " }), 201);
   assert.equal(detail.holders.find((r) => r.personId === marco.personId).status, "open");
   assert.equal(detail.holders.find((r) => r.personId === marco.personId).instruction, "Pay");
   assert.equal(detail.holders.find((r) => r.personId === marco.personId).isOnHold, false);
-  detail = expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: true, note: "STUB restore hold with note" }), 201);
+  detail = expect(await call("post", `${base}/holds`, cookie, { personId: marco.personId, held: true }), 201);
   assert.equal(detail.holders.find((r) => r.personId === marco.personId).status, "held");
-  record("Manual held status", "Required note enforced; explicit release/re-hold appended and reflected in history");
+  record("Manual Hold instruction", "Blank-note release and omitted-note re-hold both returned 201; explicit changes appended and reflected in history");
   // Monetary correction is a signed delta, not a replacement of frozen inputs.
   detail = expect(await call("post", `${base}/corrections`, cookie, { kind: "grossAdjustment", amountCents: "100", documentId: document.id, note: "STUB add one dollar of gross via explicit correction" }), 201);
   assert.equal(detail.calculation.grossCents, "11000100"); assert.deepEqual(detail.originalCalculation, originalCalculation);

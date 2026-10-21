@@ -8,6 +8,5 @@
 
 export interface SnapshotInput {
   fetchId: number;
-  /** @minLength 1 */
-  note: string;
+  note?: string;
 }

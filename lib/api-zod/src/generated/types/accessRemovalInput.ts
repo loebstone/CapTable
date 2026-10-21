@@ -8,6 +8,6 @@
 
 export interface AccessRemovalInput {
   personId: string;
-  /** @minLength 1 */
-  note: string;
+  /** @maxLength 5000 */
+  note?: string;
 }

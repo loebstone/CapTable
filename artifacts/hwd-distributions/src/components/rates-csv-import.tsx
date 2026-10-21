@@ -48,7 +48,8 @@ export function RatesCsvImport({ initialYear, onDone }: { initialYear?: number; 
           }} />
       </Field>
       {(error || preview.error || confirm.error) && <p role="alert" className="whitespace-pre-wrap text-sm text-destructive">{error || errMessage(preview.error ?? confirm.error)}</p>}
-      {!confirm.isSuccess && <Btn variant="ghost" disabled={!valid || busy} data-testid="button-preview-rates-csv"
+      {(busy || confirm.isSuccess) && <p className="text-xs text-muted-foreground">Year and file selection are locked during import. When finished, close this dialog to start another import.</p>}
+      {!confirm.isSuccess && <Btn variant="ghost" disabled={!valid || busy} disabledReason={busy ? "Reading or importing the CSV; please wait." : "Choose a CSV file up to 64 KB and a tax year from 1900 to 9999."} data-testid="button-preview-rates-csv"
         onClick={() => { if (file) { confirm.reset(); preview.mutate({ data: { taxYear, ...file } }); } }}>
         {preview.isPending ? "Checking CSV…" : "Preview CSV"}
       </Btn>}

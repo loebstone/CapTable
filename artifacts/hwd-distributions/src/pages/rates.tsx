@@ -23,7 +23,7 @@ export default function RatesPage() {
         title="Capital gains rates by tax year"
         actions={<>
           <Btn variant="ghost" onClick={() => setMode({ kind: "import", year: list[0]?.taxYear })} data-testid="button-import-rates-csv">Import CSV</Btn>
-          <Btn variant="ghost" onClick={() => setMode({ kind: "copy", from: list[0]?.taxYear })} disabled={list.length === 0} data-testid="button-copy-rates"><Copy className="h-4 w-4" /> Copy a year</Btn>
+          <Btn variant="ghost" onClick={() => setMode({ kind: "copy", from: list[0]?.taxYear })} disabled={list.length === 0} disabledReason="Create a rate table before copying a year." data-testid="button-copy-rates"><Copy className="h-4 w-4" /> Copy a year</Btn>
           <Btn onClick={() => setMode({ kind: "edit", base: null })} data-testid="button-new-rates"><Plus className="h-4 w-4" /> New year</Btn>
         </>}
       >
@@ -47,8 +47,8 @@ export default function RatesPage() {
               </div>
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-border">
-                  <RateRow label="Federal" rate={t.federalRate} source={t.federalSourceNote} />
-                  {t.states.map((s) => <RateRow key={s.stateCode} label={s.stateCode} rate={s.rate} source={s.sourceNote} />)}
+                  <RateRow label="Federal" rate={t.federalRate} source={t.federalSourceNote ?? ""} />
+                  {t.states.map((s) => <RateRow key={s.stateCode} label={s.stateCode} rate={s.rate} source={s.sourceNote ?? ""} />)}
                 </tbody>
               </table>
             </article>
@@ -99,26 +99,26 @@ function RateForm({ base, onDone }: { base: RateTable | null; onDone: () => void
   const y = Number(year);
   const yearOk = Number.isInteger(y) && y >= 1900 && y <= 9999;
   const stateErr = (s: StateRate) =>
-    !STATE_RE.test(s.stateCode) ? "State code" : !RATE_RE.test(s.rate) ? "Rate format 0.0000" : s.stateCode === "NONE" && s.rate !== "0.0000" ? "NONE must be 0.0000" : !s.sourceNote.trim() ? "Source required" : null;
+    !STATE_RE.test(s.stateCode) ? "State code" : !RATE_RE.test(s.rate) ? "Rate format 0.0000" : s.stateCode === "NONE" && s.rate !== "0.0000" ? "NONE must be 0.0000" : null;
   const dupe = new Set(states.map((s) => s.stateCode)).size !== states.length;
-  const valid = yearOk && RATE_RE.test(fed) && fedSrc.trim() && note.trim() && !dupe && states.every((s) => !stateErr(s));
+  const valid = yearOk && RATE_RE.test(fed) && !dupe && states.every((s) => !stateErr(s));
   const upd = (i: number, p: Partial<StateRate>) => setStates((xs) => xs.map((x, j) => (j === i ? { ...x, ...p } : x)));
 
   return (
     <form className="space-y-5" onSubmit={(e) => {
       e.preventDefault();
-      if (valid) save.mutate({ data: { taxYear: y, federalRate: fed, federalSourceNote: fedSrc.trim(), states: states.map((s) => ({ ...s, sourceNote: s.sourceNote.trim() })), note: note.trim() } });
+      if (valid) save.mutate({ data: { taxYear: y, federalRate: fed, federalSourceNote: fedSrc.trim(), states: states.map((s) => ({ ...s, sourceNote: s.sourceNote?.trim() ?? "" })), note: note.trim() } });
     }}>
       <DialogHeader>
         <DialogTitle className="font-display text-2xl font-normal">{base ? `Correct ${base.taxYear} rates` : "New tax year"}</DialogTitle>
         <DialogDescription>Four decimal places as a fraction: 0.1500 = 15.00%. The previous version stays in the write history.</DialogDescription>
       </DialogHeader>
       <div className="grid gap-3 sm:grid-cols-[110px_130px_1fr]">
-        <Field label="Tax year"><input className={inputCls + " num"} value={year} disabled={!!base} onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))} maxLength={4} data-testid="input-tax-year" /></Field>
+        <Field label="Tax year" hint={base ? "The year is fixed when revising its rates." : undefined}><input className={inputCls + " num"} value={year} disabled={!!base} onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))} maxLength={4} data-testid="input-tax-year" /></Field>
         <Field label="Federal rate" hint={ratePct(fed) ?? undefined} error={fed && !RATE_RE.test(fed) ? "Format 0.0000" : null}>
           <input className={inputCls + " num"} value={fed} onChange={(e) => setFed(e.target.value.trim())} placeholder="0.0000" data-testid="input-federal-rate" />
         </Field>
-        <Field label="Federal source"><input className={inputCls} value={fedSrc} onChange={(e) => setFedSrc(e.target.value)} placeholder="Where this rate comes from" data-testid="input-federal-source" /></Field>
+        <Field label="Federal source (optional)"><input className={inputCls} value={fedSrc} onChange={(e) => setFedSrc(e.target.value)} placeholder="Where this rate comes from (optional)" data-testid="input-federal-source" /></Field>
       </div>
 
       <div className="space-y-2">
@@ -137,7 +137,7 @@ function RateForm({ base, onDone }: { base: RateTable | null; onDone: () => void
                 <div className="mt-0.5 text-[11px] text-muted-foreground">{ratePct(s.rate) ?? ""}</div>
               </div>
               <div>
-                <input className={inputCls} value={s.sourceNote} onChange={(e) => upd(i, { sourceNote: e.target.value })} placeholder="Source" data-testid={`input-state-source-${i}`} />
+                <input className={inputCls} value={s.sourceNote} onChange={(e) => upd(i, { sourceNote: e.target.value })} placeholder="Source (optional)" data-testid={`input-state-source-${i}`} />
                 {err && <div className="mt-0.5 text-[11px] text-destructive">{err}</div>}
               </div>
               <button type="button" className="mt-2 text-muted-foreground transition-colors hover:text-destructive" onClick={() => setStates((x) => x.filter((_, j) => j !== i))} aria-label="Remove state" data-testid={`button-remove-state-${i}`}><Trash2 className="h-4 w-4" /></button>
@@ -147,13 +147,13 @@ function RateForm({ base, onDone }: { base: RateTable | null; onDone: () => void
         {dupe && <div className="text-xs text-destructive">Each state may appear once.</div>}
       </div>
 
-      <Field label="Note (required)" hint={base ? "Why this correction is being made." : "Context for this year's table."}>
+      <Field label="Note (optional)" hint="Optional context for this year's table or revision.">
         <textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-rates-note" />
       </Field>
       {save.isError && <div className="text-xs text-destructive">{errMessage(save.error)}</div>}
       <div className="flex justify-end gap-2">
         <Btn type="button" variant="quiet" onClick={onDone}>Cancel</Btn>
-        <Btn type="submit" disabled={!valid || save.isPending} data-testid="button-save-rates">{save.isPending ? "Saving…" : "Save rates"}</Btn>
+        <Btn type="submit" disabled={!valid || save.isPending} disabledReason={save.isPending ? "Saving rates; please wait." : !yearOk ? "Enter a tax year from 1900 to 9999." : dupe ? "Use only one row for each state code." : "Enter valid rate fractions in 0.0000 format; check each state code and keep NONE at 0.0000."} data-testid="button-save-rates">{save.isPending ? "Saving…" : "Save rates"}</Btn>
       </div>
     </form>
   );
@@ -167,7 +167,7 @@ function CopyForm({ from, years, onDone }: { from?: number; years: number[]; onD
   const [note, setNote] = useState("");
   const copy = useCopyRates({ mutation: { onSuccess: (t) => { inval(); toast({ title: `Copied into ${t.taxYear}`, description: "Review each rate before relying on it." }); onDone(); } } });
   const f = Number(fromY), t = Number(toY);
-  const valid = years.includes(f) && t >= 1900 && t <= 9999 && t !== f && note.trim();
+  const valid = years.includes(f) && t >= 1900 && t <= 9999 && t > f && !years.includes(t);
   return (
     <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) copy.mutate({ data: { fromYear: f, toYear: t, note: note.trim() } }); }}>
       <DialogHeader>
@@ -183,11 +183,11 @@ function CopyForm({ from, years, onDone }: { from?: number; years: number[]; onD
         </Field>
         <Field label="To year"><input className={inputCls + " num"} value={toY} maxLength={4} onChange={(e) => setToY(e.target.value.replace(/\D/g, ""))} data-testid="input-to-year" /></Field>
       </div>
-      <Field label="Note (required)"><textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-copy-note" /></Field>
+      <Field label="Note (optional)"><textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-copy-note" /></Field>
       {copy.isError && <div className="text-xs text-destructive">{errMessage(copy.error)}</div>}
       <div className="flex justify-end gap-2">
         <Btn type="button" variant="quiet" onClick={onDone}>Cancel</Btn>
-        <Btn type="submit" disabled={!valid || copy.isPending} data-testid="button-confirm-copy">{copy.isPending ? "Copying…" : "Copy rates"}</Btn>
+        <Btn type="submit" disabled={!valid || copy.isPending} disabledReason={copy.isPending ? "Copying rates; please wait." : !years.includes(f) ? "Select an existing source year." : years.includes(t) ? "The destination already has a rate table." : "Enter a later destination year from 1900 to 9999."} data-testid="button-confirm-copy">{copy.isPending ? "Copying…" : "Copy rates"}</Btn>
       </div>
     </form>
   );

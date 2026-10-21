@@ -86,7 +86,7 @@ function OpenYearForm({ existing, onDone }: { existing: number[]; onDone: () => 
   const prior = rateYears.find((r) => r < y) ?? rateYears[0];
   const snapList = [...(snaps.data ?? [])].sort((a, b) => b.id - a.id);
   const current = holdings.data?.holdings;
-  const valid = yearOk && !dup && hasRates && snapId && note.trim();
+  const valid = yearOk && !dup && hasRates && !!snapId;
 
   return (
     <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (valid) openY.mutate({ data: { calendarYear: y, isPractice, snapshotId: snapId!, note: note.trim() } }); }}>
@@ -111,8 +111,8 @@ function OpenYearForm({ existing, onDone }: { existing: number[]; onDone: () => 
             <div><b className="font-medium">No {yearOk ? y : ""} rate table.</b> Rates are required before a year can open. <Link href="/rates" className="text-primary underline underline-offset-2" data-testid="link-rates">Enter them on Annual rates</Link>{prior ? <> or copy from {prior}.</> : "."}</div>
             {prior && yearOk && (
               <div className="flex flex-wrap items-end gap-2">
-                <input className={inputCls + " flex-1"} placeholder="Note for the copy (required)" value={copyNote} onChange={(e) => setCopyNote(e.target.value)} data-testid="input-copy-rates-note" />
-                <Btn type="button" variant="ghost" disabled={!copyNote.trim() || copy.isPending} onClick={() => copy.mutate({ data: { fromYear: prior, toYear: y, note: copyNote.trim() } })} data-testid="button-copy-prior-rates"><Copy className="h-3.5 w-3.5" /> {copy.isPending ? "Copying…" : `Copy ${prior} → ${y}`}</Btn>
+                <input className={inputCls + " flex-1"} placeholder="Note for the copy (optional)" value={copyNote} onChange={(e) => setCopyNote(e.target.value)} data-testid="input-copy-rates-note" />
+                <Btn type="button" variant="ghost" disabled={copy.isPending} onClick={() => copy.mutate({ data: { fromYear: prior, toYear: y, note: copyNote.trim() } })} data-testid="button-copy-prior-rates"><Copy className="h-3.5 w-3.5" /> {copy.isPending ? "Copying…" : `Copy ${prior} → ${y}`}</Btn>
               </div>
             )}
             {copy.isError && <div className="text-xs text-destructive">{errMessage(copy.error)}</div>}
@@ -143,19 +143,19 @@ function OpenYearForm({ existing, onDone }: { existing: number[]; onDone: () => 
           </div>
           {current && (
             <div className="flex flex-wrap gap-2">
-              <input className={inputCls + " flex-1"} placeholder="Snapshot note (required)" value={snapNote} onChange={(e) => setSnapNote(e.target.value)} data-testid="input-snapshot-note" />
-              <Btn type="button" variant="ghost" disabled={!snapNote.trim() || take.isPending} onClick={() => take.mutate({ data: { fetchId: current.id, note: snapNote.trim() } })} data-testid="button-take-snapshot"><Camera className="h-3.5 w-3.5" /> {take.isPending ? "Taking…" : "Take new snapshot"}</Btn>
+              <input className={inputCls + " flex-1"} placeholder="Snapshot note (optional)" value={snapNote} onChange={(e) => setSnapNote(e.target.value)} data-testid="input-snapshot-note" />
+              <Btn type="button" variant="ghost" disabled={take.isPending} onClick={() => take.mutate({ data: { fetchId: current.id, note: snapNote.trim() } })} data-testid="button-take-snapshot"><Camera className="h-3.5 w-3.5" /> {take.isPending ? "Taking…" : "Take new snapshot"}</Btn>
             </div>
           )}
           {(fetchH.isError || take.isError) && <div className="text-xs text-destructive">{errMessage(fetchH.error ?? take.error)}</div>}
         </div>
       </section>
 
-      <Field label="Note (required)"><textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-open-note" /></Field>
+      <Field label="Note (optional)"><textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-open-note" /></Field>
       {openY.isError && <div className="text-xs text-destructive">{errMessage(openY.error)}</div>}
       <div className="flex justify-end gap-2">
         <Btn type="button" variant="quiet" onClick={onDone}>Cancel</Btn>
-        <Btn type="submit" disabled={!valid || openY.isPending} data-testid="button-confirm-open-year">{openY.isPending ? "Opening…" : "Open year"}</Btn>
+        <Btn type="submit" disabled={!valid || openY.isPending} disabledReason={openY.isPending ? "Opening this year; please wait." : !yearOk ? "Enter a calendar year from 1900 to 9999." : dup ? "A real distribution year already exists for this calendar year." : !hasRates ? "Create or copy this year's rate table first." : "Select a holdings snapshot first."} data-testid="button-confirm-open-year">{openY.isPending ? "Opening…" : "Open year"}</Btn>
       </div>
     </form>
   );

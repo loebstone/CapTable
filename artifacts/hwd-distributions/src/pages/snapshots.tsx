@@ -15,7 +15,7 @@ export function SnapshotsPage() {
       </PageHeader>
       {q.isLoading ? <SkeletonRows /> : q.isError ? <ErrorPanel error={q.error} onRetry={() => q.refetch()} /> : list.length === 0 ? (
         <Empty title="No snapshots recorded." action={<Link href="/holdings" className="text-sm text-primary hover:underline">Go to holdings</Link>}>
-          Fetch current holdings, then record them with a note to start the history.
+          Fetch current holdings, then record an immutable snapshot. A note is optional.
         </Empty>
       ) : (
         <ol className="relative space-y-2 border-l border-input pl-5">

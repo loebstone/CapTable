@@ -22,8 +22,8 @@ async function appendRates(tx: Tx, actor: string, data: RateData) {
   if (new Set(data.states.map((s) => s.stateCode)).size !== data.states.length) throw new HttpError(400, "Use only one row per state code");
   if (data.states.some((s) => s.stateCode === "NONE" && s.rate !== "0.0000")) throw new HttpError(400, "NONE must have a zero rate");
   const { states, ...annual } = data;
-  const row = await append(tx, actor, rateTables, { ...annual, createdBy: actor });
-  for (const state of states) await append(tx, actor, stateRates, { tableId: row.id, ...state });
+  const row = await append(tx, actor, rateTables, { ...annual, note: annual.note.trim(), federalSourceNote: annual.federalSourceNote.trim(), createdBy: actor });
+  for (const state of states) await append(tx, actor, stateRates, { tableId: row.id, ...state, sourceNote: state.sourceNote.trim() });
   return fullTable(row, tx);
 }
 router.get("/rates", async (_req, res): Promise<void> => {
