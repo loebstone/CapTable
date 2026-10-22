@@ -105,7 +105,7 @@ try {
   const earlyStatementPath = `${earlyBase}/reports/statement/${practiceHolder.personId}.pdf`;
   const emptyStatement = await call("get", earlyStatementPath, cookie);
   expect(emptyStatement, 200);
-  assert.equal(await watermarked(emptyStatement.body, null, ["not yet declared", "Estimated tax (proposed)", "Not recorded"]), 1);
+  assert.equal(await watermarked(emptyStatement.body, null, ["not yet set", "Estimated tax", "Not recorded"]), 1);
   const emptyBoard = await call("get", `${earlyBase}/reports/board.pdf`, cookie);
   expect(emptyBoard, 200); assert.equal(await watermarked(emptyBoard.body), 1);
   const emptyLedger = await call("get", `${earlyBase}/reports/ledger.xlsx`, cookie);
@@ -124,12 +124,12 @@ try {
   expect(await call("post", `${earlyBase}/figures`, cookie, noDocuments), 201);
   const undeclaredStatement = await call("get", earlyStatementPath, cookie);
   expect(undeclaredStatement, 200);
-  assert.equal(await watermarked(undeclaredStatement.body, null, ["not yet declared", "Proposed amount per share", "$77.83", "$1,556.60", "Estimated tax (proposed)", "$1,100.00"]), 1);
+  assert.equal(await watermarked(undeclaredStatement.body, null, ["not yet set", "Proposed amount per share", "$77.83", "$1,556.60", "Estimated tax", "$1,100.00"]), 1);
   const earlyZip = await call("get", `${earlyBase}/reports/statements.zip`, cookie);
   expect(earlyZip, 200); assert.match(earlyZip.headers["content-disposition"], /_Practice_Statements_/);
   const earlyFiles = Object.values((await JSZip.loadAsync(earlyZip.body)).files).filter((f) => !f.dir);
   assert.equal(earlyFiles.length, 47);
-  for (const file of earlyFiles) assert.equal(await watermarked(await file.async("nodebuffer"), null, ["not yet declared"]), 1);
+  for (const file of earlyFiles) assert.equal(await watermarked(await file.async("nodebuffer"), null, ["not yet set"]), 1);
   expect(await call("post", `${earlyBase}/declaration`, cookie, { declaredPerShareCents: "7783", declarationDate: "2026-10-20", note: "STUB draft practice declaration" }), 201);
   let early = expect(await call("post", `${earlyBase}/payments`, cookie, { ...draftEntry, amountCents: "10000" }), 201);
   const earlyCash = early.payments[0];
@@ -204,7 +204,7 @@ try {
   expect(await call("get", `${base}/documents/${fixture.source.id}/file`, cookie), 400);
   const resetStatement = await call("get", `${base}/reports/statement/${holder.personId}.pdf`, cookie);
   assert.equal(resetStatement.status, 200);
-  assert.equal(await watermarked(resetStatement.body, null, ["not yet declared"]), 1);
+  assert.equal(await watermarked(resetStatement.body, null, ["not yet set"]), 1);
   assert.equal(Number((await client.query("SELECT count(*) AS n FROM audit_log")).rows[0].n), auditBefore + 1);
   const audit = (await client.query("SELECT actor, occurred_at, operation FROM audit_log ORDER BY id DESC LIMIT 1")).rows[0];
   const reset = JSON.parse(audit.operation);

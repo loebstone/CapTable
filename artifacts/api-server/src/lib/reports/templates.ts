@@ -54,22 +54,23 @@ export function statementHtml(context: ReportContext, holder: ReportHolder) {
     <h1>${ISSUER}</h1><p>Timber revenue distribution for ${year.calendarYear}</p></header>
     <div class="sub"><div><h2>${html(holder.displayName)}</h2><p>Class ${html(holder.shareClass)} · ${html(holder.shares)} shares</p></div>
     <div class="right muted"><p>Statement as of ${html(context.generatedAt.slice(0, 10))} (UTC)</p><p>${draftPractice ? "Proposed practice preview — not finalized" : year.status === "corrected" ? "Includes recorded corrections" : "Finalized distribution record"}</p></div></div>
-    <div class="box">Your distribution <strong class="hero amount">${html(undeclared ? "not yet declared" : dollars(holder.nominalCents))}</strong>
-    <p>${undeclared ? "No distribution has been declared. Proposed amounts below are for practice only." : "This is the amount declared for your shares, before accounting for cash already paid or amounts you directed the Corporation to retain."}</p></div>
+    <div class="box">Your distribution <strong class="hero amount">${html(undeclared ? "not yet set" : dollars(holder.nominalCents))}</strong>
+    <p>${undeclared ? "No distribution amount has been set. Proposed amounts below are for practice only." : `The Corporation distributed ${html(dollars(year.declaredPerShareCents))} per share. You hold ${html(holder.shares)} shares. Below is what has been paid to you and what you directed the Corporation to keep as additional paid-in capital.`}</p></div>
     <div class="grid"><section><h2>How your amount was determined</h2><table>
     ${valueRow("Net timbering profit for the year", dollars(c?.netProfitCents ?? null))}
-    ${valueRow("Declared amount per share", undeclared ? "not yet declared" : dollars(year.declaredPerShareCents))}
+    ${valueRow("Distribution per share", undeclared ? "not yet set" : dollars(year.declaredPerShareCents))}
     ${undeclared ? valueRow("Proposed amount per share", dollars(proposedPerShare)) + valueRow("Proposed distribution for your shares", dollars(proposedDistribution)) : ""}
-    ${valueRow("Declaration date", dateLabel(year.declarationDate))}
+    ${valueRow("Approved by the board on", dateLabel(year.declarationDate))}
     ${valueRow("Your shares", holder.shares)}
-    ${valueRow("Allocated profit", dollars(holder.shareOfGainCents))}
-    ${valueRow("Distribution", undeclared ? "not yet declared" : dollars(holder.nominalCents), true)}</table></section>
-    <section><h2>Your estimated tax${draftPractice ? " (proposed)" : ""}</h2><table>
+    ${valueRow("Allocated profit (your share of the net profit)", dollars(holder.shareOfGainCents))}
+    ${valueRow("Distribution", undeclared ? "not yet set" : dollars(holder.nominalCents), true)}</table></section>
+    <section><h2>Your estimated tax</h2><table>
     ${valueRow(c ? `Federal tax at ${percent(c.federalRate)}` : "Federal tax (awaiting figures)", dollars(federal))}
     ${valueRow(`State tax: ${holder.stateCode ?? "missing"} at ${percent(holder.stateRate)}`, dollars(state))}
     ${rounding === null || rounding === 0n ? "" : valueRow("Cent rounding adjustment", dollars(rounding))}
-    ${valueRow(draftPractice ? "Estimated tax (proposed)" : "Estimated tax", dollars(holder.estimatedTaxCents), true)}
-    ${valueRow(undeclared ? "Surplus/Deficit (proposed)" : "Surplus/Deficit", dollars(undeclared ? proposedSurplus : holder.surplusCents))}</table>
+    ${valueRow("Estimated tax", dollars(holder.estimatedTaxCents), true)}
+    ${valueRow("Surplus/Deficit", dollars(undeclared ? proposedSurplus : holder.surplusCents))}</table>
+    <p class="muted">Surplus/Deficit is your distribution less your estimated tax.</p>
     <p class="muted">Estimated from your share of the year's net timbering profit, using ${draftPractice ? "proposed practice inputs, not finalized figures. Missing amounts are not recorded, not zero" : "the rates recorded for this finalized year"}.</p></section></div>
     <p class="caveat">${TAX_CAVEAT}</p>
     <h2>Paid and APIC retained</h2>
@@ -81,6 +82,49 @@ export function statementHtml(context: ReportContext, holder: ReportHolder) {
     ${valueRow("APIC retained", dollars(holder.retainedCents))}</table>`}
     <p>Instruction: <strong>${html(holder.instruction)}</strong></p>`;
   return document(context, `${year.calendarYear} shareholder statement`, body);
+}
+export function statementNoticeHtml(context: ReportContext, holder: ReportHolder) {
+  const year = context.year;
+  const c = year.calculation;
+  const draftPractice = year.isPractice && year.status === "draft";
+  const undeclared = draftPractice && year.declaredPerShareCents === null;
+  // Identical presentation rounding and proposed fallback to statementHtml;
+  // this document never changes the stored inputs or year calculations.
+  const numerator = c ? BigInt(c.netProfitCents) * shareUnits(holder.shares) : null;
+  const denominator = 4000000n * 10000n;
+  const federal = numerator === null || !c ? null : rounded(numerator * rateUnits(c.federalRate), denominator);
+  const state = numerator === null || holder.stateRate === null ? null : rounded(numerator * rateUnits(holder.stateRate), denominator);
+  const rounding = holder.estimatedTaxCents === null || federal === null || state === null ? null : BigInt(holder.estimatedTaxCents) - federal - state;
+  const proposedPerShare = c?.proposedPerShareCents ?? null;
+  const proposedDistribution = proposedPerShare === null ? null : rounded(BigInt(proposedPerShare) * shareUnits(holder.shares), 10000n);
+  const proposedSurplus = proposedDistribution === null || holder.estimatedTaxCents === null ? null : proposedDistribution - BigInt(holder.estimatedTaxCents);
+  const surplus = undeclared ? proposedSurplus : holder.surplusCents === null ? null : BigInt(holder.surplusCents);
+  const eligible = surplus === null ? null : surplus > 0n ? surplus : 0n;
+  // Privacy boundary: only this holder's amounts and identity, never any
+  // payment/hold/correction records, free-text notes or other holders' names.
+  const body = `<header><div class="eyebrow">Shareholder distribution notice · ${year.calendarYear}</div>
+    <h1>${ISSUER}</h1><p>Timber revenue distribution for ${year.calendarYear}</p></header>
+    <div class="sub"><div><h2>${html(holder.displayName)}</h2><p>Class ${html(holder.shareClass)} · ${html(holder.shares)} shares</p></div>
+    <div class="right muted"><p>Notice dated ${html(context.generatedAt.slice(0, 10))}</p><p>${draftPractice ? "Proposed practice preview — not finalized" : year.status === "corrected" ? "Includes recorded corrections" : "Finalized distribution record"}</p></div></div>
+    <div class="box">Your distribution <strong class="hero amount">${html(undeclared ? "not yet set" : dollars(holder.nominalCents))}</strong>
+    <p>${undeclared ? "No distribution amount has been set. Proposed amounts below are for practice only." : `The Corporation will distribute ${html(dollars(year.declaredPerShareCents))} per share. You hold ${html(holder.shares)} shares.`}</p></div>
+    <div class="grid"><section><h2>How your amount was determined</h2><table>
+    ${valueRow(`Net timbering profit for ${year.calendarYear}`, dollars(c?.netProfitCents ?? null))}
+    ${valueRow("Distribution per share", undeclared ? "not yet set" : dollars(year.declaredPerShareCents))}
+    ${valueRow("Approved by the board on", dateLabel(year.declarationDate))}
+    ${valueRow("Your shares", holder.shares)}
+    ${valueRow("Your distribution", undeclared ? "not yet set" : dollars(holder.nominalCents), true)}</table></section>
+    <section><h2>Your estimated tax</h2><table>
+    ${valueRow("Allocated profit (your share of the net profit)", dollars(holder.shareOfGainCents))}
+    ${valueRow(c ? `Federal tax at ${percent(c.federalRate)}` : "Federal tax (awaiting figures)", dollars(federal))}
+    ${valueRow(`State tax: ${holder.stateCode ?? "missing"} at ${percent(holder.stateRate)}`, dollars(state))}
+    ${rounding === null || rounding === 0n ? "" : valueRow("Cent rounding adjustment", dollars(rounding))}
+    ${valueRow("Estimated tax", dollars(holder.estimatedTaxCents), true)}
+    ${valueRow("Surplus/Deficit", dollars(surplus))}
+    ${valueRow("Amount eligible for Additional Paid-In Capital reinvestment", dollars(eligible))}</table>
+    <p class="muted">Surplus/Deficit is your distribution less your estimated tax.</p></section></div>
+    <p class="caveat">${TAX_CAVEAT}</p>`;
+  return document(context, `${year.calendarYear} shareholder distribution notice`, body);
 }
 export function boardHtml(context: ReportContext) {
   const year = context.year, c = year.calculation;
@@ -98,10 +142,10 @@ export function boardHtml(context: ReportContext) {
     <h1>${ISSUER}</h1><div class="sub"><p>Distribution year ${year.calendarYear} · snapshot #${year.snapshotId}</p><p>As of ${html(context.generatedAt.slice(0, 10))} (UTC)</p></div></header>
     <p>${context.classes.map((cl) => `Class ${html(cl.shareClass)}: ${html(cl.totalShares)} shares / ${cl.holderCount} holders`).join(" · ")} · <strong>${year.holders.length} shareholders</strong></p>
     <div class="grid"><section><h2>Year figures and source documents</h2><table class="mini">${figureRows}</table>
-    <p><strong>Declared per share:</strong> ${html(dollars(year.declaredPerShareCents))} · <strong>Date:</strong> ${html(dateLabel(year.declarationDate))}</p>
+    <p><strong>Distribution per share:</strong> ${html(dollars(year.declaredPerShareCents))} · <strong>Date:</strong> ${html(dateLabel(year.declarationDate))}</p>
     <table class="mini">${valueRow("Sum of distributions", dollars(c?.sumNominalCents ?? null))}
-    ${valueRow("Declared per share × 400", dollars(c?.declaredPoolCents ?? null))}
-    ${valueRow("Rounding residual (sum minus declared × 400)", dollars(c?.residualCents ?? null), true)}</table></section>
+    ${valueRow("Distribution per share × 400", dollars(c?.declaredPoolCents ?? null))}
+    ${valueRow("Rounding residual (sum minus per share × 400)", dollars(c?.residualCents ?? null), true)}</table></section>
     <section><h2>Worked proposed per-share calculation</h2><table class="mini">${worked}</table></section></div>
     <div class="totals"><span>on hold: ${year.totals.heldCount}, paid in full: ${year.totals.completeCount}, to pay: ${year.totals.openCount}</span></div>
     <table class="holders"><colgroup><col style="width:20%"><col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:8%"><col style="width:7%"></colgroup><thead><tr>

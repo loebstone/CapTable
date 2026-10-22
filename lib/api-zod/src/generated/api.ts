@@ -1903,6 +1903,21 @@ export const DownloadYearDocumentParams = zod.object({
 export const DownloadYearDocumentResponse = zod.unknown()
 
 
+export const DownloadNoticeParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "personId": zod.coerce.string()
+})
+
+export const DownloadNoticeResponse = zod.unknown()
+
+
+export const DownloadNoticesZipParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DownloadNoticesZipResponse = zod.unknown()
+
+
 export const DownloadStatementParams = zod.object({
   "id": zod.coerce.number().int(),
   "personId": zod.coerce.string()

@@ -525,6 +525,29 @@ paths:
           content:
             application/octet-stream:
               schema: {type: string, format: binary}
+  /years/{id}/reports/notice/{personId}.pdf:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      - {name: personId, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: downloadNotice
+      responses:
+        "200":
+          description: Private one-page shareholder distribution notice; practice at any stage, real years finalized only
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+  /years/{id}/reports/notices.zip:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: downloadNoticesZip
+      responses:
+        "200":
+          description: Private ZIP of shareholder distribution notices with the same gate as statements
+          content:
+            application/zip:
+              schema: {type: string, format: binary}
   /years/{id}/reports/statement/{personId}.pdf:
     parameters:
       - {name: id, in: path, required: true, schema: {type: integer}}

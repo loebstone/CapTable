@@ -1,5 +1,6 @@
 - [Chromium PDF fitting](chromium-pdf-fitting.md) — use print scaling for one-page reports; CSS zoom can reflow rows and push the footer onto another page.
 - [PDF text verification](pdf-text-verification.md) — preserve glyph adjacency when extracting Chromium PDF text; ligatures can be split across adjacent items.
+- [Shareholder report purpose](shareholder-report-purpose.md) — notices precede shareholder decisions; statements record paid/APIC afterward. Keep family-facing vocabulary simple.
 - [Validator versions](validation-versions.md) — unversioned Zod and v4 errors may not share class identity; malformed-input checks catch false 500 responses.
 - [ZIP stream compatibility](zip-stream-compatibility.md) — JSZip may emit legacy streams without async iteration; pipeline supports their backpressure.
 - [Export test responses](export-test-responses.md) — binary download URLs can return JSON errors; interpret the actual response format before asserting messages.

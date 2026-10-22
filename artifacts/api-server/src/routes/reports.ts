@@ -2,9 +2,10 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import JSZip from "jszip";
 import {
   DownloadStatementParams, DownloadStatementsZipParams, DownloadBoardSummaryParams, DownloadLedgerParams,
+  DownloadNoticeParams, DownloadNoticesZipParams,
 } from "@workspace/api-zod";
-import { reportContext, reportHolder, finalized, statementFilename, reportFilename } from "../lib/reports/context";
-import { statementHtml, boardHtml } from "../lib/reports/templates";
+import { reportContext, reportHolder, finalized, statementFilename, noticeFilename, reportFilename } from "../lib/reports/context";
+import { statementHtml, statementNoticeHtml, boardHtml } from "../lib/reports/templates";
 import { withPdfBrowser, onePagePdf } from "../lib/reports/pdf";
 import { ledgerWorkbook } from "../lib/reports/workbook";
 import { currentIdentity } from "../lib/auth";
@@ -22,6 +23,27 @@ async function sendReport(req: Request, res: Response, filename: string, mime: s
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.send(bytes);
 }
+router.get("/years/:id/reports/notice/:personId.pdf", async (req, res): Promise<void> => {
+  const { id, personId } = DownloadNoticeParams.parse(req.params);
+  const context = await reportContext(id); finalized(context);
+  const holder = reportHolder(context, personId);
+  const bytes = await withPdfBrowser((browser) => onePagePdf(browser, statementNoticeHtml(context, holder)));
+  await sendReport(req, res, noticeFilename(context, holder), "application/pdf", bytes);
+});
+router.get("/years/:id/reports/notices.zip", async (req, res): Promise<void> => {
+  const { id } = DownloadNoticesZipParams.parse(req.params);
+  const context = await reportContext(id); finalized(context);
+  const filenames = context.year.holders.map((holder) => noticeFilename(context, holder));
+  if (new Set(filenames).size !== filenames.length) throw new HttpError(409, "Two shareholders produce the same inferred notice filename; export them individually rather than silently replacing a ZIP entry");
+  const bytes = await withPdfBrowser(async (browser) => {
+    const zip = new JSZip();
+    for (const [index, holder] of context.year.holders.entries()) {
+      zip.file(filenames[index], await onePagePdf(browser, statementNoticeHtml(context, holder)));
+    }
+    return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
+  });
+  await sendReport(req, res, reportFilename(context, "notices"), "application/zip", bytes);
+});
 router.get("/years/:id/reports/statement/:personId.pdf", async (req, res): Promise<void> => {
   const { id, personId } = DownloadStatementParams.parse(req.params);
   const context = await reportContext(id); finalized(context);

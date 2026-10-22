@@ -1,0 +1,30 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "IPehZ7K7i3PERc77h2axW"
+uri = "file://generated-artifacts/report-notices/STUB_Forster_notice.pdf"
+type = "pdf"
+title = "Practice notice — verification sample"
+description = "Development-only local Roster stub fixture. One page, PRACTICE watermark, and verified APIC eligibility."
+logical_id = "0231db84-d9ff-4c26-a10f-14af082107bc"
+content_hash = "sha256:84012bcb6becf2a43d152f0ba661ad30e63c0e8abb70e64fdaad79b46cfde24f"
+size = 66458
+mtime_ms = 1792687134873
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/0231db84-d9ff-4c26-a10f-14af082107bc/ae49fe4e-c84b-43b3-aedc-0dff8281f7b2"
+storage_version_token = "1792687548754177"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "CHTzjKQD9eMe1T-iBEnG-"
+uri = "file://generated-artifacts/report-notices/STUB_Forster_statement.pdf"
+type = "pdf"
+title = "Practice statement — verification sample"
+description = "The same stub shareholder and figures, with revised wording and the existing payment/APIC section preserved."
+logical_id = "3f8d6dba-ff36-4578-af6b-6eab93097c37"
+content_hash = "sha256:a1858eab36b2b7886564e197f3a9273e7e816bc914ab6d741b81aad23a659a16"
+size = 79063
+mtime_ms = 1792687134873
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/3f8d6dba-ff36-4578-af6b-6eab93097c37/37b9f2ab-8f85-4f49-ae3b-166bf0fa1083"
+storage_version_token = "1792687549399385"
+content_type = "application/pdf"

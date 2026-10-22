@@ -3242,6 +3242,153 @@ export function useDownloadYearDocument<TData = Awaited<ReturnType<typeof downlo
 
 
 
+export const getDownloadNoticeUrl = (id: number,
+    personId: string,) => {
+
+
+
+
+  return `/api/years/${id}/reports/notice/${personId}.pdf`
+}
+
+export const downloadNotice = async (id: number,
+    personId: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadNoticeUrl(id,personId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadNoticeQueryKey = (id: number,
+    personId: string,) => {
+    return [
+    `/api/years/${id}/reports/notice/${personId}.pdf`
+    ] as const;
+    }
+
+
+export const getDownloadNoticeQueryOptions = <TData = Awaited<ReturnType<typeof downloadNotice>>, TError = ErrorType<unknown>>(id: number,
+    personId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadNotice>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadNoticeQueryKey(id,personId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadNotice>>> = ({ signal }) => downloadNotice(id,personId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && personId !== null && personId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadNotice>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadNoticeQueryResult = NonNullable<Awaited<ReturnType<typeof downloadNotice>>>
+export type DownloadNoticeQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadNotice<TData = Awaited<ReturnType<typeof downloadNotice>>, TError = ErrorType<unknown>>(
+ id: number,
+    personId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadNotice>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadNoticeQueryOptions(id,personId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadNoticesZipUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/reports/notices.zip`
+}
+
+export const downloadNoticesZip = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadNoticesZipUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadNoticesZipQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/reports/notices.zip`
+    ] as const;
+    }
+
+
+export const getDownloadNoticesZipQueryOptions = <TData = Awaited<ReturnType<typeof downloadNoticesZip>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadNoticesZip>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadNoticesZipQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadNoticesZip>>> = ({ signal }) => downloadNoticesZip(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadNoticesZip>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadNoticesZipQueryResult = NonNullable<Awaited<ReturnType<typeof downloadNoticesZip>>>
+export type DownloadNoticesZipQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadNoticesZip<TData = Awaited<ReturnType<typeof downloadNoticesZip>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadNoticesZip>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadNoticesZipQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getDownloadStatementUrl = (id: number,
     personId: string,) => {
 

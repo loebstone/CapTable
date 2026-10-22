@@ -41,8 +41,11 @@ export function statementFilename(context: ReportContext, holder: ReportHolder) 
   const [last, ...given] = holder.displayName.trim().split(/\s+/);
   return `HWD_Distribution_${context.year.calendarYear}_${context.year.isPractice ? "Practice_" : ""}Statement_${safeName(last)}_${safeName(given[0] || last)}_${reportDate(context)}.pdf`;
 }
-export function reportFilename(context: ReportContext, kind: "board" | "ledger" | "zip") {
-  const suffix = { board: "Board_Summary", ledger: "Ledger", zip: "Statements" }[kind];
-  const extension = { board: "pdf", ledger: "xlsx", zip: "zip" }[kind];
+export function noticeFilename(context: ReportContext, holder: ReportHolder) {
+  return statementFilename(context, holder).replace("_Statement_", "_Notice_");
+}
+export function reportFilename(context: ReportContext, kind: "board" | "ledger" | "zip" | "notices") {
+  const suffix = { board: "Board_Summary", ledger: "Ledger", zip: "Statements", notices: "Notices" }[kind];
+  const extension = { board: "pdf", ledger: "xlsx", zip: "zip", notices: "zip" }[kind];
   return `HWD_Distribution_${context.year.calendarYear}_${context.year.isPractice ? "Practice_" : ""}${suffix}_${reportDate(context)}.${extension}`;
 }
