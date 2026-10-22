@@ -1,3 +1,4 @@
+import { formatShares } from "@workspace/display";
 import { useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -301,7 +302,7 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
                   </td>
                   <td className="num px-2 py-2">{h.shareClass}</td>
                   <td className="num px-2 py-2">{h.stateCode ?? "—"}{!h.residenceConfirmed && <span className="ml-1 text-[10px] text-primary">unconf.</span>}{h.stateRate && <div className="text-[10px] text-muted-foreground">{h.stateRate}</div>}</td>
-                  <td className="num px-2 py-2 text-right">{h.shares}</td>
+                  <td className="num px-2 py-2 text-right">{formatShares(h.shares)}</td>
                   <td className="num px-2 py-2 text-right">{fmtCents(h.shareOfGainCents)}</td>
                   <td className="num px-2 py-2 text-right font-medium" data-testid={`text-distribution-${h.personId}`}>{fmtCents(h.nominalCents)}</td>
                   <td className="num px-2 py-2 text-right">{fmtCents(h.estimatedTaxCents)}</td>

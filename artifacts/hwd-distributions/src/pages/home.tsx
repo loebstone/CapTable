@@ -1,3 +1,4 @@
+import { formatShares } from "@workspace/display";
 import { Link } from "wouter";
 import { useGetHoldings, useListYears, useListPracticeYears, getGetHoldingsQueryKey, getListYearsQueryKey } from "@workspace/api-client-react";
 import { ArrowRight } from "lucide-react";
@@ -38,13 +39,13 @@ export default function HomePage() {
                 {[...h.classes].sort((a, b) => a.shareClass.localeCompare(b.shareClass)).map((c) => (
                   <tr key={c.shareClass} data-testid={`row-home-class-${c.shareClass}`}>
                     <td className="px-4 py-2">Class {c.shareClass}</td>
-                    <td className="num px-4 py-2 text-right">{c.totalShares}</td>
+                    <td className="num px-4 py-2 text-right">{formatShares(c.totalShares)}</td>
                     <td className="num px-4 py-2 text-right">{c.holderCount}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot className="border-t-2 border-double border-border bg-secondary/40 font-medium">
-                <tr><td className="px-4 py-2">Total</td><td className="num px-4 py-2 text-right" data-testid="text-home-total">{h.grandTotal}</td><td className="num px-4 py-2 text-right" title="Distinct holders across Classes" data-testid="text-home-holder-total">{new Set(h.holdings.map((holder) => holder.personId)).size}</td></tr>
+                <tr><td className="px-4 py-2">Total</td><td className="num px-4 py-2 text-right" data-testid="text-home-total">{formatShares(h.grandTotal)}</td><td className="num px-4 py-2 text-right" title="Distinct holders across Classes" data-testid="text-home-holder-total">{new Set(h.holdings.map((holder) => holder.personId)).size}</td></tr>
               </tfoot>
             </table>
             <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">As of {fmtDate(h.asOf)} · fetched {fmtDate(h.fetchedAt, true)} · fetch #{h.id}</div>

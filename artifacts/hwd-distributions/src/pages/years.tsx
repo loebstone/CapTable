@@ -1,3 +1,4 @@
+import { formatShares } from "@workspace/display";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -130,7 +131,7 @@ function OpenYearForm({ existing, onDone }: { existing: number[]; onDone: () => 
               <button type="button" key={s.id} onClick={() => setSnapId(s.id)} className={cn("flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors", snapId === s.id ? "bg-primary/10" : "hover:bg-secondary/60")} data-testid={`button-select-snapshot-${s.id}`}>
                 <span className={cn("h-3 w-3 shrink-0 rounded-full border", snapId === s.id ? "border-primary bg-primary" : "border-input")} />
                 <span className="num">#{s.id}</span>
-                <span className="text-xs text-muted-foreground">as of {fmtDate(s.asOf)} · {s.rowCount} rows · <span className="num">{s.grandTotal}</span> shares</span>
+                <span className="text-xs text-muted-foreground">as of {fmtDate(s.asOf)} · {s.rowCount} rows · <span className="num">{formatShares(s.grandTotal)}</span> shares</span>
                 <span className="ml-auto truncate text-xs text-muted-foreground">{s.note}</span>
               </button>
             ))}

@@ -6,6 +6,8 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import JSZip from "jszip";
+import ExcelJS from "exceljs";
+import { formatShares } from "@workspace/display";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { stage2Harness } from "./stage2-harness.mjs";
 import { finalizedFixture } from "./stage3-fixture.mjs";
@@ -45,6 +47,12 @@ function binary(response, status = 200) {
 }
 let base, cookie;
 try {
+  for (const [input, expected] of [
+    ["20.0000", "20"], ["12.5000", "12.5"], ["6.2500", "6.25"],
+    ["0.0000", "0"], ["100", "100"], ["100.0000", "100"], ["400.0000", "400"],
+    ["0.0001", "0.0001"], ["8.4000", "8.4"], ["12.3456789000", "12.3456789"],
+    ["9007199254740993.0001", "9007199254740993.0001"],
+  ]) assert.equal(formatShares(input), expected);
   const fixture = await finalizedFixture(h, { isPractice: true });
   cookie = fixture.cookie;
   base = `/api/years/${fixture.detail.id}`;
@@ -57,6 +65,39 @@ try {
   const noticeText = await pdfText(binary(notice));
   const statementText = await pdfText(binary(statement));
   const boardText = await pdfText(binary(board));
+  assert.equal(holder.shares, "20.0000");
+  const fractional = fixture.detail.holders.find((row) => row.displayName === "Pieropan Nancy");
+  assert.equal(fractional.shares, "8.4000");
+  for (const text of [noticeText, statementText]) {
+    assert.match(normalized(text), /Class C · 20 shares/);
+    assert.match(normalized(text), /Your shares 20\b/);
+    assert.match(normalized(text), /You hold 20 shares/);
+    assert.doesNotMatch(text, /20\.0000/);
+  }
+  assert.match(normalized(boardText), /Forster Nancy Anne C MA 20\b/);
+  assert.match(normalized(boardText), /Pieropan Nancy B WY 8\.4\b/);
+  assert.match(normalized(boardText), /Class A: 100 shares/);
+  const workbookResponse = await call("get", `${base}/reports/ledger.xlsx`, cookie);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(binary(workbookResponse));
+  const summary = workbook.getWorksheet("Shareholder summary");
+  const displayed = [];
+  summary.eachRow((row) => {
+    if (![holder.displayName, fractional.displayName].includes(row.getCell(1).value)) return;
+    const cell = row.getCell(3);
+    assert.equal(typeof cell.value, "number");
+    const stored = row.getCell(1).value === holder.displayName ? holder.shares : fractional.shares;
+    assert.equal(cell.value.toFixed(4), stored);
+    assert.equal(cell.numFmt, stored === "20.0000" ? "0" : "0.0");
+    displayed.push({ holder: row.getCell(1).value, value: cell.value, format: cell.numFmt, displayed: formatShares(String(cell.value)) });
+  });
+  assert.equal(displayed.length, 2);
+  record("Shared share formatting", {
+    formatterCases: 11, noticeAndStatement: ["Class C · 20 shares", "You hold 20 shares", "Your shares 20"],
+    board: [{ holder: holder.displayName, shares: "20" }, { holder: fractional.displayName, shares: "8.4" }],
+    classTotal: "100 shares", workbook: displayed,
+    transmittedAndStoredStringsUnchanged: [holder.shares, fractional.shares],
+  });
   assert.match(notice.headers["content-disposition"], /_Practice_Notice_Forster_Nancy_\d{4}-\d{2}-\d{2}\.pdf/);
   assert.match(statement.headers["content-disposition"], /_Practice_Statement_Forster_Nancy_/);
   for (const text of [noticeText, statementText]) {

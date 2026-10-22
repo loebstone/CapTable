@@ -1,4 +1,5 @@
 import type { Holdings } from "@workspace/api-client-react";
+import { formatShares } from "@workspace/display";
 import { fmtDate } from "@/lib/format";
 import { Tag } from "@/components/bits";
 
@@ -9,7 +10,7 @@ export function HoldingsView({ data }: { data: Holdings }) {
       <div className="rise rise-d1 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-6">
         <div className="col-span-2 bg-sidebar p-4 text-sidebar-foreground">
           <div className="text-[11px] uppercase tracking-[0.16em] opacity-70">Total shares outstanding</div>
-          <div className="num mt-1 text-2xl text-[hsl(40_40%_97%)]" data-testid="text-grand-total">{data.grandTotal}</div>
+          <div className="num mt-1 text-2xl text-[hsl(40_40%_97%)]" data-testid="text-grand-total">{formatShares(data.grandTotal)}</div>
           <div className="mt-2 text-xs opacity-70">As of {fmtDate(data.asOf)} · fetched {fmtDate(data.fetchedAt, true)} · fetch #{data.id}</div>
         </div>
         {data.classes.map((c) => (
@@ -18,7 +19,7 @@ export function HoldingsView({ data }: { data: Holdings }) {
               <span className="font-display text-lg">Class {c.shareClass}</span>
               <span className="text-xs text-muted-foreground">{c.holderCount} {c.holderCount === 1 ? "holder" : "holders"}</span>
             </div>
-            <div className="num mt-1 text-sm">{c.totalShares}</div>
+            <div className="num mt-1 text-sm">{formatShares(c.totalShares)}</div>
           </div>
         ))}
       </div>
@@ -43,7 +44,7 @@ export function HoldingsView({ data }: { data: Holdings }) {
               <tr key={`${h.personId}-${h.shareClass}-${i}`} className="transition-colors hover:bg-secondary/50" data-testid={`row-holding-${h.personId}-${h.shareClass}`}>
                 <td className="px-4 py-2.5 font-medium">{h.displayName}</td>
                 <td className="px-3 py-2.5"><Tag tone="lichen">{h.shareClass}</Tag></td>
-                <td className="num px-3 py-2.5 text-right">{h.shares}</td>
+                <td className="num px-3 py-2.5 text-right">{formatShares(h.shares)}</td>
                 <td className="num px-3 py-2.5 text-muted-foreground">{h.addressState ?? "—"}</td>
                 <td className="px-3 py-2.5">{h.isUnsettled ? <Tag>Unsettled</Tag> : <span className="text-muted-foreground">Settled</span>}</td>
                 <td className="px-4 py-2.5 text-muted-foreground">{h.note ?? ""}</td>

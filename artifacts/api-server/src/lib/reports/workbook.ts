@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { formatShares } from "@workspace/display";
 import type { ReportContext } from "./context";
 import { ISSUER } from "./format";
 import { HttpError } from "../errors";
@@ -34,7 +35,11 @@ function styleSheet(sheet: ExcelJS.Worksheet, widths: number[], currencyColumns:
     r.font = { name: "Calibri", size: 11 };
     if (row % 2 === 0) r.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF4F2EC" } }; });
     for (const column of currencyColumns) r.getCell(column).numFmt = currency;
-    if (shareColumn) r.getCell(shareColumn).numFmt = "0.0000";
+    if (shareColumn) {
+      const cell = r.getCell(shareColumn);
+      const fraction = formatShares(String(cell.value)).split(".")[1];
+      cell.numFmt = fraction ? `0.${"0".repeat(fraction.length)}` : "0";
+    }
   }
   sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: sheet.rowCount, column: widths.length } };
 }

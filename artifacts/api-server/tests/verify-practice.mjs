@@ -148,7 +148,7 @@ try {
   await client.query("SAVEPOINT bad_snapshot");
   await client.query("UPDATE snapshot_rows SET shares=shares-1 WHERE id=(SELECT id FROM snapshot_rows WHERE snapshot_id=$1 AND share_class='C' LIMIT 1)", [snapshotId]);
   const bad = await call("post", "/api/years", cookie, { calendarYear: 2026, isPractice: true, snapshotId, note: "STUB invalid Class C" });
-  expect(bad, 409); assert.match(bad.body.error, /Class C.*1\.0000/);
+  expect(bad, 409); assert.match(bad.body.error, /Class C.*short by 1 shares/);
   await client.query("ROLLBACK TO SAVEPOINT bad_snapshot"); await client.query("RELEASE SAVEPOINT bad_snapshot");
   expect(await call("post", "/api/years", cookie, { calendarYear: 2045, isPractice: true, snapshotId, note: "STUB missing rates" }), 409);
   // There is no conversion/update API; unknown flag fields on other writes never update the year.

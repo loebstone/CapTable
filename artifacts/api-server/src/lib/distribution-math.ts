@@ -1,4 +1,5 @@
 import type { FrozenYearInputs } from "@workspace/db";
+import { formatShares } from "@workspace/display";
 import { HttpError } from "./errors";
 import { shareUnits } from "./roster";
 
@@ -23,10 +24,10 @@ export function validateYearSnapshot(rows: FrozenYearInputs["rows"]) {
   for (const shareClass of ["A", "B", "C", "D"]) {
     const total = rows.filter((r) => r.shareClass === shareClass).reduce((sum, r) => sum + shareUnits(r.shares), 0n);
     const delta = total - 1000000n;
-    if (delta !== 0n) throw new HttpError(409, `Class ${shareClass} is ${delta < 0n ? "short" : "over"} by ${units4(delta < 0n ? -delta : delta)} shares (observed ${units4(total)}; required 100.0000)`);
+    if (delta !== 0n) throw new HttpError(409, `Class ${shareClass} is ${delta < 0n ? "short" : "over"} by ${formatShares(units4(delta < 0n ? -delta : delta))} shares (observed ${formatShares(units4(total))}; required 100)`);
   }
   const total = rows.reduce((sum, r) => sum + shareUnits(r.shares), 0n);
-  if (total !== 4000000n) throw new HttpError(409, `Snapshot grand total is ${units4(total)}; required 400.0000`);
+  if (total !== 4000000n) throw new HttpError(409, `Snapshot grand total is ${formatShares(units4(total))}; required 400`);
 }
 
 type Entry = {personId: string; kind: "cash" | "apic"; amountCents: bigint};

@@ -1,3 +1,4 @@
+import { formatShares } from "@workspace/display";
 import { Link, useParams } from "wouter";
 import { useListSnapshots, useGetSnapshot, getGetSnapshotQueryKey } from "@workspace/api-client-react";
 import { ArrowLeft, ChevronRight, Lock } from "lucide-react";
@@ -29,7 +30,7 @@ export function SnapshotsPage() {
                   <div className="mt-0.5 text-xs text-muted-foreground">As of {fmtDate(s.asOf)} · recorded {fmtDate(s.createdAt, true)} by {s.createdBy} · fetch #{s.fetchId}</div>
                 </div>
                 <div className="hidden text-right md:block">
-                  <div className="num text-sm">{s.grandTotal}</div>
+                  <div className="num text-sm">{formatShares(s.grandTotal)}</div>
                   <div className="text-xs text-muted-foreground">{s.rowCount} rows</div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />

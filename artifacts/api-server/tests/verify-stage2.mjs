@@ -50,7 +50,7 @@ try {
   const badFetch = expect(await call("post", "/api/holdings/fetch", cookie), 200);
   const badSnapshot = expect(await call("post", "/api/snapshots", cookie, { fetchId: badFetch.id, note: "STUB Class C short by 1.0000 verification" }), 201);
   const refused = expect(await call("post", "/api/years", cookie, { calendarYear: year + 1, snapshotId: badSnapshot.id, note: "Must be refused" }), 409);
-  assert.match(refused.error, /Class C.*short.*1\.0000/);
+  assert.match(refused.error, /Class C.*short by 1 shares.*observed 99; required 100/);
   record("1. Exact snapshot totals", { validSnapshotRows: 47, classTotals: snapshot.classes, grandTotal: snapshot.grandTotal, openedYear: year, invalidHTTP: 409, refusal: refused.error });
   const missingRates = expect(await call("post", "/api/years", cookie, { calendarYear: year + 1, snapshotId: snapshot.id, note: "Missing rate table must block opening" }), 409);
   assert.match(missingRates.error, /No rate table exists.*2027/);

@@ -1,3 +1,4 @@
+import { formatShares } from "@workspace/display";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -34,7 +35,7 @@ export default function HoldingsPage() {
         setNote("");
         qc.invalidateQueries({ queryKey: getListSnapshotsQueryKey() });
         qc.invalidateQueries({ queryKey: getListAuditQueryKey() });
-        toast({ title: `Snapshot #${s.id} recorded`, description: `${s.rowCount} rows, total ${s.grandTotal}.` });
+        toast({ title: `Snapshot #${s.id} recorded`, description: `${s.rowCount} rows, total ${formatShares(s.grandTotal)}.` });
       },
       onError: (e) => toast({ title: "Snapshot not saved", description: errMessage(e), variant: "destructive" }),
     },
