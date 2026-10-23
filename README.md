@@ -12,6 +12,8 @@ The configured workflows run the API server and web application separately.
   (`stage1`, `stage2`, `stage3`, `practice`, `security`, `rates-csv`, `backup`,
   `residences`, `notes`).
 - Download backup: the **Write history** page header.
+  New ZIPs: `HWD_CapTable_<environment>_Backup_<timestamp>.zip`; SQL inside:
+  `HWD_CapTable_<environment>_<timestamp>.sql`. Existing backups are unchanged.
 
 The app name is HWD Cap Table. Existing technical identifiers, routes, database
 tables, file paths, cookie name, and environment-variable names are unchanged.

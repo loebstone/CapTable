@@ -245,6 +245,11 @@ The Stage 3 suite reconstructs the exact 47-holder Stage 2 fixture, including Na
 
 ## On-demand backup
 
+New downloads use `HWD_CapTable_<environment>_Backup_<timestamp>.zip`; the SQL
+member uses `HWD_CapTable_<environment>_<timestamp>.sql`. Timestamp formatting
+is unchanged. Only newly generated backup filenames use this prefix; existing
+backups and all other paths, identifiers and configuration names are untouched.
+
 
 - **Write history header → Download backup** opens an access-checked confirmation page.
   GET never exports or writes. Its origin-preserving referrer policy lets the

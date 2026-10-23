@@ -61,9 +61,11 @@ async function inspect(bytes, liveClient) {
   assert.equal(Number(manifest.totalBytes), bytes.length);
   const sql = await zip.file(manifest.sql.filename).async("string");
   assert.equal(Number(manifest.sqlBytes), Buffer.byteLength(sql));
-  assert.match(manifest.sql.filename, /development_.*\.sql$/);
+  assert.match(manifest.sql.filename, /^HWD_CapTable_development_.*\.sql$/);
+  assert.ok(Object.keys(zip.files).every((name) => !name.startsWith("HWD_Distributions_")));
   assert.ok(zip.file("RESTORE.md"));
   assert.match(await zip.file("RESTORE.md").async("string"), /^# Restore HWD Cap Table/m);
+  assert.match(await zip.file("RESTORE.md").async("string"), /HWD_CapTable_<environment>_Backup_<timestamp>\.zip/);
   assert.deepEqual(manifest.tables, await tableInventory(liveClient));
   for (const file of Object.values(zip.files).filter((entry) => !entry.dir)) {
     const data = await file.async("nodebuffer");

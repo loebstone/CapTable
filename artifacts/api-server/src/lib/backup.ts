@@ -41,8 +41,12 @@ const RESTORE = `# Restore HWD Cap Table
 This archive contains private family records, including historical identity and
 hashed sign-in/session records. Protect it as carefully as the running app.
 
+New archives are named HWD_CapTable_<environment>_Backup_<timestamp>.zip.
+The SQL file inside is HWD_CapTable_<environment>_<timestamp>.sql.
+Use manifest.json for its exact filename. Existing backups are not renamed.
+
 1. Restore into an EMPTY PostgreSQL database, never over a running app:
-   psql --set ON_ERROR_STOP=on --single-transaction --file <environment_timestamp.sql> <target-connection>
+   psql --set ON_ERROR_STOP=on --single-transaction --file <HWD_CapTable_environment_timestamp.sql> <target-connection>
    Use PostgreSQL/psql 16.10 or a compatible newer release. Database roles,
    grants, passwords, runtime configuration and storage credentials are NOT
    included; supply those separately. pg_dump includes schema, constraints,
@@ -88,7 +92,7 @@ export async function backupPlan(client: BackupClient, signal: AbortSignal, forc
   }
   const environment = process.env.NODE_ENV === "production" ? "production" : "development";
   const timestamp = new Date().toISOString(), stamp = timestamp.replace(/[:.]/g, "-");
-  const id = randomUUID(), sqlName = `HWD_Distributions_${environment}_${stamp}.sql`;
+  const id = randomUUID(), sqlName = `HWD_CapTable_${environment}_${stamp}.sql`;
   const engine = !forceCatalog && await dumpAvailable() ? "pg_dump" : "catalog";
   const snapshot = (await client.query("SELECT pg_export_snapshot() AS snapshot")).rows[0].snapshot as string;
   let gitCommit: string | null = null;
@@ -106,7 +110,7 @@ export async function backupPlan(client: BackupClient, signal: AbortSignal, forc
     auditTiming: "Snapshot precedes this download's completion audit",
   };
   return {
-    id, environment, manifest, filename: `HWD_Distributions_${environment}_Backup_${stamp}.zip`,
+    id, environment, manifest, filename: `HWD_CapTable_${environment}_Backup_${stamp}.zip`,
     async archive() {
       const zip = new JSZip(), inputs: Readable[] = [];
       const add = (name: string, input: Readable) => { inputs.push(input); zip.file(name, input, { date: new Date(timestamp) }); };
