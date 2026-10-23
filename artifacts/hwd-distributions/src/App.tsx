@@ -16,6 +16,7 @@ import AccessPage from '@/pages/access';
 import AuditPage from '@/pages/audit';
 import YearsPage from '@/pages/years';
 import YearDetailPage from '@/pages/year-detail';
+import MailingPage from '@/pages/mailing';
 import { Shell } from '@/components/shell';
 import { ErrorPanel } from '@/components/bits';
 import { isAuthError } from '@/lib/format';
@@ -61,6 +62,7 @@ function Gate() {
           <Route path="/access" component={AccessPage} />
           <Route path="/audit" component={AuditPage} />
           <Route path="/years" component={YearsPage} />
+          <Route path="/years/:id/mailing" component={MailingPage} />
           <Route path="/years/:id" component={YearDetailPage} />
           <Route component={NotFound} />
         </Switch>

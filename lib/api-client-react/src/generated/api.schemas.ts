@@ -5,6 +5,112 @@
  * HWD Cap Table foundation API
  * OpenAPI spec version: 1.0.0
  */
+export interface PaperPreferenceInput {
+  personId: string;
+  prefersPaper: boolean;
+}
+
+export type MailingSendInputKind = typeof MailingSendInputKind[keyof typeof MailingSendInputKind];
+
+
+export const MailingSendInputKind = {
+  send: 'send',
+  resend: 'resend',
+  preview: 'preview',
+} as const;
+
+export interface MailingSendInput {
+  kind: MailingSendInputKind;
+  draftId: number;
+  personId?: string;
+}
+
+export interface MailSettings {
+  replyTo: string;
+}
+
+export type MailingContentAttachment = typeof MailingContentAttachment[keyof typeof MailingContentAttachment];
+
+
+export const MailingContentAttachment = {
+  notice: 'notice',
+  statement: 'statement',
+  none: 'none',
+} as const;
+
+export type MailingContentChoices = {[key: string]: 'notice' | 'statement' | 'none'};
+
+export interface MailingContent {
+  subject: string;
+  body: string;
+  documentIds: number[];
+  attachment: MailingContentAttachment;
+  choices: MailingContentChoices;
+}
+
+export type MailingViewStatus = typeof MailingViewStatus[keyof typeof MailingViewStatus];
+
+
+export const MailingViewStatus = {
+  draft: 'draft',
+  sent: 'sent',
+} as const;
+
+export type MailingViewRecipientsItemChannel = typeof MailingViewRecipientsItemChannel[keyof typeof MailingViewRecipientsItemChannel];
+
+
+export const MailingViewRecipientsItemChannel = {
+  Email: 'Email',
+  Paper: 'Paper',
+  No_email: 'No email',
+} as const;
+
+export type MailingViewRecipientsItemAttachment = typeof MailingViewRecipientsItemAttachment[keyof typeof MailingViewRecipientsItemAttachment];
+
+
+export const MailingViewRecipientsItemAttachment = {
+  notice: 'notice',
+  statement: 'statement',
+  none: 'none',
+} as const;
+
+export type MailingViewRecipientsItem = {
+  personId: string;
+  displayName: string;
+  /** @nullable */
+  email: string | null;
+  prefersPaper: boolean;
+  channel: MailingViewRecipientsItemChannel;
+  status: string;
+  attachment: MailingViewRecipientsItemAttachment;
+  canResend: boolean;
+  /** @nullable */
+  messageId?: string | null;
+  /** @nullable */
+  sentAt?: string | null;
+  /** @nullable */
+  detail?: string | null;
+};
+
+export type MailingViewDocumentsItem = {
+  id: number;
+  filename: string;
+  contentType: string;
+  size: number;
+};
+
+export interface MailingView {
+  calendarYear: number;
+  /** @nullable */
+  draftId: number | null;
+  content: MailingContent;
+  status: MailingViewStatus;
+  replyTo: string;
+  isPractice: boolean;
+  recipients: MailingViewRecipientsItem[];
+  documents: MailingViewDocumentsItem[];
+}
+
 export interface NoteInput {
   /** @maxLength 5000 */
   note?: string;
@@ -639,5 +745,17 @@ export type RedeemSignInBodyOne = {
 
 export type RedeemSignInBodyTwo = {
   token: string;
+};
+
+export type SendMailing200ResultsItem = {
+  personId: string;
+  result: string;
+  /** @nullable */
+  messageId?: string | null;
+  detail?: string;
+};
+
+export type SendMailing200 = {
+  results: SendMailing200ResultsItem[];
 };
 

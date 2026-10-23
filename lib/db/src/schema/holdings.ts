@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 export type StoredHolding = {
   personId: string; displayName: string; shareClass: "A" | "B" | "C" | "D";
-  shares: string; isUnsettled: boolean; note: string | null; addressState: string | null;
+  shares: string; isUnsettled: boolean; note: string | null; addressState: string | null; email?: string | null;
 };
 export type StoredClass = { shareClass: "A" | "B" | "C" | "D"; totalShares: string; holderCount: number };
 export type StoredHoldings = { holdings: StoredHolding[]; classes: StoredClass[]; grandTotal: string; asOf: string };

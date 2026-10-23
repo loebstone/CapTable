@@ -1,3 +1,14 @@
+# Mailing
+
+Stage A mailing is available from a distribution year's **Mailing** link.
+Set the reply-to on **Access**. Practice years permit **Send to me first** only.
+Every recipient receives the same authored, plain-text subject and message;
+personal figures belong only in the chosen PDF attachment. Merge fields are
+disabled. Automated verification uses a mock sender and never emails Peter.
+Delivery callbacks require Peter to configure `RESEND_WEBHOOK_SECRET` in Replit
+Secrets; see `replit.md` for the callback contract, sender, privacy rules, and
+development-only verification commands. No signatures or scheduling are included.
+
 # HWD Cap Table
 
 Private management tool for Horace W. Davis Realty Corp. (HWD Farm): holdings,

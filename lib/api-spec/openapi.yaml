@@ -593,8 +593,188 @@ paths:
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema: {type: string, format: binary}
+  /mail/settings:
+    get:
+      operationId: getMailSettings
+      responses:
+        "200":
+          description: Reply-to setting
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MailSettings"}
+    post:
+      operationId: saveMailSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MailSettings"}
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MailSettings"}
+  /mail/paper:
+    post:
+      operationId: savePaperPreference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PaperPreferenceInput"}
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /years/{id}/mailing:
+    parameters:
+      - {$ref: "#/components/parameters/YearId"}
+    get:
+      operationId: getMailing
+      responses:
+        "200":
+          description: Draft, recipients, and delivery history
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MailingView"}
+    post:
+      operationId: saveMailing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MailingContent"}
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /years/{id}/mailing/send:
+    parameters:
+      - {$ref: "#/components/parameters/YearId"}
+    post:
+      operationId: sendMailing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MailingSendInput"}
+      responses:
+        "200":
+          description: Per-recipient results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [results]
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required: [personId, result]
+                      properties:
+                        personId: {type: string}
+                        result: {type: string}
+                        messageId: {type: [string, "null"]}
+                        detail: {type: string}
+  /years/{id}/mailing/paper.pdf:
+    parameters:
+      - {$ref: "#/components/parameters/YearId"}
+    get:
+      operationId: printMailingLetters
+      responses:
+        "200":
+          description: Combined paper-recipient PDF
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+  /mail/webhook:
+    post:
+      operationId: receiveMailWebhook
+      description: Public callback authenticated by Svix signature, not a browser session.
+      responses:
+        "200":
+          description: Event recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
 components:
+  parameters:
+    YearId:
+      name: id
+      in: path
+      required: true
+      schema: {type: integer, minimum: 1}
   schemas:
+    PaperPreferenceInput:
+      type: object
+      required: [personId, prefersPaper]
+      properties:
+        personId: {type: string}
+        prefersPaper: {type: boolean}
+    MailingSendInput:
+      type: object
+      required: [kind, draftId]
+      properties:
+        kind: {type: string, enum: [send, resend, preview]}
+        draftId: {type: integer}
+        personId: {type: string}
+    MailSettings:
+      type: object
+      required: [replyTo]
+      properties:
+        replyTo: {type: string, format: email}
+    MailingContent:
+      type: object
+      required: [subject, body, documentIds, attachment, choices]
+      properties:
+        subject: {type: string}
+        body: {type: string}
+        documentIds: {type: array, items: {type: integer}}
+        attachment: {type: string, enum: [notice, statement, none]}
+        choices: {type: object, additionalProperties: {type: string, enum: [notice, statement, none]}}
+    MailingView:
+      type: object
+      required: [calendarYear, draftId, content, status, replyTo, isPractice, recipients, documents]
+      properties:
+        calendarYear: {type: integer}
+        draftId: {type: [integer, "null"]}
+        content: {$ref: "#/components/schemas/MailingContent"}
+        status: {type: string, enum: [draft, sent]}
+        replyTo: {type: string}
+        isPractice: {type: boolean}
+        recipients:
+          type: array
+          items:
+            type: object
+            required: [personId, displayName, email, prefersPaper, channel, status, attachment, canResend]
+            properties:
+              personId: {type: string}
+              displayName: {type: string}
+              email: {type: [string, "null"]}
+              prefersPaper: {type: boolean}
+              channel: {type: string, enum: [Email, Paper, No email]}
+              status: {type: string}
+              attachment: {type: string, enum: [notice, statement, none]}
+              canResend: {type: boolean}
+              messageId: {type: [string, "null"]}
+              sentAt: {type: [string, "null"]}
+              detail: {type: [string, "null"]}
+        documents:
+          type: array
+          items:
+            type: object
+            required: [id, filename, contentType, size]
+            properties:
+              id: {type: integer}
+              filename: {type: string}
+              contentType: {type: string}
+              size: {type: integer}
     NoteInput:
       type: object
       properties:

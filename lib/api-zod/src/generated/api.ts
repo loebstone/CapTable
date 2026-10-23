@@ -1947,3 +1947,130 @@ export const DownloadLedgerParams = zod.object({
 export const DownloadLedgerResponse = zod.unknown()
 
 
+export const GetMailSettingsResponse = zod.object({
+  "replyTo": zod.string().email()
+})
+
+
+export const SaveMailSettingsBody = zod.object({
+  "replyTo": zod.string().email()
+})
+
+export const SaveMailSettingsResponse = zod.object({
+  "replyTo": zod.string().email()
+})
+
+
+export const SavePaperPreferenceBody = zod.object({
+  "personId": zod.string(),
+  "prefersPaper": zod.boolean()
+})
+
+export const SavePaperPreferenceResponse = zod.object({
+  "message": zod.string()
+})
+
+
+
+
+
+export const GetMailingParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const GetMailingResponse = zod.object({
+  "calendarYear": zod.number().int(),
+  "draftId": zod.number().int().nullable(),
+  "content": zod.object({
+  "subject": zod.string(),
+  "body": zod.string(),
+  "documentIds": zod.array(zod.number().int()),
+  "attachment": zod.enum(['notice', 'statement', 'none']),
+  "choices": zod.record(zod.string(), zod.enum(['notice', 'statement', 'none']))
+}),
+  "status": zod.enum(['draft', 'sent']),
+  "replyTo": zod.string(),
+  "isPractice": zod.boolean(),
+  "recipients": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string().nullable(),
+  "prefersPaper": zod.boolean(),
+  "channel": zod.enum(['Email', 'Paper', 'No email']),
+  "status": zod.string(),
+  "attachment": zod.enum(['notice', 'statement', 'none']),
+  "canResend": zod.boolean(),
+  "messageId": zod.string().nullish(),
+  "sentAt": zod.string().nullish(),
+  "detail": zod.string().nullish()
+})),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int()
+}))
+})
+
+
+
+
+
+export const SaveMailingParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const SaveMailingBody = zod.object({
+  "subject": zod.string(),
+  "body": zod.string(),
+  "documentIds": zod.array(zod.number().int()),
+  "attachment": zod.enum(['notice', 'statement', 'none']),
+  "choices": zod.record(zod.string(), zod.enum(['notice', 'statement', 'none']))
+})
+
+export const SaveMailingResponse = zod.object({
+  "message": zod.string()
+})
+
+
+
+
+
+export const SendMailingParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const SendMailingBody = zod.object({
+  "kind": zod.enum(['send', 'resend', 'preview']),
+  "draftId": zod.number().int(),
+  "personId": zod.string().optional()
+})
+
+export const SendMailingResponse = zod.object({
+  "results": zod.array(zod.object({
+  "personId": zod.string(),
+  "result": zod.string(),
+  "messageId": zod.string().nullish(),
+  "detail": zod.string().optional()
+}))
+})
+
+
+
+
+
+export const PrintMailingLettersParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const PrintMailingLettersResponse = zod.unknown()
+
+
+/**
+ * Public callback authenticated by Svix signature, not a browser session.
+ */
+export const ReceiveMailWebhookResponse = zod.object({
+  "message": zod.string()
+})
+
+

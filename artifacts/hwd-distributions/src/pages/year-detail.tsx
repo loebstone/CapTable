@@ -15,6 +15,7 @@ import { PageHeader, SkeletonRows, ErrorPanel, Empty, Btn, Field, inputCls, Tag 
 import { StatusTag } from "@/pages/years";
 import { YearExports } from "@/components/year-exports";
 import { PracticeReset } from "@/components/practice-reset";
+import { MailingLink } from "@/pages/mailing";
 import { fmtDate, errMessage, ratePct } from "@/lib/format";
 import { fmtCents, parseDollars, centsToInput, isNeg, todayISO, fmtBytes, sumCents } from "@/lib/money";
 import { useToast } from "@/hooks/use-toast";
@@ -65,6 +66,7 @@ export default function YearDetailPage() {
         <span className="inline-flex flex-wrap items-center gap-2">
           <StatusTag status={y.status} />
           <span>Opened {fmtDate(y.createdAt)} by {y.createdBy}{y.finalizedAt && <> · finalized {fmtDate(y.finalizedAt, true)}</>}</span>
+          <MailingLink id={y.id} />
           <Link href={`/snapshots/${y.snapshotId}`} className="text-primary underline-offset-2 hover:underline" data-testid="link-year-snapshot">View snapshot</Link>
         </span>
       </PageHeader>

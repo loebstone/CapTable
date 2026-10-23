@@ -6,3 +6,4 @@ export * from "./rates";
 export * from "./rate-imports";
 export * from "./audit";
 export * from "./distributions";
+export * from "./mailings";

@@ -8,6 +8,8 @@ const holdingSchema = z.object({
   personId: z.string().min(1), displayName: z.string().min(1), shareClass,
   shares: decimal, isUnsettled: z.boolean(), note: z.string().nullable(),
   addressState: z.string().nullable(),
+  // Rolling Roster deployment: older responses omit this field.
+  email: z.string().email().nullish().transform((value) => value ?? null),
 });
 const holdingsSchema = z.object({
   holdings: z.array(holdingSchema),

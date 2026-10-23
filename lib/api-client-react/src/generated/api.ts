@@ -33,8 +33,13 @@ import type {
   HoldInput,
   Holdings,
   HoldingsResult,
+  MailSettings,
+  MailingContent,
+  MailingSendInput,
+  MailingView,
   Message,
   NoteInput,
+  PaperPreferenceInput,
   PaymentInput,
   PracticeResetInput,
   RateCopyInput,
@@ -51,6 +56,7 @@ import type {
   ResidenceBatchResult,
   ResidenceInput,
   ReversalInput,
+  SendMailing200,
   Session,
   Snapshot,
   SnapshotInput,
@@ -3677,4 +3683,618 @@ export function useDownloadLedger<TData = Awaited<ReturnType<typeof downloadLedg
 
 
 
+
+export const getGetMailSettingsUrl = () => {
+
+
+
+
+  return `/api/mail/settings`
+}
+
+export const getMailSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<MailSettings> => {
+
+  return customFetch<MailSettings>(getGetMailSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMailSettingsQueryKey = () => {
+    return [
+    `/api/mail/settings`
+    ] as const;
+    }
+
+
+export const getGetMailSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMailSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMailSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMailSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMailSettings>>> = ({ signal }) => getMailSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMailSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMailSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMailSettings>>>
+export type GetMailSettingsQueryError = ErrorType<unknown>
+
+
+
+export function useGetMailSettings<TData = Awaited<ReturnType<typeof getMailSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMailSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMailSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveMailSettingsUrl = () => {
+
+
+
+
+  return `/api/mail/settings`
+}
+
+export const saveMailSettings = async (mailSettings: MailSettings, options?: Parameters<typeof customFetch>[1]): Promise<MailSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MailSettings>(getSaveMailSettingsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mailSettings)
+  }
+);}
+
+
+
+
+
+export const getSaveMailSettingsMutationKey = () => ['saveMailSettings'] as const;
+
+export const getSaveMailSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMailSettings>>, TError,SaveMailSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveMailSettings>>, TError,SaveMailSettingsMutationVariables, TContext> => {
+
+const mutationKey = getSaveMailSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveMailSettings>>, SaveMailSettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveMailSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveMailSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof saveMailSettings>>>
+    export type SaveMailSettingsMutationBody = BodyType<MailSettings>
+    export type SaveMailSettingsMutationError = ErrorType<unknown>
+    export type SaveMailSettingsMutationVariables = {data: BodyType<MailSettings>}
+
+    export const useSaveMailSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMailSettings>>, TError,SaveMailSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveMailSettings>>,
+        TError,
+        SaveMailSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveMailSettingsMutationOptions(options));
+    }
+
+export const getSavePaperPreferenceUrl = () => {
+
+
+
+
+  return `/api/mail/paper`
+}
+
+export const savePaperPreference = async (paperPreferenceInput: PaperPreferenceInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getSavePaperPreferenceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paperPreferenceInput)
+  }
+);}
+
+
+
+
+
+export const getSavePaperPreferenceMutationKey = () => ['savePaperPreference'] as const;
+
+export const getSavePaperPreferenceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePaperPreference>>, TError,SavePaperPreferenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof savePaperPreference>>, TError,SavePaperPreferenceMutationVariables, TContext> => {
+
+const mutationKey = getSavePaperPreferenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof savePaperPreference>>, SavePaperPreferenceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  savePaperPreference(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SavePaperPreferenceMutationResult = NonNullable<Awaited<ReturnType<typeof savePaperPreference>>>
+    export type SavePaperPreferenceMutationBody = BodyType<PaperPreferenceInput>
+    export type SavePaperPreferenceMutationError = ErrorType<unknown>
+    export type SavePaperPreferenceMutationVariables = {data: BodyType<PaperPreferenceInput>}
+
+    export const useSavePaperPreference = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePaperPreference>>, TError,SavePaperPreferenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof savePaperPreference>>,
+        TError,
+        SavePaperPreferenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSavePaperPreferenceMutationOptions(options));
+    }
+
+export const getGetMailingUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/mailing`
+}
+
+export const getMailing = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<MailingView> => {
+
+  return customFetch<MailingView>(getGetMailingUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMailingQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/mailing`
+    ] as const;
+    }
+
+
+export const getGetMailingQueryOptions = <TData = Awaited<ReturnType<typeof getMailing>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMailing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMailingQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMailing>>> = ({ signal }) => getMailing(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMailing>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMailingQueryResult = NonNullable<Awaited<ReturnType<typeof getMailing>>>
+export type GetMailingQueryError = ErrorType<unknown>
+
+
+
+export function useGetMailing<TData = Awaited<ReturnType<typeof getMailing>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMailing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMailingQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveMailingUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/mailing`
+}
+
+export const saveMailing = async (id: number,
+    mailingContent: MailingContent, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getSaveMailingUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mailingContent)
+  }
+);}
+
+
+
+
+
+export const getSaveMailingMutationKey = () => ['saveMailing'] as const;
+
+export const getSaveMailingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMailing>>, TError,SaveMailingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveMailing>>, TError,SaveMailingMutationVariables, TContext> => {
+
+const mutationKey = getSaveMailingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveMailing>>, SaveMailingMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveMailing(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveMailingMutationResult = NonNullable<Awaited<ReturnType<typeof saveMailing>>>
+    export type SaveMailingMutationBody = BodyType<MailingContent>
+    export type SaveMailingMutationError = ErrorType<unknown>
+    export type SaveMailingMutationVariables = {id: number;data: BodyType<MailingContent>}
+
+    export const useSaveMailing = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMailing>>, TError,SaveMailingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveMailing>>,
+        TError,
+        SaveMailingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveMailingMutationOptions(options));
+    }
+
+export const getSendMailingUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/mailing/send`
+}
+
+export const sendMailing = async (id: number,
+    mailingSendInput: MailingSendInput, options?: Parameters<typeof customFetch>[1]): Promise<SendMailing200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SendMailing200>(getSendMailingUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mailingSendInput)
+  }
+);}
+
+
+
+
+
+export const getSendMailingMutationKey = () => ['sendMailing'] as const;
+
+export const getSendMailingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendMailing>>, TError,SendMailingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendMailing>>, TError,SendMailingMutationVariables, TContext> => {
+
+const mutationKey = getSendMailingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendMailing>>, SendMailingMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendMailing(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendMailingMutationResult = NonNullable<Awaited<ReturnType<typeof sendMailing>>>
+    export type SendMailingMutationBody = BodyType<MailingSendInput>
+    export type SendMailingMutationError = ErrorType<unknown>
+    export type SendMailingMutationVariables = {id: number;data: BodyType<MailingSendInput>}
+
+    export const useSendMailing = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendMailing>>, TError,SendMailingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendMailing>>,
+        TError,
+        SendMailingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSendMailingMutationOptions(options));
+    }
+
+export const getPrintMailingLettersUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/mailing/paper.pdf`
+}
+
+export const printMailingLetters = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getPrintMailingLettersUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPrintMailingLettersQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/mailing/paper.pdf`
+    ] as const;
+    }
+
+
+export const getPrintMailingLettersQueryOptions = <TData = Awaited<ReturnType<typeof printMailingLetters>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof printMailingLetters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPrintMailingLettersQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof printMailingLetters>>> = ({ signal }) => printMailingLetters(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof printMailingLetters>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PrintMailingLettersQueryResult = NonNullable<Awaited<ReturnType<typeof printMailingLetters>>>
+export type PrintMailingLettersQueryError = ErrorType<unknown>
+
+
+
+export function usePrintMailingLetters<TData = Awaited<ReturnType<typeof printMailingLetters>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof printMailingLetters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPrintMailingLettersQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReceiveMailWebhookUrl = () => {
+
+
+
+
+  return `/api/mail/webhook`
+}
+
+/**
+ * Public callback authenticated by Svix signature, not a browser session.
+ */
+export const receiveMailWebhook = async ( options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+  return customFetch<Message>(getReceiveMailWebhookUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getReceiveMailWebhookMutationKey = () => ['receiveMailWebhook'] as const;
+
+export const getReceiveMailWebhookMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveMailWebhook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof receiveMailWebhook>>, TError,void, TContext> => {
+
+const mutationKey = getReceiveMailWebhookMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof receiveMailWebhook>>, void> = () => {
+
+
+          return  receiveMailWebhook(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReceiveMailWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof receiveMailWebhook>>>
+
+    export type ReceiveMailWebhookMutationError = ErrorType<unknown>
+
+
+    export const useReceiveMailWebhook = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveMailWebhook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof receiveMailWebhook>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getReceiveMailWebhookMutationOptions(options));
+    }
 

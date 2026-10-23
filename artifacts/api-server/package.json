@@ -16,7 +16,8 @@
     "verify:rates-csv": "tsx tests/verify-rates-csv.mjs",
     "verify:practice": "tsx tests/verify-practice.mjs",
     "verify:backup": "tsx tests/verify-backup.mjs",
-    "verify:residences": "tsx tests/verify-residences.mjs"
+    "verify:residences": "tsx tests/verify-residences.mjs",
+    "verify:mailings": "tsx tests/verify-mailings.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.4.0",
@@ -32,9 +33,11 @@
     "express": "^5.2.1",
     "google-auth-library": "^11.3.1",
     "jszip": "^3.10.2",
+    "pdf-lib": "^1.17.1",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
     "puppeteer-core": "^25.14.0",
+    "svix": "^2.8.0",
     "zod": "catalog:"
   },
   "devDependencies": {

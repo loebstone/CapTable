@@ -1,10 +1,12 @@
 import {
   auditLog, distributionYears, yearUploads, yearDocuments, yearFigures, yearCosts,
   yearDeclarations, yearFinalizations, yearCorrections, distributionEntries, distributionHolds,
+  mailingDrafts,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { assertAccess } from "./access";
-import { write } from "./records";
+import { write, append } from "./records";
+import { defaultMailing } from "./mailings";
 import { requireYear, yearDetail } from "./distribution-years";
 import { yearDocumentStore } from "./year-document-store";
 import { ResetPracticeYearBody } from "@workspace/api-zod";
@@ -44,6 +46,10 @@ export async function resetPracticeYear(actor: string, id: number, input: unknow
     await tx.delete(yearFigures).where(eq(yearFigures.yearId, id));
     await tx.delete(yearDocuments).where(eq(yearDocuments.yearId, id));
     await tx.delete(yearUploads).where(eq(yearUploads.yearId, id));
+    // Preview history remains permanent, but a reset draft must not retain IDs
+    // pointing at source documents that the practice reset just removed.
+    const drafts = await tx.select().from(mailingDrafts).where(eq(mailingDrafts.yearId, id));
+    if (drafts.length) await append(tx, actor, mailingDrafts, { yearId: id, content: defaultMailing, createdBy: actor }, "PRACTICE_MAILING_RESET");
     await tx.insert(auditLog).values({
       actor, entity: "distribution_years", recordId: String(id),
       operation: JSON.stringify({ action: "PRACTICE_RESET", year: year.calendarYear, snapshotId: year.snapshotId, removed: counts }),

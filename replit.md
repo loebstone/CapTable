@@ -1,3 +1,84 @@
+# Stage A — mailings (no signatures)
+
+Development implementation. Never publish as part of verification and never write
+to a production database. The supplied Stage A prompt is the implemented contract;
+the separately named “Mailings and Signatures v0.1” project document was not present
+in this workspace. No Stage B signing, direction links, scheduling, or new roles.
+
+- A year has append-only draft revisions; the first real send reserves an immutable
+  batch and locks the draft. Explicit resends target only failed/bounced email
+  recipients; complaints suppress resending, including a late complaint about an
+  earlier attempt. A timeout/uncertain outcome is not automatically retried.
+- All holders come from the fixed year snapshot. Email addresses come from the
+  latest **stored** Roster holdings fetch, matched by personId. Use “Refresh
+  addresses” to fetch current contacts; absent `email` and explicit null mean no
+  email. No invented addresses. The Roster service contract now additionally allows
+  `email?: string | null` (first email contact); old responses remain compatible.
+- `paper_preferences` is revisioned per person, independent of tax residence.
+  Missing-email and prefers-paper holders appear in a separate paper list.
+  “Print letters” combines their selected notice/statement PDFs, with an explicit
+  page naming the holder if no per-person attachment was chosen. Shared documents
+  remain downloadable from the year's private document store.
+- Mailing subject/body are **uniform authored plain text**, identical for every
+  real email recipient. No merge fields or per-person names, shares, distributions
+  or amounts belong in them. The obsolete `{first_name}`, `{shares}`, and
+  `{distribution}` fields are rejected on save and on send, including old drafts.
+  Only the selected per-holder PDF carries that person's figures. The fixed
+  subject/body live in an immutable mailing draft shared by each attempt;
+  per-recipient rows contain only address/reply-to and attachment metadata
+  (historical attempt-level subject/body columns remain nullable, never filled
+  for new sends, so prior records are not hard-deleted).
+  There is no HTML editor and only the `text` part is sent to Resend. Resend's
+  documented plain-text-only behavior excludes open-tracking pixels:
+  https://resend.com/docs/dashboard/domains/tracking. No open events are collected.
+- Mailing sender is fixed: **Horace W. Davis Realty Corp. <horace@hwdfarm.com>**.
+  Existing sign-in email still uses `RESEND_FROM_EMAIL`; mailing sender is not
+  changed by that setting. Reply-to defaults to `peter@loebstone.com`, is validated,
+  and can be revised by anyone with active access on the Access page.
+- “Send to me first” renders one chosen holder's complete envelope to the signed-in
+  session's own email, never a typed destination, with a fixed `[PREVIEW]` prefix
+  that contains no holder's name or figures.
+  It is the only permitted send in a practice year. Practice emails have a
+  **PRACTICE** body banner; report attachments retain their existing watermark.
+  Actual Send AND Resend reject practice years server-side with 403, before Resend.
+- Shared attachments use the existing sealed private year-document store and are
+  PDF-only. Each email is validated below 40 MB including base64 with conservative
+  MIME/header headroom. Sequential sends are separated by 650 ms. There is no
+  Resend batch endpoint and no background/scheduled send job.
+- Envelopes are preflighted into a private mode-0700 temporary directory, with
+  mode-0600 payloads; temporary disk use is the sum of the email envelopes, but
+  only one email's attachment bytes are held in memory at a time. Insufficient
+  disk space stops preflight before any send. Temporary files are removed in `finally` on
+  success/failure. A process crash may leave OS temporary files until the runtime
+  is reclaimed; these files are never served or placed in public storage.
+- Each reserved recipient stores its reply-to/address
+  and attachment filename/size/SHA-256 list before its external send; the batch
+  references its immutable authored draft for the one uniform subject/body. The exact
+  preflighted bytes are sent (PDFs are not regenerated after reservation). Results
+  append the Resend message ID and acceptance timestamp, or an explicit failed/
+  uncertain result. Before each send, active access, practice flag, paper preference,
+  address and complaint suppression are checked again. Every draft, batch,
+  envelope, result, delivery event, setting and preference change is audited.
+- **Peter must add `RESEND_WEBHOOK_SECRET` in Replit Secrets** using the signing
+  secret for the Resend webhook configured for `/api/mail/webhook`, subscribing to
+  `email.delivered`, `email.bounced`, `email.complained`. It is intentionally NOT
+  configured by the agent. This is the sole mailing endpoint exempt from browser
+  session/Origin checks: exact raw bytes must pass Svix signature and timestamp
+  verification before a write. Unsigned/tampered events fail 401; missing secret
+  fails 503. Event IDs deduplicate callbacks; out-of-order delivery cannot erase
+  a bounce/complaint. All other mailing/settings/paper/print routes use the usual
+  Roster, session, access-list and same-origin gates.
+- Practice reset still deletes only the allowed practice-year data/files. It
+  appends a fresh mailing draft to clear deleted document references, preserving
+  preview and audit history.
+- Code: `lib/db/src/schema/mailings.ts`; API routes `routes/mailings.ts` and
+  `routes/mail-webhook.ts`; services `lib/mailing-*.ts` / `lib/mailings.ts`;
+  web `/years/:id/mailing`, linked from year header; reply-to on Access.
+- Tests: `pnpm --filter @workspace/api-server run verify:mailings` uses a local
+  Roster stub, **mock Resend only**, rollback-isolated tables and real private test
+  files. It cannot run in production and never emails Peter. No automatic or
+  optional live-email test flag remains. No secret values are logged.
+
 # HWD Cap Table
 
 Private distribution recordkeeping for Horace W. Davis Realty Corp. (“HWD Farm”), a Massachusetts S-corporation with approximately 47 family shareholders and 400 shares: Classes A, B, C and D, each with 100 shares.

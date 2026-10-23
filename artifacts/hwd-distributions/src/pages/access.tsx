@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { PageHeader, SkeletonRows, ErrorPanel, Empty, Btn, Field, Tag, inputCls } from "@/components/bits";
 import { fmtDate, errMessage } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
+import { ReplyToSetting } from "@/components/reply-to-setting";
 
 export default function AccessPage() {
   const qc = useQueryClient();
@@ -55,6 +56,8 @@ export default function AccessPage() {
           ))}
         </ul>
       )}
+
+      <ReplyToSetting />
 
       <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <DialogContent className="bg-card">{removing && <RemoveForm entry={removing} onDone={() => { setRemoving(null); }} onSuccess={inval} />}</DialogContent>
