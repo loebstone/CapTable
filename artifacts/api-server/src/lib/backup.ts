@@ -36,7 +36,7 @@ function credentialGuard() {
     done(null, chunk);
   } });
 }
-const RESTORE = `# Restore HWD Distributions
+const RESTORE = `# Restore HWD Cap Table
 
 This archive contains private family records, including historical identity and
 hashed sign-in/session records. Protect it as carefully as the running app.
@@ -94,7 +94,7 @@ export async function backupPlan(client: BackupClient, signal: AbortSignal, forc
   let gitCommit: string | null = null;
   try { const result = await run("git", ["rev-parse", "HEAD"], { timeout: 2000 }); if (/^[0-9a-f]{40,64}$/.test(result.stdout.trim())) gitCommit = result.stdout.trim(); } catch { /* optional metadata */ }
   const manifest = {
-    app: "HWD Distributions", environment, timestamp, backupId: id, gitCommit,
+    app: "HWD Cap Table", environment, timestamp, backupId: id, gitCommit,
     database: { name: identity.name, serverAddress: identity.address },
     sql: { filename: sqlName, engine, countsUseOnly: true },
     // Fixed-width decimal bytes keep manifest/ZIP length stable between
@@ -111,7 +111,7 @@ export async function backupPlan(client: BackupClient, signal: AbortSignal, forc
       const zip = new JSZip(), inputs: Readable[] = [];
       const add = (name: string, input: Readable) => { inputs.push(input); zip.file(name, input, { date: new Date(timestamp) }); };
       const sql = engine === "pg_dump" ? postgresDump(snapshot, id, signal) : await catalogDump(client, tables);
-      const header = `-- HWD Distributions; environment ${environment}; observed database ${JSON.stringify(identity.name)}, server ${JSON.stringify(identity.address)}\n`;
+      const header = `-- HWD Cap Table; environment ${environment}; observed database ${JSON.stringify(identity.name)}, server ${JSON.stringify(identity.address)}\n`;
       add(sqlName, Readable.from((async function* () {
         let count = Buffer.byteLength(header);
         yield Buffer.from(header, "utf8");
@@ -173,7 +173,7 @@ export async function downloadBackup(req: Request, res: Response) {
     releaseAudit = () => auditClient.release();
     const checkAccess = async () => {
       const { rows } = await auditClient.query("SELECT removed_at FROM access_entries WHERE person_id=$1 ORDER BY id DESC LIMIT 1", [currentIdentity(req).personId]);
-      if (!rows.length || rows[0].removed_at !== null) throw new HttpError(403, "This person is not on the active HWD Distributions access list");
+      if (!rows.length || rows[0].removed_at !== null) throw new HttpError(403, "This person is not on the active HWD Cap Table access list");
     };
     await client.connect();
     // Acquire before BEGIN so a reset finishing while we wait cannot leave a

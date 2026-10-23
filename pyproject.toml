@@ -1,7 +1,7 @@
 [project]
 name = "repl-nix-workspace"
 version = "0.1.0"
-description = "Development-only PDF visual inspection helpers for HWD Distributions"
+description = "Development-only PDF visual inspection helpers for HWD Cap Table"
 requires-python = ">=3.13"
 dependencies = [
     "pymupdf>=2.0",

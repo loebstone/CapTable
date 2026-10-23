@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "HWD Distributions"
+title = "HWD Cap Table"
 description = "Private HWD Farm distribution management foundation: delegated email sign-in, immutable holdings snapshots, tax residences, annual tax rates and shared access management."
 version = "1.0.0"
 id = "artifacts/hwd-distributions"

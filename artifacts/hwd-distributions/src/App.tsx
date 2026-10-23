@@ -40,7 +40,7 @@ function Gate() {
   if (session.isLoading) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center">
-        <div className="font-display animate-pulse text-xl text-muted-foreground">HWD Farm</div>
+        <div className="font-display animate-pulse text-xl text-muted-foreground">HWD Cap Table</div>
       </div>
     );
   }

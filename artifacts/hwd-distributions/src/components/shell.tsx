@@ -42,8 +42,8 @@ export function Shell({ session, children }: { session: Session; children: React
     <div className="flex min-h-[100dvh] flex-col md:flex-row">
       <aside className="flex shrink-0 flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-[100dvh] md:w-60">
         <div className="px-5 pb-4 pt-6">
-          <div className="font-display text-xl text-[hsl(40_40%_97%)]">HWD Farm</div>
-          <div className="text-[11px] uppercase tracking-[0.18em] text-sidebar-primary">Distributions ledger</div>
+          <div className="font-display text-xl text-[hsl(40_40%_97%)]">HWD Cap Table</div>
+          <div className="text-[11px] uppercase tracking-[0.18em] text-sidebar-primary">Private family records</div>
         </div>
         <nav className="flex gap-0.5 overflow-x-auto px-2 pb-2 md:flex-col md:overflow-visible">
           {NAV.map(({ href, label, icon: Icon }) => {

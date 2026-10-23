@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useListAudit } from "@workspace/api-client-react";
 import { PageHeader, SkeletonRows, ErrorPanel, Empty, Tag, inputCls } from "@/components/bits";
 import { fmtDate } from "@/lib/format";
+import { BackupDownload } from "@/components/backup-download";
 
 export default function AuditPage() {
   const q = useListAudit();
@@ -13,7 +14,7 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader kicker="Write history" title="Every change, in order">
+      <PageHeader kicker="Write history" title="Every change, in order" actions={<BackupDownload />}>
         A permanent list of writes made through this ledger: who, what, and when.
       </PageHeader>
       <input className={inputCls + " max-w-xs"} placeholder="Filter by person, record, operation" value={filter} onChange={(e) => setFilter(e.target.value)} data-testid="input-audit-filter" />

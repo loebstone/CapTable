@@ -5,3 +5,4 @@
 - [ZIP stream compatibility](zip-stream-compatibility.md) — JSZip may emit legacy streams without async iteration; pipeline supports their backpressure.
 - [Export test responses](export-test-responses.md) — binary download URLs can return JSON errors; interpret the actual response format before asserting messages.
 - [Drizzle CHECK diffs](drizzle-check-diffs.md) — push may miss changed expressions on same-named CHECK constraints; verify the actual database definition.
+- [Express request traces](express-request-traces.md) — response-finish callbacks can see router-local paths; capture original request metadata before middleware.

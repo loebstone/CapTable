@@ -14,7 +14,7 @@ export default function SignIn() {
       <section className="rings relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 text-sidebar-foreground md:flex">
         <div className="text-[11px] uppercase tracking-[0.2em] text-sidebar-primary">Private family record</div>
         <div className="rise">
-          <h1 className="font-display text-5xl leading-[1.05] text-[hsl(40_40%_97%)]">HWD Farm<br />distributions ledger</h1>
+          <h1 className="font-display text-5xl leading-[1.05] text-[hsl(40_40%_97%)]">HWD<br />Cap Table</h1>
           <p className="mt-5 max-w-sm text-sm leading-relaxed opacity-75">
             Shareholdings, tax residence and annual rates for the timber income, kept carefully and written down once.
             Every change is recorded in the audit log.
@@ -29,7 +29,7 @@ export default function SignIn() {
 
       <section className="flex items-center justify-center px-6 py-12">
         <div className="rise w-full max-w-sm">
-          <div className="font-display text-2xl md:hidden">HWD Farm</div>
+          <div className="font-display text-2xl md:hidden">HWD Cap Table</div>
           <h2 className="font-display mt-1 text-3xl">Sign in</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Enter the email address the family has on file. We will send a one-time sign-in link; there is no password.

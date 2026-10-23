@@ -43,8 +43,8 @@ router.post("/auth/link", async (req, res): Promise<void> => {
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           from: process.env.RESEND_FROM_EMAIL, to: [email],
-          subject: "Sign in to HWD Distributions",
-          text: `Sign in to HWD Distributions:\n\n${url}\n\nThis single-use link expires in 15 minutes. If you did not request it, ignore this email.`,
+          subject: "Sign in to HWD Cap Table",
+          text: `Sign in to HWD Cap Table:\n\n${url}\n\nThis single-use link expires in 15 minutes. If you did not request it, ignore this email.`,
         }),
         signal: AbortSignal.timeout(10000),
       });
@@ -66,7 +66,7 @@ router.get("/auth/verify", async (req, res): Promise<void> => {
     <title>Continue to HWD Cap Table</title><style>
     body{font:17px system-ui,sans-serif;background:#f8f5ef;color:#172b31;margin:0;padding:12vh 24px}
     main{max-width:440px;margin:auto}button{font:inherit;padding:14px 20px;background:#172b31;color:white;border:0;border-radius:6px;cursor:pointer}
-    </style></head><body><main><h1>HWD Farm</h1><p>Continue to complete your sign-in. This single-use link expires 15 minutes after it was requested.</p>
+    </style></head><body><main><h1>HWD Cap Table</h1><p>Continue to complete your sign-in. This single-use link expires 15 minutes after it was requested.</p>
     <form method="post" action="${html(publicOrigin(req))}/api/auth/verify">
     <input type="hidden" name="token" value="${token}"><button type="submit">Continue to HWD Cap Table</button>
     </form></main></body></html>`);

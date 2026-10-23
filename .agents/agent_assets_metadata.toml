@@ -28,3 +28,31 @@ mtime_ms = 1792688643858
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/3f8d6dba-ff36-4578-af6b-6eab93097c37/ff7f5318-07fc-469d-bfa4-cb83beb5b81d"
 storage_version_token = "1792689079582312"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "EZ8g2KH6g5PpcpPQFy83N"
+uri = "file://generated-artifacts/branding/sign-in-preview.jpg"
+type = "image"
+title = "Development sign-in — HWD Cap Table"
+description = "Current development preview; renamed app heading and browser metadata."
+logical_id = "399851eb-1cc4-4eca-98d5-278d168a780c"
+content_hash = "sha256:7a361980e96579a56a25cbc7da31f4f16d3f3dd5752c51ea128a2ac6ac20cc10"
+size = 39992
+mtime_ms = 1792777796954
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/399851eb-1cc4-4eca-98d5-278d168a780c/5eee1d88-b475-4908-a04f-e3f904ac7ab1"
+storage_version_token = "1792778087936316"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "GGuCKY1hP3w1_N19zdLtW"
+uri = "file://generated-artifacts/branding/naming-verification.html"
+type = "html"
+title = "Naming and backup move — full evidence"
+description = "All 14 distinct before/after changes, all 72 API metadata locations, every retained plural occurrence with reasons, email text and verification results."
+logical_id = "87544e43-246d-4c79-a319-6a1ebb0dc5b3"
+content_hash = "sha256:52a7a33cede871ebce0156a2a0a971d5c271b61ff0e5094a5172b0b95858cb56"
+size = 20357
+mtime_ms = 1792778046373
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/87544e43-246d-4c79-a319-6a1ebb0dc5b3/c4a86ecf-85f8-46b6-89a4-3a805c9ba49f"
+storage_version_token = "1792778088540763"
+content_type = "text/html"

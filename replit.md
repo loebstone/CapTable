@@ -1,4 +1,4 @@
-# HWD Distributions
+# HWD Cap Table
 
 Private distribution recordkeeping for Horace W. Davis Realty Corp. (“HWD Farm”), a Massachusetts S-corporation with approximately 47 family shareholders and 400 shares: Classes A, B, C and D, each with 100 shares.
 
@@ -246,7 +246,7 @@ The Stage 3 suite reconstructs the exact 47-holder Stage 2 fixture, including Na
 ## On-demand backup
 
 
-- **Access list → Download backup** opens an access-checked confirmation page.
+- **Write history header → Download backup** opens an access-checked confirmation page.
   GET never exports or writes. Its origin-preserving referrer policy lets the
   native confirmation form send a same-origin POST to `/api/backup`. Both routes
   require the usual valid session, current Roster allowance and active local

@@ -23,7 +23,7 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader kicker="HWD Farm" title="Overview" />
+      <PageHeader kicker="HWD Cap Table" title="Overview" />
 
       <section className="space-y-3">
         <h2 className="font-display text-xl">Current holdings</h2>

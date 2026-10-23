@@ -57,12 +57,13 @@ async function restore(sql, target) {
 async function inspect(bytes, liveClient) {
   const zip = await JSZip.loadAsync(bytes, { checkCRC32: true });
   const manifest = JSON.parse(await zip.file("manifest.json").async("string"));
-  assert.equal(manifest.app, "HWD Distributions"); assert.equal(manifest.environment, "development");
+  assert.equal(manifest.app, "HWD Cap Table"); assert.equal(manifest.environment, "development");
   assert.equal(Number(manifest.totalBytes), bytes.length);
   const sql = await zip.file(manifest.sql.filename).async("string");
   assert.equal(Number(manifest.sqlBytes), Buffer.byteLength(sql));
   assert.match(manifest.sql.filename, /development_.*\.sql$/);
   assert.ok(zip.file("RESTORE.md"));
+  assert.match(await zip.file("RESTORE.md").async("string"), /^# Restore HWD Cap Table/m);
   assert.deepEqual(manifest.tables, await tableInventory(liveClient));
   for (const file of Object.values(zip.files).filter((entry) => !entry.dir)) {
     const data = await file.async("nodebuffer");

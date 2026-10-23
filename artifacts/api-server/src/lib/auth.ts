@@ -30,7 +30,7 @@ function validCookie(value: unknown): string | null {
 export const requireAccess: RequestHandler = async (req, _res, next) => {
   try {
     const token = validCookie(req.cookies?.[COOKIE_NAME]);
-    if (!token) throw new HttpError(401, "Sign in to HWD Distributions");
+    if (!token) throw new HttpError(401, "Sign in to HWD Cap Table");
     const [session] = await db.select().from(sessions).where(eq(sessions.tokenHash, hash(token))).limit(1);
     if (!session || new Date(session.expiresAt).getTime() <= Date.now()) throw new HttpError(401, "Session has expired; sign in again");
     const [revoked] = await db.select().from(sessionRevocations).where(eq(sessionRevocations.sessionId, session.id)).limit(1);
