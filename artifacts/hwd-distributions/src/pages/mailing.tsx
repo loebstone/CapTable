@@ -38,11 +38,11 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const locked = m.status === "sent";
-  const [c, setC] = useState<MailingContent>(m.content);
+  const [c, setC] = useState<MailingContent>({ ...m.content, includeSigningLink: m.content.includeSigningLink ?? false });
   const initFor = useRef<string>("");
   const serverKey = `${m.draftId}:${JSON.stringify(m.content)}`;
-  useEffect(() => { if (initFor.current !== serverKey) { initFor.current = serverKey; setC(m.content); } }, [serverKey, m.content]);
-  const dirty = !same(c, m.content);
+  useEffect(() => { if (initFor.current !== serverKey) { initFor.current = serverKey; setC({ ...m.content, includeSigningLink: m.content.includeSigningLink ?? false }); } }, [serverKey, m.content]);
+  const dirty = !same(c, { ...m.content, includeSigningLink: m.content.includeSigningLink ?? false });
   const saved = m.draftId !== null && !dirty;
   const [results, setResults] = useState<{ kind: string; r: SendMailing200 } | null>(null);
   const [sendErr, setSendErr] = useState<string | null>(null);
@@ -109,6 +109,10 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
           <Field label="Body (plain text)" hint="Identical for every recipient. Do not include names, shares, or amounts.">
             <textarea className={cn(inputCls, "font-mono text-[13px]")} rows={12} value={c.body} disabled={locked} onChange={(e) => setC({ ...c, body: e.target.value })} data-testid="input-body" />
           </Field>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" className="mt-0.5" checked={c.includeSigningLink ?? false} disabled={locked} onChange={(e) => setC({ ...c, includeSigningLink: e.target.checked })} data-testid="checkbox-include-signing-link" />
+            <span>Include signing link<span className="block text-xs text-muted-foreground">Each holder's private Tax &amp; Reinvestment link is the only personalized text added to the email.</span></span>
+          </label>
           <Field label="Default attachment for every holder">
             <select className={inputCls} value={c.attachment} disabled={locked} onChange={(e) => setC({ ...c, attachment: e.target.value as Att })} data-testid="select-default-attachment">
               {(Object.keys(ATT_LABEL) as Att[]).map((a) => <option key={a} value={a}>{ATT_LABEL[a]}</option>)}

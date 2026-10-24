@@ -6,6 +6,177 @@ info:
 servers:
   - url: /api
 paths:
+  /signing/open:
+    get:
+      operationId: openSigningLink
+      parameters:
+        - {name: token, in: query, required: true, schema: {type: string, pattern: "^[a-f0-9]{64}$"}}
+      responses:
+        "200":
+          description: Continue-only landing; no token consumption or session
+          content:
+            text/html:
+              schema: {type: string}
+        "410":
+          description: Spent, expired, voided or invalid link
+          content:
+            text/plain:
+              schema: {type: string}
+  /signing/continue:
+    post:
+      operationId: continueSigningLink
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: "#/components/schemas/SigningContinueInput"}
+      responses:
+        "303":
+          description: Restricted signing cookie established; redirect to public signing page
+        "403":
+          description: Same-origin check failed
+        "410":
+          description: Spent, expired, voided or invalid link
+  /signing/session:
+    get:
+      operationId: getSigningSession
+      responses:
+        "200":
+          description: Restricted signing session only; no management access
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SigningSession"}
+  /signing/sign:
+    post:
+      operationId: signDirection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SignatureInput"}
+      responses:
+        "200":
+          description: Signed and awaiting management confirmation
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SigningSession"}
+  /years/{id}/directions:
+    get:
+      operationId: getDirections
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Direction and mailing status per holder
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DirectionView"}
+  /years/{id}/directions/issue:
+    post:
+      operationId: issueDirectionLink
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DirectionIssueInput"}
+      responses:
+        "200":
+          description: Link reissued and previous links voided; email result recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DirectionDispatch"}
+  /years/{id}/directions/resend:
+    post:
+      operationId: resendDirectionEnvelope
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DirectionIssueInput"}
+      responses:
+        "200":
+          description: Complete original envelope resent with a fresh signing link; practice is self-addressed only
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MailingSendResult"}
+  /years/{id}/directions/paper.pdf:
+    get:
+      operationId: printPaperDirections
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Blank direction documents for the paper list, with signature and date lines
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+  /years/{id}/directions/remind:
+    post:
+      operationId: remindDirections
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Explicit reminders to eligible unsigned email holders
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count: {type: integer}
+                  sentCount: {type: integer}
+                  failedCount: {type: integer}
+                  unknownCount: {type: integer}
+  /years/{id}/directions/{directionId}/confirm:
+    post:
+      operationId: confirmDirection
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: directionId, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DirectionConfirmInput"}
+      responses:
+        "200":
+          description: APIC recorded atomically and direction confirmed
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DirectionView"}
+  /years/{id}/directions/paper:
+    post:
+      operationId: recordPaperDirection
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PaperDirectionInput"}
+      responses:
+        "200":
+          description: Paper direction confirmed and APIC recorded atomically
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DirectionView"}
+  /years/{id}/directions/{directionId}/pdf:
+    get:
+      operationId: downloadDirectionPdf
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: directionId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Access-checked sealed signed PDF or paper scan
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
   /healthz:
     get:
       operationId: healthCheck
@@ -711,6 +882,116 @@ components:
       required: true
       schema: {type: integer, minimum: 1}
   schemas:
+    SigningContinueInput:
+      type: object
+      required: [token]
+      properties:
+        token: {type: string, pattern: "^[a-f0-9]{64}$"}
+    SignatureInput:
+      type: object
+      required: [amountCents, fullName, consent]
+      properties:
+        amountCents: {type: string, pattern: '^\d+$'}
+        fullName: {type: string}
+        consent: {type: boolean}
+    SigningSession:
+      type: object
+      required: [state, holderName, calendarYear, boardApprovalDate, amountCents, maxAmountCents, templateVersion, templateText, consentText, isPractice]
+      properties:
+        state: {type: string, enum: [ready, signed]}
+        holderName: {type: string}
+        calendarYear: {type: integer}
+        boardApprovalDate: {type: string}
+        amountCents: {type: string}
+        maxAmountCents: {type: string}
+        templateVersion: {type: integer}
+        templateText: {type: string}
+        consentText: {type: string}
+        isPractice: {type: boolean}
+        signedAt: {type: string}
+        receiptResult: {type: string}
+    DirectionIssueInput:
+      type: object
+      required: [personId]
+      properties:
+        personId: {type: string}
+    DirectionConfirmInput:
+      type: object
+      properties:
+        note: {type: string}
+    PaperDirectionInput:
+      type: object
+      required: [personId, amountCents, receivedDate]
+      properties:
+        personId: {type: string}
+        amountCents: {type: string, pattern: '^\d+$'}
+        receivedDate: {type: string}
+        documentId: {type: integer}
+        note: {type: string}
+    DirectionDispatch:
+      type: object
+      required: [linkId, expiresAt, result]
+      properties:
+        linkId: {type: integer}
+        expiresAt: {type: string}
+        messageId: {type: [string, "null"]}
+        result: {type: string}
+    MailingSendResult:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [personId, result]
+            properties:
+              personId: {type: string}
+              result: {type: string}
+              messageId: {type: [string, "null"]}
+              detail: {type: string}
+    DirectionStatusRow:
+      type: object
+      required: [personId, displayName, channel, email, mailingStatus, documentStatus, instruction, maxAmountCents, canConfirm, canRemind, canIssue]
+      properties:
+        personId: {type: string}
+        displayName: {type: string}
+        channel: {type: string}
+        email: {type: [string, "null"]}
+        mailingStatus: {type: string}
+        documentStatus: {type: string}
+        instruction: {type: string}
+        maxAmountCents: {type: [string, "null"]}
+        directionId: {type: [integer, "null"]}
+        amountCents: {type: [string, "null"]}
+        canConfirm: {type: boolean}
+        canRemind: {type: boolean}
+        canIssue: {type: boolean}
+        canResendEnvelope: {type: boolean}
+        resendCount: {type: integer}
+        resendBlocked: {type: [string, "null"]}
+        confirmationBlocked: {type: [string, "null"]}
+        pdfUrl: {type: [string, "null"]}
+        expiresAt: {type: [string, "null"]}
+        history: {type: array, items: {$ref: "#/components/schemas/DirectionHistory"}}
+    DirectionHistory:
+      type: object
+      required: [id, kind, amountCents, confirmed, createdAt]
+      properties:
+        id: {type: integer}
+        kind: {type: string}
+        amountCents: {type: string}
+        confirmed: {type: boolean}
+        createdAt: {type: string}
+        pdfUrl: {type: [string, "null"]}
+    DirectionView:
+      type: object
+      required: [yearId, calendarYear, isPractice, rows]
+      properties:
+        yearId: {type: integer}
+        calendarYear: {type: integer}
+        isPractice: {type: boolean}
+        rows: {type: array, items: {$ref: "#/components/schemas/DirectionStatusRow"}}
     PaperPreferenceInput:
       type: object
       required: [personId, prefersPaper]
@@ -738,6 +1019,7 @@ components:
         documentIds: {type: array, items: {type: integer}}
         attachment: {type: string, enum: [notice, statement, none]}
         choices: {type: object, additionalProperties: {type: string, enum: [notice, statement, none]}}
+        includeSigningLink: {type: boolean}
     MailingView:
       type: object
       required: [calendarYear, draftId, content, status, replyTo, isPractice, recipients, documents]

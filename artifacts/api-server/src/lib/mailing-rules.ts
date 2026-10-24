@@ -9,6 +9,7 @@ export const draftInput = z.object({
   documentIds: z.array(z.number().int().positive()).max(30).default([]),
   attachment: choice.default("notice"),
   choices: z.record(z.string(), choice).default({}),
+  includeSigningLink: z.boolean().default(false),
 }).superRefine(({ subject, body }, ctx) => {
   for (const [field, value] of [["subject", subject], ["body", body]] as const) {
     if (/\{\s*(first_name|shares|distribution)\s*\}/i.test(value)) {

@@ -28,7 +28,7 @@ export async function stage2Harness() {
     if (req.method === "POST" && req.url === "/api/service/sign-in-check") {
       let raw = ""; for await (const part of req) raw += part;
       const { email } = JSON.parse(raw);
-      const identity = { "bootstrap@example.test": ["test-bootstrap", "Test Bootstrap"], "other@example.test": ["test-other", "Test Other"] }[email];
+      const identity = { "bootstrap@example.test": ["test-bootstrap", "Test Bootstrap"], "other@example.test": ["test-other", "Test Other"], "delivered@resend.dev": ["test-bootstrap", "Test Bootstrap"] }[email];
       res.end(JSON.stringify(identity ? { allowed: true, personId: identity[0], displayName: identity[1] } : { allowed: false }));
     } else if (req.method === "GET" && req.url === "/api/service/holdings") res.end(JSON.stringify(holdings));
     else res.writeHead(404).end("{}");
@@ -83,7 +83,7 @@ export async function stage2Harness() {
     req = req.set("Origin", process.env.APP_ORIGIN);
     if (cookie) req = req.set("Cookie", cookie);
     if (data !== undefined) req = req.send(data);
-    if (path.endsWith("/file") || /\.(pdf|zip|xlsx)$/.test(path)) req = req.buffer(true).parse((res, done) => {
+    if (path.endsWith("/file") || path.endsWith("/pdf") || /\.(pdf|zip|xlsx)$/.test(path)) req = req.buffer(true).parse((res, done) => {
       const chunks = [];
       res.on("data", (chunk) => chunks.push(chunk));
       res.on("end", () => done(null, Buffer.concat(chunks)));

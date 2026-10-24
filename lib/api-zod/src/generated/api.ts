@@ -8,6 +8,264 @@
 import * as zod from 'zod';
 
 
+export const openSigningLinkQueryTokenRegExp = new RegExp('^[a-f0-9]{64}$');
+
+
+export const OpenSigningLinkQueryParams = zod.object({
+  "token": zod.coerce.string().regex(openSigningLinkQueryTokenRegExp)
+})
+
+export const OpenSigningLinkResponse = zod.unknown()
+
+
+export const continueSigningLinkBodyTokenRegExp = new RegExp('^[a-f0-9]{64}$');
+
+
+export const ContinueSigningLinkBody = zod.object({
+  "token": zod.string().regex(continueSigningLinkBodyTokenRegExp)
+})
+
+export const ContinueSigningLinkResponse = zod.void()
+
+
+export const GetSigningSessionResponse = zod.object({
+  "state": zod.enum(['ready', 'signed']),
+  "holderName": zod.string(),
+  "calendarYear": zod.number().int(),
+  "boardApprovalDate": zod.string(),
+  "amountCents": zod.string(),
+  "maxAmountCents": zod.string(),
+  "templateVersion": zod.number().int(),
+  "templateText": zod.string(),
+  "consentText": zod.string(),
+  "isPractice": zod.boolean(),
+  "signedAt": zod.string().optional(),
+  "receiptResult": zod.string().optional()
+})
+
+
+export const signDirectionBodyAmountCentsRegExp = new RegExp('^\\d+$');
+
+
+export const SignDirectionBody = zod.object({
+  "amountCents": zod.string().regex(signDirectionBodyAmountCentsRegExp),
+  "fullName": zod.string(),
+  "consent": zod.boolean()
+})
+
+export const SignDirectionResponse = zod.object({
+  "state": zod.enum(['ready', 'signed']),
+  "holderName": zod.string(),
+  "calendarYear": zod.number().int(),
+  "boardApprovalDate": zod.string(),
+  "amountCents": zod.string(),
+  "maxAmountCents": zod.string(),
+  "templateVersion": zod.number().int(),
+  "templateText": zod.string(),
+  "consentText": zod.string(),
+  "isPractice": zod.boolean(),
+  "signedAt": zod.string().optional(),
+  "receiptResult": zod.string().optional()
+})
+
+
+export const GetDirectionsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetDirectionsResponse = zod.object({
+  "yearId": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
+  "rows": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "channel": zod.string(),
+  "email": zod.string().nullable(),
+  "mailingStatus": zod.string(),
+  "documentStatus": zod.string(),
+  "instruction": zod.string(),
+  "maxAmountCents": zod.string().nullable(),
+  "directionId": zod.number().int().nullish(),
+  "amountCents": zod.string().nullish(),
+  "canConfirm": zod.boolean(),
+  "canRemind": zod.boolean(),
+  "canIssue": zod.boolean(),
+  "canResendEnvelope": zod.boolean().optional(),
+  "resendCount": zod.number().int().optional(),
+  "resendBlocked": zod.string().nullish(),
+  "confirmationBlocked": zod.string().nullish(),
+  "pdfUrl": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
+  "history": zod.array(zod.object({
+  "id": zod.number().int(),
+  "kind": zod.string(),
+  "amountCents": zod.string(),
+  "confirmed": zod.boolean(),
+  "createdAt": zod.string(),
+  "pdfUrl": zod.string().nullish()
+})).optional()
+}))
+})
+
+
+export const IssueDirectionLinkParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const IssueDirectionLinkBody = zod.object({
+  "personId": zod.string()
+})
+
+export const IssueDirectionLinkResponse = zod.object({
+  "linkId": zod.number().int(),
+  "expiresAt": zod.string(),
+  "messageId": zod.string().nullish(),
+  "result": zod.string()
+})
+
+
+export const ResendDirectionEnvelopeParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ResendDirectionEnvelopeBody = zod.object({
+  "personId": zod.string()
+})
+
+export const ResendDirectionEnvelopeResponse = zod.object({
+  "results": zod.array(zod.object({
+  "personId": zod.string(),
+  "result": zod.string(),
+  "messageId": zod.string().nullish(),
+  "detail": zod.string().optional()
+}))
+})
+
+
+export const PrintPaperDirectionsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const PrintPaperDirectionsResponse = zod.unknown()
+
+
+export const RemindDirectionsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const RemindDirectionsResponse = zod.object({
+  "count": zod.number().int(),
+  "sentCount": zod.number().int().optional(),
+  "failedCount": zod.number().int().optional(),
+  "unknownCount": zod.number().int().optional()
+})
+
+
+export const ConfirmDirectionParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "directionId": zod.coerce.number().int()
+})
+
+export const ConfirmDirectionBody = zod.object({
+  "note": zod.string().optional()
+})
+
+export const ConfirmDirectionResponse = zod.object({
+  "yearId": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
+  "rows": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "channel": zod.string(),
+  "email": zod.string().nullable(),
+  "mailingStatus": zod.string(),
+  "documentStatus": zod.string(),
+  "instruction": zod.string(),
+  "maxAmountCents": zod.string().nullable(),
+  "directionId": zod.number().int().nullish(),
+  "amountCents": zod.string().nullish(),
+  "canConfirm": zod.boolean(),
+  "canRemind": zod.boolean(),
+  "canIssue": zod.boolean(),
+  "canResendEnvelope": zod.boolean().optional(),
+  "resendCount": zod.number().int().optional(),
+  "resendBlocked": zod.string().nullish(),
+  "confirmationBlocked": zod.string().nullish(),
+  "pdfUrl": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
+  "history": zod.array(zod.object({
+  "id": zod.number().int(),
+  "kind": zod.string(),
+  "amountCents": zod.string(),
+  "confirmed": zod.boolean(),
+  "createdAt": zod.string(),
+  "pdfUrl": zod.string().nullish()
+})).optional()
+}))
+})
+
+
+export const RecordPaperDirectionParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const recordPaperDirectionBodyAmountCentsRegExp = new RegExp('^\\d+$');
+
+
+export const RecordPaperDirectionBody = zod.object({
+  "personId": zod.string(),
+  "amountCents": zod.string().regex(recordPaperDirectionBodyAmountCentsRegExp),
+  "receivedDate": zod.string(),
+  "documentId": zod.number().int().optional(),
+  "note": zod.string().optional()
+})
+
+export const RecordPaperDirectionResponse = zod.object({
+  "yearId": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
+  "rows": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "channel": zod.string(),
+  "email": zod.string().nullable(),
+  "mailingStatus": zod.string(),
+  "documentStatus": zod.string(),
+  "instruction": zod.string(),
+  "maxAmountCents": zod.string().nullable(),
+  "directionId": zod.number().int().nullish(),
+  "amountCents": zod.string().nullish(),
+  "canConfirm": zod.boolean(),
+  "canRemind": zod.boolean(),
+  "canIssue": zod.boolean(),
+  "canResendEnvelope": zod.boolean().optional(),
+  "resendCount": zod.number().int().optional(),
+  "resendBlocked": zod.string().nullish(),
+  "confirmationBlocked": zod.string().nullish(),
+  "pdfUrl": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
+  "history": zod.array(zod.object({
+  "id": zod.number().int(),
+  "kind": zod.string(),
+  "amountCents": zod.string(),
+  "confirmed": zod.boolean(),
+  "createdAt": zod.string(),
+  "pdfUrl": zod.string().nullish()
+})).optional()
+}))
+})
+
+
+export const DownloadDirectionPdfParams = zod.object({
+  "id": zod.coerce.number().int(),
+  "directionId": zod.coerce.number().int()
+})
+
+export const DownloadDirectionPdfResponse = zod.unknown()
+
+
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
@@ -1986,7 +2244,8 @@ export const GetMailingResponse = zod.object({
   "body": zod.string(),
   "documentIds": zod.array(zod.number().int()),
   "attachment": zod.enum(['notice', 'statement', 'none']),
-  "choices": zod.record(zod.string(), zod.enum(['notice', 'statement', 'none']))
+  "choices": zod.record(zod.string(), zod.enum(['notice', 'statement', 'none'])),
+  "includeSigningLink": zod.boolean().optional()
 }),
   "status": zod.enum(['draft', 'sent']),
   "replyTo": zod.string(),
@@ -2025,7 +2284,8 @@ export const SaveMailingBody = zod.object({
   "body": zod.string(),
   "documentIds": zod.array(zod.number().int()),
   "attachment": zod.enum(['notice', 'statement', 'none']),
-  "choices": zod.record(zod.string(), zod.enum(['notice', 'statement', 'none']))
+  "choices": zod.record(zod.string(), zod.enum(['notice', 'statement', 'none'])),
+  "includeSigningLink": zod.boolean().optional()
 })
 
 export const SaveMailingResponse = zod.object({

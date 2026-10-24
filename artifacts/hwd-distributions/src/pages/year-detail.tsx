@@ -16,6 +16,7 @@ import { StatusTag } from "@/pages/years";
 import { YearExports } from "@/components/year-exports";
 import { PracticeReset } from "@/components/practice-reset";
 import { MailingLink } from "@/pages/mailing";
+import { DirectionConfirmCell } from "@/pages/directions";
 import { fmtDate, errMessage, ratePct } from "@/lib/format";
 import { fmtCents, parseDollars, centsToInput, isNeg, todayISO, fmtBytes, sumCents } from "@/lib/money";
 import { useToast } from "@/hooks/use-toast";
@@ -67,6 +68,7 @@ export default function YearDetailPage() {
           <StatusTag status={y.status} />
           <span>Opened {fmtDate(y.createdAt)} by {y.createdBy}{y.finalizedAt && <> · finalized {fmtDate(y.finalizedAt, true)}</>}</span>
           <MailingLink id={y.id} />
+          <Link href={`/years/${y.id}/directions`} className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-medium hover:bg-secondary" data-testid="link-year-directions"><Stamp className="h-4 w-4" /> Tax &amp; Reinvestment</Link>
           <Link href={`/snapshots/${y.snapshotId}`} className="text-primary underline-offset-2 hover:underline" data-testid="link-year-snapshot">View snapshot</Link>
         </span>
       </PageHeader>
@@ -313,6 +315,7 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
                   <td className="num px-2 py-2 text-right">{fmtCents(h.paidCents)}</td>
                   <td className="px-2 py-2">
                     <div data-testid={`text-instruction-${h.personId}`}>{statusTag(h)}</div>
+                    <DirectionConfirmCell yearId={y.id} personId={h.personId} />
                     {ledger && (
                       <div className="flex justify-end gap-0.5">
                          <IconBtn title={h.nominalCents === null ? "Declare a per-share amount before recording payments" : "Record cash payment"} disabled={h.nominalCents === null || h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "cash" })} test={`button-pay-${h.personId}`}><Banknote className="h-4 w-4" /></IconBtn>

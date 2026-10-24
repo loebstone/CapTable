@@ -56,3 +56,31 @@ mtime_ms = 1792778046373
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/87544e43-246d-4c79-a319-6a1ebb0dc5b3/c4a86ecf-85f8-46b6-89a4-3a805c9ba49f"
 storage_version_token = "1792778088540763"
 content_type = "text/html"
+
+[[outputs]]
+id = "_rGRPjBx2Q9miX7pQ1-j3"
+uri = "file://generated-artifacts/directions/Practice_Tax_Reinvestment_Signed.pdf"
+type = "pdf"
+title = "Practice signed Tax & Reinvestment Document"
+description = "Two-page development fixture PDF: signed direction and signature evidence; sent only to Resend’s test address."
+logical_id = "955cf59f-bbc9-451e-b163-5e8e55f5d40e"
+content_hash = "sha256:6cd58c8e2af1b5dc4147db90dddd0870c93f58cc6855b6fdb5d11676a460b335"
+size = 56083
+mtime_ms = 1792800466982
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/955cf59f-bbc9-451e-b163-5e8e55f5d40e/fbc2b719-4775-4b08-a131-58d15029d5e1"
+storage_version_token = "1792800952516965"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "Ke32T2ExxYS-2lNe6jhyk"
+uri = "file://generated-artifacts/directions/publish-schema-diff.html"
+type = "html"
+title = "Stage B — read-only publish schema diff"
+description = "Full unapplied SQL: nine new tables, one nullable column, no removals or destructive-change warnings. Nothing published."
+logical_id = "4cfabc93-183a-4a96-b08a-4a5acba38d07"
+content_hash = "sha256:aad404f82c2baeb11c8f96ea41ea6dcd3ea9f70e3000bf9fba3cc2826045140f"
+size = 7412
+mtime_ms = 1792800366206
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:5f49ba11-7ba8-4f7a-b1bf-848edb44ac43/4cfabc93-183a-4a96-b08a-4a5acba38d07/8e33c13d-e5dc-48c1-8c03-6b6b41e5e22a"
+storage_version_token = "1792800953106454"
+content_type = "text/html"

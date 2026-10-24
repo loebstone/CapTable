@@ -17,6 +17,8 @@ import AuditPage from '@/pages/audit';
 import YearsPage from '@/pages/years';
 import YearDetailPage from '@/pages/year-detail';
 import MailingPage from '@/pages/mailing';
+import DirectionsPage from '@/pages/directions';
+import SignDirectionPage from '@/pages/sign-direction';
 import { Shell } from '@/components/shell';
 import { ErrorPanel } from '@/components/bits';
 import { isAuthError } from '@/lib/format';
@@ -63,6 +65,7 @@ function Gate() {
           <Route path="/audit" component={AuditPage} />
           <Route path="/years" component={YearsPage} />
           <Route path="/years/:id/mailing" component={MailingPage} />
+          <Route path="/years/:id/directions" component={DirectionsPage} />
           <Route path="/years/:id" component={YearDetailPage} />
           <Route component={NotFound} />
         </Switch>
@@ -81,7 +84,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Gate />
+          <Switch>
+            <Route path="/sign-direction" component={SignDirectionPage} />
+            <Route component={Gate} />
+          </Switch>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

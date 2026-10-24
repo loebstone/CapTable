@@ -1,6 +1,6 @@
 import {
   db, holdingFetches, mailSettings, paperPreferences, mailingDrafts, mailingBatches,
-  mailingAttempts, mailingResults, mailingEvents, yearDocuments, type MailingDraft,
+  mailingAttempts, mailingResults, mailingEvents, yearDocuments, signedDirections, type MailingDraft,
 } from "@workspace/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { reportContext } from "./reports/context";
@@ -9,8 +9,20 @@ import { recipientChannel } from "./mailing-rules";
 import { HttpError } from "./errors";
 
 export const defaultMailing: MailingDraft = { subject: "", body: "", documentIds: [], attachment: "notice", choices: {} };
+async function privateDirectionDocumentIds(yearId: number) {
+  const rows = await db.select().from(signedDirections).where(eq(signedDirections.yearId, yearId));
+  return new Set(rows.flatMap((r) => [r.documentId, r.sourceDocumentId].filter((id): id is number => id !== null)));
+}
 export async function replyToSetting() {
   return (await db.select().from(mailSettings).orderBy(desc(mailSettings.id)).limit(1))[0]?.replyTo ?? "peter@loebstone.com";
+}
+export async function originalMailing(yearId: number, practice: boolean) {
+  const batches = await db.select().from(mailingBatches).where(eq(mailingBatches.yearId, yearId)).orderBy(desc(mailingBatches.id));
+  const batch = practice ? batches.find((b) => b.kind === "preview") : batches.filter((b) => b.kind === "send").at(-1);
+  if (!batch) return null;
+  const [draft] = await db.select().from(mailingDrafts).where(eq(mailingDrafts.id, batch.draftId));
+  const [attempt] = await db.select().from(mailingAttempts).where(eq(mailingAttempts.batchId, batch.id)).limit(1);
+  return draft && attempt ? { draftId: draft.id, content: draft.content, replyTo: attempt.replyTo } : null;
 }
 export async function mailingView(yearId: number) {
   const context = await reportContext(yearId);
@@ -19,12 +31,18 @@ export async function mailingView(yearId: number) {
   const emails = new Map(fetch?.payload.holdings.map((h) => [h.personId, h.email ?? null]));
   const preferences = new Map(latestBy(await db.select().from(paperPreferences).orderBy(desc(paperPreferences.id)), (r) => r.personId).map((r) => [r.personId, r.prefersPaper]));
   const batches = await db.select().from(mailingBatches).where(eq(mailingBatches.yearId, yearId));
-  const liveBatches = batches.filter((b) => b.kind !== "preview").map((b) => b.id);
+  // Self-addressed practice resends are logged as resends, not shareholder sends.
+  const liveBatches = context.year.isPractice ? [] : batches.filter((b) => b.kind !== "preview").map((b) => b.id);
   const attempts = liveBatches.length ? await db.select().from(mailingAttempts).where(inArray(mailingAttempts.batchId, liveBatches)).orderBy(desc(mailingAttempts.id)) : [];
   const results = attempts.length ? await db.select().from(mailingResults).where(inArray(mailingResults.attemptId, attempts.map((a) => a.id))) : [];
   const messages = results.flatMap((r) => r.messageId ? [r.messageId] : []);
   const events = messages.length ? await db.select().from(mailingEvents).where(inArray(mailingEvents.messageId, messages)) : [];
   const content = draft?.content ?? defaultMailing;
+  const resendBatchIds = batches.filter((b) => b.kind === "resend").map((b) => b.id);
+  const resendAttempts = !resendBatchIds.length ? [] : context.year.isPractice
+    ? await db.select().from(mailingAttempts).where(inArray(mailingAttempts.batchId, resendBatchIds))
+    : attempts.filter((a) => resendBatchIds.includes(a.batchId));
+  const privateDocuments = await privateDirectionDocumentIds(yearId);
   const recipients = context.year.holders.map((holder) => {
     const email = emails.get(holder.personId) ?? null, prefersPaper = preferences.get(holder.personId) ?? false;
     const channel = recipientChannel(email, prefersPaper);
@@ -40,6 +58,7 @@ export async function mailingView(yearId: number) {
       result?.result === "sent" ? "Sent" : result?.result === "failed" ? "Failed" : attempt ? "Unknown — check Resend before retrying" :
       channel === "Email" ? "Draft" : channel;
     return { personId: holder.personId, displayName: holder.displayName, email, prefersPaper, channel, status,
+      resendCount: resendAttempts.filter((a) => a.personId === holder.personId).length,
       attachment: content.choices[holder.personId] ?? content.attachment,
       canResend: channel === "Email" && (status === "Failed" || status === "Bounced"),
       messageId: result?.messageId ?? null, sentAt: result?.result === "sent" ? result.createdAt : null,
@@ -48,12 +67,14 @@ export async function mailingView(yearId: number) {
   });
   return { calendarYear: context.year.calendarYear, draftId: draft?.id ?? null, content, status: liveBatches.length ? "sent" as const : "draft" as const,
     replyTo: await replyToSetting(), isPractice: context.year.isPractice, recipients,
-    documents: (await db.select().from(yearDocuments).where(eq(yearDocuments.yearId, yearId))).map(({ id, filename, contentType, size }) => ({ id, filename, contentType, size })),
+    documents: (await db.select().from(yearDocuments).where(eq(yearDocuments.yearId, yearId))).filter((d) => !privateDocuments.has(d.id)).map(({ id, filename, contentType, size }) => ({ id, filename, contentType, size })),
   };
 }
 export async function validateMailDocuments(yearId: number, content: MailingDraft) {
+  const privateDocuments = await privateDirectionDocumentIds(yearId);
   if (new Set(content.documentIds).size !== content.documentIds.length) throw new HttpError(400, "Duplicate attachment");
   for (const id of content.documentIds) {
+    if (privateDocuments.has(id)) throw new HttpError(400, "Signed directions and paper scans cannot be shared mailing attachments.");
     const [doc] = await db.select().from(yearDocuments).where(and(eq(yearDocuments.id, id), eq(yearDocuments.yearId, yearId)));
     if (!doc || doc.contentType !== "application/pdf") throw new HttpError(400, "Shared attachments must be sealed PDFs attached to this year");
   }

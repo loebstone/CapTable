@@ -25,6 +25,10 @@ import type {
   AccessRemovalInput,
   AuditEntry,
   DeclarationInput,
+  DirectionConfirmInput,
+  DirectionDispatch,
+  DirectionIssueInput,
+  DirectionView,
   DocumentAttachmentInput,
   DocumentUpload,
   DocumentUploadInput,
@@ -36,9 +40,12 @@ import type {
   MailSettings,
   MailingContent,
   MailingSendInput,
+  MailingSendResult,
   MailingView,
   Message,
   NoteInput,
+  OpenSigningLinkParams,
+  PaperDirectionInput,
   PaperPreferenceInput,
   PaymentInput,
   PracticeResetInput,
@@ -51,6 +58,7 @@ import type {
   RateTable,
   RedeemSignInBodyOne,
   RedeemSignInBodyTwo,
+  RemindDirections200,
   Residence,
   ResidenceBatchInput,
   ResidenceBatchResult,
@@ -58,6 +66,9 @@ import type {
   ReversalInput,
   SendMailing200,
   Session,
+  SignatureInput,
+  SigningContinueInput,
+  SigningSession,
   Snapshot,
   SnapshotInput,
   VerifySignInParams,
@@ -95,6 +106,941 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getOpenSigningLinkUrl = (params: OpenSigningLinkParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/signing/open?${stringifiedParams}` : `/api/signing/open`
+}
+
+export const openSigningLink = async (params: OpenSigningLinkParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getOpenSigningLinkUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOpenSigningLinkQueryKey = (params?: OpenSigningLinkParams,) => {
+    return [
+    `/api/signing/open`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getOpenSigningLinkQueryOptions = <TData = Awaited<ReturnType<typeof openSigningLink>>, TError = ErrorType<string>>(params: OpenSigningLinkParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof openSigningLink>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOpenSigningLinkQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof openSigningLink>>> = ({ signal }) => openSigningLink(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof openSigningLink>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type OpenSigningLinkQueryResult = NonNullable<Awaited<ReturnType<typeof openSigningLink>>>
+export type OpenSigningLinkQueryError = ErrorType<string>
+
+
+
+export function useOpenSigningLink<TData = Awaited<ReturnType<typeof openSigningLink>>, TError = ErrorType<string>>(
+ params: OpenSigningLinkParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof openSigningLink>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getOpenSigningLinkQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getContinueSigningLinkUrl = () => {
+
+
+
+
+  return `/api/signing/continue`
+}
+
+export const continueSigningLink = async (signingContinueInput: SigningContinueInput, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+    const formUrlEncoded = new URLSearchParams();
+formUrlEncoded.append(`token`, signingContinueInput.token);
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<unknown>(getContinueSigningLinkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getHeaders(options?.headers) },
+    body: formUrlEncoded
+  }
+);}
+
+
+
+
+
+export const getContinueSigningLinkMutationKey = () => ['continueSigningLink'] as const;
+
+export const getContinueSigningLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof continueSigningLink>>, TError,ContinueSigningLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof continueSigningLink>>, TError,ContinueSigningLinkMutationVariables, TContext> => {
+
+const mutationKey = getContinueSigningLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof continueSigningLink>>, ContinueSigningLinkMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  continueSigningLink(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ContinueSigningLinkMutationResult = NonNullable<Awaited<ReturnType<typeof continueSigningLink>>>
+    export type ContinueSigningLinkMutationBody = BodyType<SigningContinueInput>
+    export type ContinueSigningLinkMutationError = ErrorType<void>
+    export type ContinueSigningLinkMutationVariables = {data: BodyType<SigningContinueInput>}
+
+    export const useContinueSigningLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof continueSigningLink>>, TError,ContinueSigningLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof continueSigningLink>>,
+        TError,
+        ContinueSigningLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getContinueSigningLinkMutationOptions(options));
+    }
+
+export const getGetSigningSessionUrl = () => {
+
+
+
+
+  return `/api/signing/session`
+}
+
+export const getSigningSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<SigningSession> => {
+
+  return customFetch<SigningSession>(getGetSigningSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSigningSessionQueryKey = () => {
+    return [
+    `/api/signing/session`
+    ] as const;
+    }
+
+
+export const getGetSigningSessionQueryOptions = <TData = Awaited<ReturnType<typeof getSigningSession>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSigningSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSigningSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSigningSession>>> = ({ signal }) => getSigningSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSigningSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSigningSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getSigningSession>>>
+export type GetSigningSessionQueryError = ErrorType<unknown>
+
+
+
+export function useGetSigningSession<TData = Awaited<ReturnType<typeof getSigningSession>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSigningSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSigningSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSignDirectionUrl = () => {
+
+
+
+
+  return `/api/signing/sign`
+}
+
+export const signDirection = async (signatureInput: SignatureInput, options?: Parameters<typeof customFetch>[1]): Promise<SigningSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SigningSession>(getSignDirectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signatureInput)
+  }
+);}
+
+
+
+
+
+export const getSignDirectionMutationKey = () => ['signDirection'] as const;
+
+export const getSignDirectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signDirection>>, TError,SignDirectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signDirection>>, TError,SignDirectionMutationVariables, TContext> => {
+
+const mutationKey = getSignDirectionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signDirection>>, SignDirectionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  signDirection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignDirectionMutationResult = NonNullable<Awaited<ReturnType<typeof signDirection>>>
+    export type SignDirectionMutationBody = BodyType<SignatureInput>
+    export type SignDirectionMutationError = ErrorType<unknown>
+    export type SignDirectionMutationVariables = {data: BodyType<SignatureInput>}
+
+    export const useSignDirection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signDirection>>, TError,SignDirectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof signDirection>>,
+        TError,
+        SignDirectionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSignDirectionMutationOptions(options));
+    }
+
+export const getGetDirectionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions`
+}
+
+export const getDirections = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<DirectionView> => {
+
+  return customFetch<DirectionView>(getGetDirectionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDirectionsQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/directions`
+    ] as const;
+    }
+
+
+export const getGetDirectionsQueryOptions = <TData = Awaited<ReturnType<typeof getDirections>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDirectionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDirections>>> = ({ signal }) => getDirections(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDirections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDirectionsQueryResult = NonNullable<Awaited<ReturnType<typeof getDirections>>>
+export type GetDirectionsQueryError = ErrorType<unknown>
+
+
+
+export function useGetDirections<TData = Awaited<ReturnType<typeof getDirections>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDirectionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getIssueDirectionLinkUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions/issue`
+}
+
+export const issueDirectionLink = async (id: number,
+    directionIssueInput: DirectionIssueInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionDispatch> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionDispatch>(getIssueDirectionLinkUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionIssueInput)
+  }
+);}
+
+
+
+
+
+export const getIssueDirectionLinkMutationKey = () => ['issueDirectionLink'] as const;
+
+export const getIssueDirectionLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueDirectionLink>>, TError,IssueDirectionLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof issueDirectionLink>>, TError,IssueDirectionLinkMutationVariables, TContext> => {
+
+const mutationKey = getIssueDirectionLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issueDirectionLink>>, IssueDirectionLinkMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  issueDirectionLink(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IssueDirectionLinkMutationResult = NonNullable<Awaited<ReturnType<typeof issueDirectionLink>>>
+    export type IssueDirectionLinkMutationBody = BodyType<DirectionIssueInput>
+    export type IssueDirectionLinkMutationError = ErrorType<unknown>
+    export type IssueDirectionLinkMutationVariables = {id: number;data: BodyType<DirectionIssueInput>}
+
+    export const useIssueDirectionLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueDirectionLink>>, TError,IssueDirectionLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof issueDirectionLink>>,
+        TError,
+        IssueDirectionLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getIssueDirectionLinkMutationOptions(options));
+    }
+
+export const getResendDirectionEnvelopeUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions/resend`
+}
+
+export const resendDirectionEnvelope = async (id: number,
+    directionIssueInput: DirectionIssueInput, options?: Parameters<typeof customFetch>[1]): Promise<MailingSendResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MailingSendResult>(getResendDirectionEnvelopeUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionIssueInput)
+  }
+);}
+
+
+
+
+
+export const getResendDirectionEnvelopeMutationKey = () => ['resendDirectionEnvelope'] as const;
+
+export const getResendDirectionEnvelopeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendDirectionEnvelope>>, TError,ResendDirectionEnvelopeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendDirectionEnvelope>>, TError,ResendDirectionEnvelopeMutationVariables, TContext> => {
+
+const mutationKey = getResendDirectionEnvelopeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendDirectionEnvelope>>, ResendDirectionEnvelopeMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resendDirectionEnvelope(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendDirectionEnvelopeMutationResult = NonNullable<Awaited<ReturnType<typeof resendDirectionEnvelope>>>
+    export type ResendDirectionEnvelopeMutationBody = BodyType<DirectionIssueInput>
+    export type ResendDirectionEnvelopeMutationError = ErrorType<unknown>
+    export type ResendDirectionEnvelopeMutationVariables = {id: number;data: BodyType<DirectionIssueInput>}
+
+    export const useResendDirectionEnvelope = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendDirectionEnvelope>>, TError,ResendDirectionEnvelopeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendDirectionEnvelope>>,
+        TError,
+        ResendDirectionEnvelopeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResendDirectionEnvelopeMutationOptions(options));
+    }
+
+export const getPrintPaperDirectionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions/paper.pdf`
+}
+
+export const printPaperDirections = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getPrintPaperDirectionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPrintPaperDirectionsQueryKey = (id: number,) => {
+    return [
+    `/api/years/${id}/directions/paper.pdf`
+    ] as const;
+    }
+
+
+export const getPrintPaperDirectionsQueryOptions = <TData = Awaited<ReturnType<typeof printPaperDirections>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof printPaperDirections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPrintPaperDirectionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof printPaperDirections>>> = ({ signal }) => printPaperDirections(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof printPaperDirections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PrintPaperDirectionsQueryResult = NonNullable<Awaited<ReturnType<typeof printPaperDirections>>>
+export type PrintPaperDirectionsQueryError = ErrorType<unknown>
+
+
+
+export function usePrintPaperDirections<TData = Awaited<ReturnType<typeof printPaperDirections>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof printPaperDirections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPrintPaperDirectionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRemindDirectionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions/remind`
+}
+
+export const remindDirections = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<RemindDirections200> => {
+
+  return customFetch<RemindDirections200>(getRemindDirectionsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemindDirectionsMutationKey = () => ['remindDirections'] as const;
+
+export const getRemindDirectionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof remindDirections>>, TError,RemindDirectionsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof remindDirections>>, TError,RemindDirectionsMutationVariables, TContext> => {
+
+const mutationKey = getRemindDirectionsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof remindDirections>>, RemindDirectionsMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  remindDirections(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemindDirectionsMutationResult = NonNullable<Awaited<ReturnType<typeof remindDirections>>>
+
+    export type RemindDirectionsMutationError = ErrorType<unknown>
+    export type RemindDirectionsMutationVariables = {id: number}
+
+    export const useRemindDirections = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof remindDirections>>, TError,RemindDirectionsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof remindDirections>>,
+        TError,
+        RemindDirectionsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemindDirectionsMutationOptions(options));
+    }
+
+export const getConfirmDirectionUrl = (id: number,
+    directionId: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions/${directionId}/confirm`
+}
+
+export const confirmDirection = async (id: number,
+    directionId: number,
+    directionConfirmInput: DirectionConfirmInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionView> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionView>(getConfirmDirectionUrl(id,directionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionConfirmInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmDirectionMutationKey = () => ['confirmDirection'] as const;
+
+export const getConfirmDirectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmDirection>>, TError,ConfirmDirectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmDirection>>, TError,ConfirmDirectionMutationVariables, TContext> => {
+
+const mutationKey = getConfirmDirectionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmDirection>>, ConfirmDirectionMutationVariables> = (props) => {
+          const {id,directionId,data} = props ?? {};
+
+          return  confirmDirection(id,directionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmDirectionMutationResult = NonNullable<Awaited<ReturnType<typeof confirmDirection>>>
+    export type ConfirmDirectionMutationBody = BodyType<DirectionConfirmInput>
+    export type ConfirmDirectionMutationError = ErrorType<unknown>
+    export type ConfirmDirectionMutationVariables = {id: number;directionId: number;data: BodyType<DirectionConfirmInput>}
+
+    export const useConfirmDirection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmDirection>>, TError,ConfirmDirectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmDirection>>,
+        TError,
+        ConfirmDirectionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmDirectionMutationOptions(options));
+    }
+
+export const getRecordPaperDirectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions/paper`
+}
+
+export const recordPaperDirection = async (id: number,
+    paperDirectionInput: PaperDirectionInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionView> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionView>(getRecordPaperDirectionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paperDirectionInput)
+  }
+);}
+
+
+
+
+
+export const getRecordPaperDirectionMutationKey = () => ['recordPaperDirection'] as const;
+
+export const getRecordPaperDirectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPaperDirection>>, TError,RecordPaperDirectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordPaperDirection>>, TError,RecordPaperDirectionMutationVariables, TContext> => {
+
+const mutationKey = getRecordPaperDirectionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordPaperDirection>>, RecordPaperDirectionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  recordPaperDirection(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordPaperDirectionMutationResult = NonNullable<Awaited<ReturnType<typeof recordPaperDirection>>>
+    export type RecordPaperDirectionMutationBody = BodyType<PaperDirectionInput>
+    export type RecordPaperDirectionMutationError = ErrorType<unknown>
+    export type RecordPaperDirectionMutationVariables = {id: number;data: BodyType<PaperDirectionInput>}
+
+    export const useRecordPaperDirection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPaperDirection>>, TError,RecordPaperDirectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordPaperDirection>>,
+        TError,
+        RecordPaperDirectionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecordPaperDirectionMutationOptions(options));
+    }
+
+export const getDownloadDirectionPdfUrl = (id: number,
+    directionId: number,) => {
+
+
+
+
+  return `/api/years/${id}/directions/${directionId}/pdf`
+}
+
+export const downloadDirectionPdf = async (id: number,
+    directionId: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadDirectionPdfUrl(id,directionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadDirectionPdfQueryKey = (id: number,
+    directionId: number,) => {
+    return [
+    `/api/years/${id}/directions/${directionId}/pdf`
+    ] as const;
+    }
+
+
+export const getDownloadDirectionPdfQueryOptions = <TData = Awaited<ReturnType<typeof downloadDirectionPdf>>, TError = ErrorType<unknown>>(id: number,
+    directionId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadDirectionPdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadDirectionPdfQueryKey(id,directionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadDirectionPdf>>> = ({ signal }) => downloadDirectionPdf(id,directionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && directionId !== null && directionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadDirectionPdf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadDirectionPdfQueryResult = NonNullable<Awaited<ReturnType<typeof downloadDirectionPdf>>>
+export type DownloadDirectionPdfQueryError = ErrorType<unknown>
+
+
+
+export function useDownloadDirectionPdf<TData = Awaited<ReturnType<typeof downloadDirectionPdf>>, TError = ErrorType<unknown>>(
+ id: number,
+    directionId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadDirectionPdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadDirectionPdfQueryOptions(id,directionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

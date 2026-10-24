@@ -1,8 +1,8 @@
 import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { db, mailingAttempts, mailingBatches, mailingDrafts, mailingResults } from "@workspace/db";
-import { and, eq, ne } from "drizzle-orm";
+import { db, mailingAttempts, mailingBatches, mailingDrafts, mailingResults, holdingFetches } from "@workspace/db";
+import { and, eq, ne, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import { append, write } from "./records";
 import { assertAccess } from "./access";
@@ -10,27 +10,48 @@ import type { Identity } from "./auth";
 import { requireYear } from "./distribution-years";
 import { HttpError } from "./errors";
 import { assertPracticeSend } from "./mailing-rules";
-import { mailingView, validateMailDocuments } from "./mailings";
+import { mailingView, validateMailDocuments, originalMailing } from "./mailings";
+import { fetchRosterHoldings } from "./roster";
+import { proposeHoldingResidences } from "./holding-residences";
 import { mailingEnvelope } from "./mailing-envelope";
+import { issueSigningToken, signingLinkText } from "./direction-links";
 
 const sendInput = z.object({ kind: z.enum(["send", "resend", "preview"]), draftId: z.number().int().positive(), personId: z.string().optional() });
 // Deliberate, explicit sends only; no background jobs and no automatic retries.
-export async function sendMailing(identity: Identity, yearId: number, input: unknown) {
+export async function sendMailing(identity: Identity, yearId: number, input: unknown, origin: string) {
   const directory = await mkdtemp(join(tmpdir(), "hwd-mail-"));
-  try { return await sendWithSpool(identity, yearId, input, directory); }
+  try { return await sendWithSpool(identity, yearId, input, directory, origin); }
   finally { await rm(directory, { recursive: true, force: true }); }
 }
-async function sendWithSpool(identity: Identity, yearId: number, input: unknown, directory: string) {
-  const data = sendInput.parse(input), preview = data.kind === "preview";
+export async function resendHolderEnvelope(identity: Identity, yearId: number, personId: string, origin: string) {
+  const year = await requireYear(db, yearId), source = await originalMailing(yearId, year.isPractice);
+  if (!source) throw new HttpError(409, year.isPractice ? "Send to me first before resending a practice envelope." : "Send this year's mailing before resending an envelope.");
+  const payload = await fetchRosterHoldings();
+  await write(identity.personId, async (tx, actor) => {
+    await assertAccess(actor, tx);
+    await append(tx, actor, holdingFetches, { payload, fetchedBy: actor }, "MAILING_RESEND_ROSTER_REFRESH");
+    await proposeHoldingResidences(tx, actor, payload);
+  });
+  const directory = await mkdtemp(join(tmpdir(), "hwd-mail-"));
+  try { return await sendWithSpool(identity, yearId, { kind: "resend", draftId: source.draftId, personId }, directory, origin, source); }
+  finally { await rm(directory, { recursive: true, force: true }); }
+}
+async function sendWithSpool(identity: Identity, yearId: number, input: unknown, directory: string, origin: string,
+  source?: NonNullable<Awaited<ReturnType<typeof originalMailing>>>) {
+  const data = sendInput.parse(input);
   const year = await requireYear(db, yearId);
+  const preview = data.kind === "preview" || (!!source && year.isPractice);
   assertPracticeSend(year.isPractice, preview); // Before any external request.
   if (!process.env.RESEND_API_KEY) throw new HttpError(503, "RESEND_API_KEY is unset; no mailing was sent");
   const view = await mailingView(yearId);
-  if (view.draftId !== data.draftId) throw new HttpError(409, "The mailing changed. Reload and review it before sending.");
+  if (!source && view.draftId !== data.draftId) throw new HttpError(409, "The mailing changed. Reload and review it before sending.");
+  const content = source ? { ...source.content, choices: { ...source.content.choices, [data.personId!]: "notice" as const }, includeSigningLink: true } : view.content;
+  const replyTo = source?.replyTo ?? view.replyTo;
   if (data.kind === "send" && view.status === "sent") throw new HttpError(409, "This mailing was already sent. Use Resend to failed/bounced.");
-  await validateMailDocuments(yearId, view.content);
+  await validateMailDocuments(yearId, content);
   const recipients = preview ? view.recipients.filter((r) => r.personId === data.personId) :
-    view.recipients.filter((r) => r.channel === "Email" && (data.kind === "resend" ? r.canResend && (!data.personId || r.personId === data.personId) : r.status === "Draft"));
+    view.recipients.filter((r) => r.channel === "Email" && (source ? r.personId === data.personId && r.status !== "Complained" :
+      data.kind === "resend" ? r.canResend && (!data.personId || r.personId === data.personId) : r.status === "Draft"));
   if (!recipients.length) throw new HttpError(400, preview ? "Choose a holder for the preview" : "No eligible recipients");
   // Render/validate every envelope before reserving the send. Only one envelope's
   // bytes are retained at a time; attachments are generated again for delivery.
@@ -39,7 +60,7 @@ async function sendWithSpool(identity: Identity, yearId: number, input: unknown,
     attachments: Awaited<ReturnType<typeof mailingEnvelope>>["records"];
   }[] = [];
   for (const recipient of recipients) {
-    const envelope = await mailingEnvelope(yearId, view.content, recipient.personId, preview ? identity.email : recipient.email!, view.replyTo, preview);
+    const envelope = await mailingEnvelope(yearId, content, recipient.personId, preview ? identity.email : recipient.email!, replyTo, preview);
     const spoolFile = join(directory, `${reservations.length}.json`);
     await writeFile(spoolFile, JSON.stringify(envelope.payload), { mode: 0o600 });
     reservations.push({ recipient, spoolFile, attachments: envelope.records });
@@ -48,25 +69,44 @@ async function sendWithSpool(identity: Identity, yearId: number, input: unknown,
     await assertAccess(actor, tx);
     assertPracticeSend((await requireYear(tx, yearId)).isPractice, preview);
     const drafts = await tx.select().from(mailingDrafts).where(eq(mailingDrafts.yearId, yearId));
-    if (!drafts.length || Math.max(...drafts.map((d) => d.id)) !== data.draftId) throw new HttpError(409, "The mailing changed. Reload it.");
+    if (!drafts.length || (!source && Math.max(...drafts.map((d) => d.id)) !== data.draftId)) throw new HttpError(409, "The mailing changed. Reload it.");
     const existing = await tx.select().from(mailingBatches).where(and(eq(mailingBatches.yearId, yearId), ne(mailingBatches.kind, "preview")));
     if (!preview && data.kind === "send" && existing.length) throw new HttpError(409, "This mailing was already sent. Use Resend to failed/bounced.");
+    await validateMailDocuments(yearId, content);
+    if (source) {
+      const pending = await tx.select({ id: mailingAttempts.id }).from(mailingAttempts)
+        .innerJoin(mailingBatches, eq(mailingBatches.id, mailingAttempts.batchId))
+        .leftJoin(mailingResults, eq(mailingResults.attemptId, mailingAttempts.id))
+        .where(and(eq(mailingBatches.yearId, yearId), eq(mailingAttempts.personId, data.personId!),
+          isNull(mailingResults.id), ...(preview ? [] : [ne(mailingBatches.kind, "preview")])));
+      // Check results explicitly; a reserved envelope with no recorded outcome
+      // must not be sent concurrently or silently retried after a process crash.
+      if (pending.length) throw new HttpError(409, "An earlier envelope is still pending. Check Resend before another resend.");
+    }
     // Reserve against simultaneous resend attempts as well as first sends.
     const currentView = await mailingView(yearId);
     for (const { recipient } of reservations) {
       const current = currentView.recipients.find((r) => r.personId === recipient.personId);
       if (!preview && (current?.channel !== "Email" || current.email !== recipient.email)) throw new HttpError(409, "Recipient addresses or paper preferences changed; reload the mailing.");
       if (!preview && data.kind === "resend") {
-        if (!current?.canResend) throw new HttpError(409, "Recipient eligibility changed; reload the mailing.");
+        if (source ? current?.status === "Complained" : !current?.canResend) throw new HttpError(409, "Recipient eligibility changed; reload the mailing.");
       }
     }
-    const row = await append(tx, actor, mailingBatches, { yearId, draftId: data.draftId, kind: data.kind, createdBy: actor }, `MAILING_${data.kind.toUpperCase()}`);
+    const row = await append(tx, actor, mailingBatches, { yearId, draftId: data.draftId, kind: data.kind, createdBy: actor }, source ? "MAILING_PERSON_RESEND" : `MAILING_${data.kind.toUpperCase()}`);
     const attempts = [];
     for (const reservation of reservations) {
+      const link = content.includeSigningLink ? await issueSigningToken(tx, actor, yearId, reservation.recipient.personId, preview ? identity.email : reservation.recipient.email!, origin) : null;
+      if (link) {
+        const payload = JSON.parse(await readFile(reservation.spoolFile, "utf8"));
+        payload.text = signingLinkText(payload.text, link.url);
+        const { assertEnvelopeSize } = await import("./mailing-rules");
+        assertEnvelopeSize(payload);
+        await writeFile(reservation.spoolFile, JSON.stringify(payload), { mode: 0o600 });
+      }
       attempts.push(await append(tx, actor, mailingAttempts, {
         batchId: row.id, personId: reservation.recipient.personId,
-        to: preview ? identity.email : reservation.recipient.email!, replyTo: view.replyTo,
-        attachments: reservation.attachments, createdBy: actor,
+        to: preview ? identity.email : reservation.recipient.email!, replyTo,
+        attachments: reservation.attachments, signingTokenId: link?.token.id ?? null, createdBy: actor,
       }, "MAILING_ENVELOPE_RESERVED"));
     }
     return { id: row.id, attempts };

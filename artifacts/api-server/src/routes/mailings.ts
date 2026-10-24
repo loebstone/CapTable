@@ -6,6 +6,7 @@ import { currentIdentity } from "../lib/auth";
 import { assertAccess } from "../lib/access";
 import { append, write } from "../lib/records";
 import { draftInput, emailInput } from "../lib/mailing-rules";
+import { publicOrigin } from "../lib/origin";
 import { mailingView, replyToSetting, validateMailDocuments } from "../lib/mailings";
 import { sendMailing } from "../lib/mailing-send";
 import { requireYear } from "../lib/distribution-years";
@@ -37,16 +38,16 @@ router.post("/years/:id/mailing", async (req, res): Promise<void> => {
   const view = await mailingView(id);
   for (const personId of Object.keys(data.choices)) if (!view.recipients.some((r) => r.personId === personId)) throw new HttpError(400, "Attachment choice names someone outside this snapshot");
   await write(currentIdentity(req).personId, async (tx, actor) => {
-    await assertAccess(actor, tx); await requireYear(tx, id);
+    await assertAccess(actor, tx); const year = await requireYear(tx, id);
     const sent = await tx.select().from(mailingBatches).where(and(eq(mailingBatches.yearId, id), ne(mailingBatches.kind, "preview")));
-    if (sent.length) throw new HttpError(409, "Sent mailings cannot be edited");
+    if (!year.isPractice && sent.length) throw new HttpError(409, "Sent mailings cannot be edited");
     await validateMailDocuments(id, data);
     await append(tx, actor, mailingDrafts, { yearId: id, content: data, createdBy: actor }, "MAILING_DRAFT_SAVED");
   });
   res.json({ message: "Mailing draft saved" });
 });
 router.post("/years/:id/mailing/send", async (req, res): Promise<void> => {
-  res.json(await sendMailing(currentIdentity(req), idInput.parse(req.params.id), req.body));
+  res.json(await sendMailing(currentIdentity(req), idInput.parse(req.params.id), req.body, publicOrigin(req)));
 });
 router.get("/years/:id/mailing/paper.pdf", async (req, res): Promise<void> => {
   const id = idInput.parse(req.params.id), view = await mailingView(id);

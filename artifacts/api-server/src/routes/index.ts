@@ -13,12 +13,17 @@ import yearDocumentsRouter from "./year-documents";
 import reportsRouter from "./reports";
 import backupRouter from "./backup";
 import mailingsRouter from "./mailings";
+import directionsRouter from "./directions";
+import directionsPublicRouter from "./directions-public";
 import { requireAccess } from "../lib/auth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+// Deliberate public signing exception: only hashed link/restricted-signing
+// cookies authorize these routes, never a management session or arbitrary IDs.
+router.use(directionsPublicRouter);
 // Every business endpoint and unknown API route is behind the same server gate.
 router.use(requireAccess);
 router.use(holdingsRouter);
@@ -33,6 +38,7 @@ router.use(yearDocumentsRouter);
 router.use(reportsRouter);
 router.use(backupRouter);
 router.use(mailingsRouter);
+router.use(directionsRouter);
 router.use((_req, res) => { res.status(404).json({ error: "API route not found" }); });
 
 export default router;

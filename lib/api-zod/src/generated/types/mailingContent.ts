@@ -14,4 +14,5 @@ export interface MailingContent {
   documentIds: number[];
   attachment: MailingContentAttachment;
   choices: MailingContentChoices;
+  includeSigningLink?: boolean;
 }

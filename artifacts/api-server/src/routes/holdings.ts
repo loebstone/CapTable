@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
-import { db, holdingFetches, snapshots, snapshotRows, residences } from "@workspace/db";
+import { db, holdingFetches, snapshots, snapshotRows } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import {
   GetHoldingsResponse, FetchHoldingsResponse, ListSnapshotsResponse, TakeSnapshotBody,
   TakeSnapshotResponse, GetSnapshotParams, GetSnapshotResponse,
 } from "@workspace/api-zod";
 import { currentIdentity } from "../lib/auth";
-import { fetchRosterHoldings, proposedState } from "../lib/roster";
+import { fetchRosterHoldings } from "../lib/roster";
+import { proposeHoldingResidences } from "../lib/holding-residences";
 import { append, write } from "../lib/records";
 import { assertAccess } from "../lib/access";
 import { HttpError } from "../lib/errors";
@@ -21,15 +22,7 @@ router.post("/holdings/fetch", async (req, res): Promise<void> => {
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
     await assertAccess(actor, tx);
     const row = await append(tx, actor, holdingFetches, { payload, fetchedBy: actor });
-    for (const person of new Map(payload.holdings.map((h) => [h.personId, h])).values()) {
-      const [existing] = await tx.select({ id: residences.id }).from(residences).where(eq(residences.personId, person.personId)).limit(1);
-      if (existing) continue;
-      const stateCode = proposedState(person.addressState);
-      await append(tx, actor, residences, {
-        personId: person.personId, displayName: person.displayName, stateCode, confirmed: false,
-        note: stateCode === null ? "Missing: no addressState supplied by Roster" : `Proposed from Roster addressState (${person.addressState}); requires confirmation`,
-      });
-    }
+    await proposeHoldingResidences(tx, actor, payload);
     return { id: row.id, ...payload, fetchedAt: row.fetchedAt };
   });
   res.json(FetchHoldingsResponse.parse(result));

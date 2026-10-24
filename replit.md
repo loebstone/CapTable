@@ -1,9 +1,120 @@
-# Stage A — mailings (no signatures)
+# Stage A and Stage B — mailings and signed directions
 
 Development implementation. Never publish as part of verification and never write
-to a production database. The supplied Stage A prompt is the implemented contract;
+to a production database. The supplied Stage A and revised Stage B prompts are the implemented contract;
 the separately named “Mailings and Signatures v0.1” project document was not present
-in this workspace. No Stage B signing, direction links, scheduling, or new roles.
+in this workspace. There are no scheduled jobs, roles or officer titles.
+
+## Tax & Reinvestment Document — Stage B
+
+- Each status row has **Resend**, separate from **Re-issue link** (link only) and
+  **Remind unsigned**. Resend fetches current Roster contacts first; for real years
+  it uses the original sent mailing's immutable subject/body, shared PDF IDs and
+  reply-to, regenerates this holder's Notice and adds a fresh signing link (also
+  when the original mailing predated signing links). Earlier unused/continued links
+  are invalidated. The target is never supplied by the browser.
+- A practice Resend uses the latest **Send to me first** envelope's original draft,
+  not a subsequently edited unsent draft, and goes only to the current signed-in
+  person's Roster-authorized email. It has the normal preview subject/PRACTICE
+  banner. It does not mark the practice mailing sent or lock its draft.
+- A Resend is an intentional second copy, allowed after Sent/Delivered as well as
+  failures; it is not automatic retry. Complaints and paper preference still block
+  real shareholder email, and a pending reservation with no recorded outcome
+  blocks concurrent copies. Every attempt is a `resend` batch with its own
+  per-recipient attachment hashes/token id/result and Write History entries.
+  **Resends: N** counts these attempts, including self-addressed practice resends;
+  ordinary previews and link-only reissues/reminders do not increment it.
+- `pnpm --filter @workspace/api-server run verify:resend` exercises original-envelope
+  preservation, current-address refresh, Notice regeneration, link replacement,
+  counts, self-only practice behavior and access/Origin/pending guards using
+  a local Roster stub and mocked Resend. It sends NO real email.
+
+- The year header's **Tax & Reinvestment** link opens the per-holder direction
+  status table. Signing works on the public **/sign-direction** page without a
+  management sign-in, but only after a restricted signing session is established.
+  The page has no navigation, shares, distribution or tax figures. Its only
+  figure is the editable retention amount.
+- The exact legal document text lives in `direction_templates`, with a unique
+  immutable version. Source wording lives in `direction-rules.ts`; a wording
+  change MUST increase `DIRECTION_VERSION`. Existing tokens/documents retain the
+  version they used. Snapshot name is distinct from typed signature name.
+- **Include signing link** on a new mailing permits the one per-recipient text
+  exception: a plain **Sign your Tax & Reinvestment Document** URL appended to
+  the otherwise uniform authored body. No name/share/amount merge fields return.
+  A sent Stage A draft remains locked; existing years can use **Re-issue link**
+  or an explicit **Remind** action independently.
+- Signing links contain 32 random bytes, stored only as SHA-256 hashes, bound to
+  one holder/year/delivery email/template version and a frozen distribution
+  context. They expire after 30 days when checked; no job modifies them.
+  Reissue appends invalidation events for previous unused/continued tokens.
+- `GET /api/signing/open?token=...` serves only a Continue form, never a session
+  or holder data. `POST /api/signing/continue` consumes the link, appends a
+  Continue event and creates a distinct 30-minute restricted cookie,
+  **hwd_direction_session** (HttpOnly, SameSite=Strict, Secure in production,
+  path `/api/signing`). It grants NO management API access. Old, expired or
+  voided links return a plain 410 message. Public POSTs use the same Origin
+  checks as every other write; IP/token/session rate limits apply.
+  The native Continue form uses `Referrer-Policy: strict-origin`, as the
+  magic-link form does, so Chromium supplies Origin without disclosing the
+  token-bearing path/query in a referrer.
+- `POST /api/signing/sign` requires typed name and the exact affirmative consent
+  checkbox, validates integer cents inclusively from zero to the holder's
+  distribution, and refuses a changed distribution context. It records signer
+  IP/browser, UTC and America/New_York times, link id, Continue time, recipient
+  email, consent text, and template version. It does not trust client identity,
+  dates, IP or year/holder IDs.
+- The first page contains ONLY the versioned legal document (plus the practice
+  watermark when applicable). The second is signature evidence. To avoid an
+  impossible self-referential PDF hash, `document_hash` hashes the original
+  one-page document and is printed on the evidence page; `pdf_hash` hashes the
+  final sealed two-page PDF. Both the original and signed PDF are stored privately
+  in the year's sealed document store and are covered by backup.
+- The signature, token-spent event, document metadata, evidence and receipt intent
+  commit in one database transaction, under the app's write lock. App Storage and
+  Resend cannot join a PostgreSQL transaction: the files are sealed before commit
+  and the receipt email is sent only after commit; its result is appended separately.
+  A storage failure rolls back the signature. A database/commit failure can leave
+  an unreferenced private generated file rather than risking deletion of a
+  committed signature. No scheduled cleanup or automatic email retry.
+- An electronic direction is **awaiting confirmation** until someone with active
+  access clicks Confirm. Optional note is available but never required. Confirm
+  atomically records APIC on the New York signing date and a confirmation row.
+  A zero direction is valid and confirmed without an invalid zero ledger entry.
+  Hold blocks confirmation/ledger changes until removed.
+- A superseding confirmed direction REPLACES the prior direction's retention:
+  reverse the prior active APIC entry, then append the new amount; check combined
+  cash/other APIC does not exceed the distribution. Do not add the new direction
+  on top of the old one. Earlier PDFs and rows remain and are linked in history.
+- **Record paper direction** accepts amount, received date, optional sealed scan
+  and optional note; it records paper + confirmation + APIC together, and disables
+  older signing links. Paper scans and generated signature PDFs are EXCLUDED from
+  shared mailing attachments both in the chooser and on the server.
+- **Print paper directions** on the status page prints one blank-amount document
+  with signature/date lines per paper recipient. The Mailing page's Print letters
+  also includes these forms when Include signing link is selected.
+- In practice years, a new/reissued link is emailed ONLY to the signed-in person's
+  own address. The signed-copy receipt goes to that same token-bound address.
+  Every email has a PRACTICE banner and every PDF page a PRACTICE watermark.
+  Batch Send, Resend and Remind remain forbidden. Practice reset invalidates
+  existing links/sessions/directions, removes its document files/ledger under the
+  existing reset exception, and retains signature/audit history with a reset cutoff.
+- Public signing routes are the deliberate capability-based exception to management
+  access checks, alongside sign-in/health and the signature-verified Resend webhook.
+  All management direction/status/print/download/confirm/paper/reminder routes
+  require both the live Roster session check and active local access.
+- Signing is evidence of the actions taken with a bearer link, typed name and
+  consent, not independent identity verification. Do not describe it as proof
+  that an email link was not forwarded.
+- `pnpm --filter @workspace/api-server run verify:directions` uses mocked Resend,
+  a local Roster stub, isolated rollback tables and private test storage. It never
+  emails Peter. The explicitly requested live receipt check is
+  `pnpm --filter @workspace/api-server exec tsx tests/verify-directions.mjs --live-receipt`;
+  it permits exactly ONE real signed-copy receipt to **delivered@resend.dev**,
+  not any configurable human address. All other emails remain mocked.
+  **Do not rerun a live-email check until provider callback routing is isolated.**
+  The completed live receipt test also reached the account's existing production
+  webhook and appended a delivery event there. A development database does not
+  isolate an account-wide Resend webhook. Use the default mocked command meanwhile.
 
 - A year has append-only draft revisions; the first real send reserves an immutable
   batch and locks the draft. Explicit resends target only failed/bounced email
@@ -23,6 +134,7 @@ in this workspace. No Stage B signing, direction links, scheduling, or new roles
   real email recipient. No merge fields or per-person names, shares, distributions
   or amounts belong in them. The obsolete `{first_name}`, `{shares}`, and
   `{distribution}` fields are rejected on save and on send, including old drafts.
+  Stage B's opt-in signing URL is the sole individualized body exception.
   Only the selected per-holder PDF carries that person's figures. The fixed
   subject/body live in an immutable mailing draft shared by each attempt;
   per-recipient rows contain only address/reply-to and attachment metadata
@@ -38,7 +150,8 @@ in this workspace. No Stage B signing, direction links, scheduling, or new roles
 - “Send to me first” renders one chosen holder's complete envelope to the signed-in
   session's own email, never a typed destination, with a fixed `[PREVIEW]` prefix
   that contains no holder's name or figures.
-  It is the only permitted send in a practice year. Practice emails have a
+  It is the only permitted Stage A send in a practice year; Stage B also allows
+  the same self-addressed link and signed-copy receipt. Practice emails have a
   **PRACTICE** body banner; report attachments retain their existing watermark.
   Actual Send AND Resend reject practice years server-side with 403, before Resend.
 - Shared attachments use the existing sealed private year-document store and are

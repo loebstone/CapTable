@@ -5,6 +5,126 @@
  * HWD Cap Table foundation API
  * OpenAPI spec version: 1.0.0
  */
+export interface SigningContinueInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  token: string;
+}
+
+export interface SignatureInput {
+  /** @pattern ^\d+$ */
+  amountCents: string;
+  fullName: string;
+  consent: boolean;
+}
+
+export type SigningSessionState = typeof SigningSessionState[keyof typeof SigningSessionState];
+
+
+export const SigningSessionState = {
+  ready: 'ready',
+  signed: 'signed',
+} as const;
+
+export interface SigningSession {
+  state: SigningSessionState;
+  holderName: string;
+  calendarYear: number;
+  boardApprovalDate: string;
+  amountCents: string;
+  maxAmountCents: string;
+  templateVersion: number;
+  templateText: string;
+  consentText: string;
+  isPractice: boolean;
+  signedAt?: string;
+  receiptResult?: string;
+}
+
+export interface DirectionIssueInput {
+  personId: string;
+}
+
+export interface DirectionConfirmInput {
+  note?: string;
+}
+
+export interface PaperDirectionInput {
+  personId: string;
+  /** @pattern ^\d+$ */
+  amountCents: string;
+  receivedDate: string;
+  documentId?: number;
+  note?: string;
+}
+
+export interface DirectionDispatch {
+  linkId: number;
+  expiresAt: string;
+  /** @nullable */
+  messageId?: string | null;
+  result: string;
+}
+
+export type MailingSendResultResultsItem = {
+  personId: string;
+  result: string;
+  /** @nullable */
+  messageId?: string | null;
+  detail?: string;
+};
+
+export interface MailingSendResult {
+  results: MailingSendResultResultsItem[];
+}
+
+export interface DirectionHistory {
+  id: number;
+  kind: string;
+  amountCents: string;
+  confirmed: boolean;
+  createdAt: string;
+  /** @nullable */
+  pdfUrl?: string | null;
+}
+
+export interface DirectionStatusRow {
+  personId: string;
+  displayName: string;
+  channel: string;
+  /** @nullable */
+  email: string | null;
+  mailingStatus: string;
+  documentStatus: string;
+  instruction: string;
+  /** @nullable */
+  maxAmountCents: string | null;
+  /** @nullable */
+  directionId?: number | null;
+  /** @nullable */
+  amountCents?: string | null;
+  canConfirm: boolean;
+  canRemind: boolean;
+  canIssue: boolean;
+  canResendEnvelope?: boolean;
+  resendCount?: number;
+  /** @nullable */
+  resendBlocked?: string | null;
+  /** @nullable */
+  confirmationBlocked?: string | null;
+  /** @nullable */
+  pdfUrl?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  history?: DirectionHistory[];
+}
+
+export interface DirectionView {
+  yearId: number;
+  calendarYear: number;
+  isPractice: boolean;
+  rows: DirectionStatusRow[];
+}
+
 export interface PaperPreferenceInput {
   personId: string;
   prefersPaper: boolean;
@@ -46,6 +166,7 @@ export interface MailingContent {
   documentIds: number[];
   attachment: MailingContentAttachment;
   choices: MailingContentChoices;
+  includeSigningLink?: boolean;
 }
 
 export type MailingViewStatus = typeof MailingViewStatus[keyof typeof MailingViewStatus];
@@ -734,6 +855,20 @@ export interface AuditEntry {
   operation: string;
   recordId: string;
 }
+
+export type OpenSigningLinkParams = {
+/**
+ * @pattern ^[a-f0-9]{64}$
+ */
+token: string;
+};
+
+export type RemindDirections200 = {
+  count: number;
+  sentCount?: number;
+  failedCount?: number;
+  unknownCount?: number;
+};
 
 export type VerifySignInParams = {
 token: string;

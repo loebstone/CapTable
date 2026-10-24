@@ -4,6 +4,7 @@ import { distributionYears } from "./distributions";
 const at = () => timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow();
 export type MailingDraft = {
   subject: string; body: string; documentIds: number[];
+  includeSigningLink?: boolean;
   attachment: "notice" | "statement" | "none";
   choices: Record<string, "notice" | "statement" | "none">;
 };
@@ -33,6 +34,7 @@ export const mailingAttempts = pgTable("mailing_attempts", {
   // New mailings keep one uniform subject/body in the immutable mailing draft.
   subject: text("subject"), body: text("body"), replyTo: text("reply_to").notNull(),
   attachments: jsonb("attachments").$type<MailAttachmentRecord[]>().notNull(),
+  signingTokenId: integer("signing_token_id"),
   createdAt: at(), createdBy: text("created_by").notNull(),
 });
 export const mailingResults = pgTable("mailing_results", {

@@ -17,7 +17,9 @@
     "verify:practice": "tsx tests/verify-practice.mjs",
     "verify:backup": "tsx tests/verify-backup.mjs",
     "verify:residences": "tsx tests/verify-residences.mjs",
-    "verify:mailings": "tsx tests/verify-mailings.mjs"
+    "verify:mailings": "tsx tests/verify-mailings.mjs",
+    "verify:directions": "tsx tests/verify-directions.mjs",
+    "verify:resend": "tsx tests/verify-resend.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.4.0",

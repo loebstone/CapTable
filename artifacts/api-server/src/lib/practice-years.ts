@@ -2,6 +2,7 @@ import {
   auditLog, distributionYears, yearUploads, yearDocuments, yearFigures, yearCosts,
   yearDeclarations, yearFinalizations, yearCorrections, distributionEntries, distributionHolds,
   mailingDrafts,
+  directionTokens, signedDirections, directionResets,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { assertAccess } from "./access";
@@ -40,6 +41,12 @@ export async function resetPracticeYear(actor: string, id: number, input: unknow
       counts[name] = rows.length;
     }
     counts.storedFiles = await yearDocumentStore.removePracticeFiles([...documents.map((d) => d.objectPath), ...uploads.map((u) => u.objectPath)]);
+    const tokens = await tx.select().from(directionTokens).where(eq(directionTokens.yearId, id));
+    const directions = await tx.select().from(signedDirections).where(eq(signedDirections.yearId, id));
+    if (tokens.length || directions.length) {
+      await append(tx, actor, directionResets, { yearId: id, lastTokenId: Math.max(0, ...tokens.map((t) => t.id)),
+        lastDirectionId: Math.max(0, ...directions.map((d) => d.id)), createdBy: actor }, "PRACTICE_DIRECTIONS_RESET");
+    }
     // Every deletion is scoped to this persisted practice year (or its figure IDs).
     for (const table of Object.values(tables)) await tx.delete(table).where(eq(table.yearId, id));
     if (figures.length) await tx.delete(yearCosts).where(inArray(yearCosts.figuresId, figures.map((f) => f.id)));

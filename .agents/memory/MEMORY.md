@@ -7,3 +7,4 @@
 - [Drizzle CHECK diffs](drizzle-check-diffs.md) — push may miss changed expressions on same-named CHECK constraints; verify the actual database definition.
 - [Express request traces](express-request-traces.md) — response-finish callbacks can see router-local paths; capture original request metadata before middleware.
 - [Mailing safety](mailing-safety.md) — practice is self-preview only; uncertain sends stay manual; Svix 2 verifies raw bytes without returning JSON.
+- [Verification timestamps](test-timestamps.md) — rollback fixtures freeze PostgreSQL transaction time; Date.parse(Date) also drops milliseconds.

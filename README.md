@@ -7,7 +7,17 @@ personal figures belong only in the chosen PDF attachment. Merge fields are
 disabled. Automated verification uses a mock sender and never emails Peter.
 Delivery callbacks require Peter to configure `RESEND_WEBHOOK_SECRET` in Replit
 Secrets; see `replit.md` for the callback contract, sender, privacy rules, and
-development-only verification commands. No signatures or scheduling are included.
+development-only verification commands. No scheduling is included.
+
+Stage B is available from a year's **Tax & Reinvestment** link. A mailing can opt
+into signing links; signatures stay awaiting confirmation until an active user
+confirms APIC. Paper directions and private signed-PDF history use the same status
+page. Practice links/receipts go only to the signed-in previewer.
+
+`pnpm --filter @workspace/api-server run verify:directions` runs the development
+stub/mocked-email signing checks. See `replit.md` for the exact document, token,
+privacy, hash, confirmation and supersession rules and the explicitly requested
+Resend-test-address-only receipt verification.
 
 # HWD Cap Table
 
