@@ -4,7 +4,7 @@ import { assertAccess } from "./access";
 import type { Identity } from "./auth";
 import { requireYear } from "./distribution-years";
 import { mailingView, replyToSetting } from "./mailings";
-import { issueSigningToken, signingLinkText } from "./direction-links";
+import { issueSigningToken, signingLinkHtml, signingLinkText } from "./direction-links";
 import { MAIL_SENDER } from "./mailing-envelope";
 import { HttpError } from "./errors";
 import { directionView } from "./directions";
@@ -29,7 +29,8 @@ export async function dispatchDirection(identity: Identity, yearId: number, pers
         "Idempotency-Key": `hwd-direction-link-${reservation.token.id}` },
       body: JSON.stringify({ from: MAIL_SENDER, to: [reservation.token.email], reply_to: await replyToSetting(),
         subject: `${reservation.token.context.isPractice ? "[PREVIEW] " : ""}${reminder ? "Reminder: " : ""}Tax & Reinvestment Document`,
-        text: signingLinkText(`${reservation.token.context.isPractice ? "PRACTICE — nothing here is a real distribution\n\n" : ""}Please review and sign your Tax & Reinvestment Document using the link below.`, reservation.url) }),
+        text: signingLinkText(`${reservation.token.context.isPractice ? "PRACTICE — nothing here is a real distribution\n\n" : ""}Please review and sign your Tax & Reinvestment Document using the link below.`, reservation.url),
+        html: signingLinkHtml(`${reservation.token.context.isPractice ? "PRACTICE — nothing here is a real distribution\n\n" : ""}Please review and sign your Tax & Reinvestment Document using the link below.`, reservation.url) }),
       signal: AbortSignal.timeout(30000), redirect: "error",
     });
     const answer = await response.json().catch(() => null);

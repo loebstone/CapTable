@@ -3,7 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { hash, randomToken } from "./auth";
 import { append, type Tx } from "./records";
 import { requireLedgerYear, yearDetail } from "./distribution-years";
-import { DIRECTION_TEXT, DIRECTION_VERSION } from "./direction-rules";
+import { DIRECTION_TEXT, DIRECTION_VERSION, escapeHtml } from "./direction-rules";
 import { HttpError } from "./errors";
 
 export async function ensureDirectionTemplate(tx: Tx, actor: string) {
@@ -51,4 +51,23 @@ export async function issueSigningToken(tx: Tx, actor: string, yearId: number, p
 }
 export function signingLinkText(body: string, url: string) {
   return `${body}\n\nSign your Tax & Reinvestment Document:\n${url}`;
+}
+
+/** Fixed email chrome only. The composer still authors uniform plain text. */
+export function signingLinkHtml(body: string, url: string) {
+  const parsed = new URL(url);
+  if (!["https:", "http:"].includes(parsed.protocol)) throw new HttpError(400, "Invalid signing address");
+  const address = escapeHtml(url);
+  const message = body.split(/\r?\n/).map(escapeHtml).join("<br>");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:24px;background:#ffffff;color:#172b31;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6">
+<div style="max-width:600px;margin:0 auto">
+<div>${message}</div>
+<table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin:24px 0;border-collapse:separate">
+<tr><td align="center" bgcolor="#172b31" style="border-radius:4px;mso-padding-alt:14px 28px">
+<a href="${address}" style="display:inline-block;border:1px solid #172b31;border-radius:4px;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:bold;line-height:1.2;color:#ffffff;text-decoration:none">Sign here</a>
+</td></tr></table>
+<p style="margin:0 0 8px;font-size:13px;color:#526166">If the button doesn't work, copy this address into your browser:</p>
+<p style="margin:0;font-size:13px;overflow-wrap:anywhere;word-break:break-all"><a href="${address}" style="color:#172b31">${address}</a></p>
+</div></body></html>`;
 }

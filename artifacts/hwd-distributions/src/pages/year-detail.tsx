@@ -1,11 +1,11 @@
 import { formatShares } from "@workspace/display";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetYear, useSaveYearFigures, useDeclareYear, useFinalizeYear, useCorrectYear, useRecordPayment, useReversePayment,
   useSetYearHold, useRequestYearUpload, useAttachYearDocument,
-  getGetYearQueryKey, getListYearsQueryKey, getListPracticeYearsQueryKey, getListAuditQueryKey,
+  getGetYearQueryKey, getGetDirectionsQueryKey, getGetMailingQueryKey, getListYearsQueryKey, getListPracticeYearsQueryKey, getListAuditQueryKey,
   type YearDetail, type YearCalculation, type YearHolder, type YearDocument, type PaymentEntry, type CostLineInput,
   type YearCorrectionInputKind, type DocumentUploadInputContentType,
 } from "@workspace/api-client-react";
@@ -16,7 +16,8 @@ import { StatusTag } from "@/pages/years";
 import { YearExports } from "@/components/year-exports";
 import { PracticeReset } from "@/components/practice-reset";
 import { MailingLink } from "@/pages/mailing";
-import { DirectionConfirmCell } from "@/pages/directions";
+import { useDirections, DirectionsToolbar, DirectionChannelCell, DirectionMailingCell, DirectionDocumentCell, DirectionActionsCell, PaperDirectionForm } from "@/pages/directions";
+import type { DirectionStatusRow } from "@workspace/api-client-react";
 import { fmtDate, errMessage, ratePct } from "@/lib/format";
 import { fmtCents, parseDollars, centsToInput, isNeg, todayISO, fmtBytes, sumCents } from "@/lib/money";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,8 @@ function useYearInval(id: number) {
   const qc = useQueryClient();
   return () => {
     qc.invalidateQueries({ queryKey: getGetYearQueryKey(id) });
+    qc.invalidateQueries({ queryKey: getGetDirectionsQueryKey(id) });
+    qc.invalidateQueries({ queryKey: getGetMailingQueryKey(id) });
     qc.invalidateQueries({ queryKey: getListYearsQueryKey() });
     qc.invalidateQueries({ queryKey: getListPracticeYearsQueryKey() });
     qc.invalidateQueries({ queryKey: getListAuditQueryKey() });
@@ -68,7 +71,7 @@ export default function YearDetailPage() {
           <StatusTag status={y.status} />
           <span>Opened {fmtDate(y.createdAt)} by {y.createdBy}{y.finalizedAt && <> · finalized {fmtDate(y.finalizedAt, true)}</>}</span>
           <MailingLink id={y.id} />
-          <Link href={`/years/${y.id}/directions`} className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-medium hover:bg-secondary" data-testid="link-year-directions"><Stamp className="h-4 w-4" /> Tax &amp; Reinvestment</Link>
+          <a href="#holders" onClick={(e) => { e.preventDefault(); document.getElementById("holders")?.scrollIntoView({ behavior: "smooth" }); }} className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-medium hover:bg-secondary" data-testid="link-year-directions"><Stamp className="h-4 w-4" /> Tax &amp; Reinvestment</a>
           <Link href={`/snapshots/${y.snapshotId}`} className="text-primary underline-offset-2 hover:underline" data-testid="link-year-snapshot">View snapshot</Link>
         </span>
       </PageHeader>
@@ -77,8 +80,8 @@ export default function YearDetailPage() {
       {y.isPractice && <PracticeReset y={y} />}
       {y.blockers.length > 0 && <Blockers y={y} />}
 
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-        <section className="rise rise-d1 space-y-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <section className="rise rise-d1 min-w-0 space-y-3">
           <SectionTitle>Worked calculation{y.status === "corrected" && " · effective"}</SectionTitle>
           {y.calculation ? <WorkedTable c={y.calculation} declared={y.declaredPerShareCents} date={y.declarationDate} /> : (
             <Empty title="No figures yet.">Enter the gross timber income and each cost line, each tied to a source document. Net profit is computed on the server.</Empty>
@@ -90,7 +93,7 @@ export default function YearDetailPage() {
             </details>
           )}
         </section>
-        <section className="rise rise-d2 space-y-6">
+        <section className="rise rise-d2 min-w-0 space-y-6">
           <FiguresCard y={y} />
           <Documents y={y} />
         </section>
@@ -149,7 +152,7 @@ function WorkedTable({ c, declared, date, muted }: { c: YearCalculation; declare
   const rate = (r: string | null) => (r ? <>{r} <span className="text-xs text-muted-foreground">({ratePct(r)})</span></> : "—");
   const residual = c.residualCents;
   return (
-    <div className={cn("overflow-hidden rounded-lg border border-border bg-card", muted && "opacity-80")} data-testid={muted ? "table-original-calculation" : "table-worked"}>
+    <div className={cn("overflow-x-auto rounded-lg border border-border bg-card", muted && "opacity-80")} data-testid={muted ? "table-original-calculation" : "table-worked"}>
       <table className="w-full">
         <tbody className="divide-y divide-border/70">
           <Row label="Gross timber income" value={fmtCents(c.grossCents)} test="text-gross" />
@@ -281,25 +284,40 @@ function statusTag(h: YearHolder) {
 function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void }) {
   const ledger = y.isPractice || y.status !== "draft";
   const t = y.totals;
+  const dq = useDirections(y.id);
+  const byPid = new Map((dq.data?.rows ?? []).map((r) => [r.personId, r]));
+  const [paperFor, setPaperFor] = useState<DirectionStatusRow | null>(null);
+  const loaded = !dq.isLoading;
+  useEffect(() => { if (window.location.hash === "#holders") document.getElementById("holders")?.scrollIntoView(); }, []);
+  const dash = (k: string) => <span className="text-xs text-muted-foreground" key={k}>{dq.isLoading ? <span className="inline-block h-3 w-12 animate-pulse rounded bg-muted" /> : "—"}</span>;
+  const TH = "sticky top-0 z-20 bg-secondary";
   return (
-    <section className="rise rise-d3 space-y-3">
+    <section id="holders" className="rise rise-d3 scroll-mt-16 space-y-3" data-testid="section-holders">
       <SectionTitle right={<div className="num flex gap-3 text-xs text-muted-foreground"><span>on hold: {t.heldCount}</span><span>paid in full: {t.completeCount}</span><span>to pay: {t.openCount}</span></div>}>Holders</SectionTitle>
       {y.isPractice && y.status === "draft" && <p className="text-xs text-muted-foreground">Practice payments and APIC entries are available before finalization once a per-share amount is declared. Holds can be changed now.</p>}
+      {dq.data && <DirectionsToolbar id={y.id} v={dq.data} />}
+      {dq.isError && <div className="flex items-center gap-3 rounded-md bg-destructive/5 px-3 py-2 text-xs text-destructive" data-testid="text-directions-error">Direction status could not load: {errMessage(dq.error)} <Btn variant="quiet" className="px-2 py-1 text-xs" onClick={() => dq.refetch()} data-testid="button-retry-directions">Retry</Btn></div>}
       {y.holders.length === 0 ? <Empty title="No holders in this snapshot." /> : (
-        <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="w-full min-w-[1180px] text-sm" data-testid="table-year-holders">
-            <thead className="bg-secondary/50 text-[11px] tracking-wider text-muted-foreground">
+        <div className="max-h-[60dvh] overflow-auto overscroll-contain rounded-lg border border-border bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" tabIndex={0} role="region" aria-label="Holders table, scrollable" data-testid="scroll-year-holders">
+          <table className="w-[1956px] table-fixed border-separate border-spacing-0 text-sm sm:w-[2100px] [&_td]:border-b [&_td]:border-border" data-testid="table-year-holders">
+            <colgroup>
+              <col className="w-[120px] sm:w-[200px]" />
+              {[60, 70, 80, 140, 125, 125, 140, 110, 110, 110, 200, 150, 240].map((width, index) => <col key={index} style={{ width }} />)}
+              <col className="w-[176px] sm:w-[240px]" />
+            </colgroup>
+            <thead className="text-[11px] tracking-wider text-muted-foreground">
               <tr className="text-left">
-                <th className="px-3 py-2 font-medium">Holder</th><th className="px-2 py-2 font-medium">Class</th><th className="px-2 py-2 font-medium">State</th>
-                <th className="px-2 py-2 text-right font-medium">Shares</th><th className="px-2 py-2 text-right font-medium">Allocated Profit</th><th className="px-2 py-2 text-right font-medium">Distribution</th>
-                <th className="px-2 py-2 text-right font-medium">Estimated Tax</th><th className="px-2 py-2 text-right font-medium">Surplus/Deficit</th><th className="px-2 py-2 text-right font-medium">APIC</th>
-                <th className="px-2 py-2 text-right font-medium">Paid</th><th className="px-2 py-2 font-medium">Instruction</th>
+                <th className={cn(TH, "left-0 z-30 min-w-[120px] max-w-[130px] sm:min-w-[160px] sm:max-w-[200px] border-r border-border px-3 py-2 font-medium")}>Holder</th><th className={cn(TH, "px-2 py-2 font-medium")}>Class</th><th className={cn(TH, "px-2 py-2 font-medium")}>State</th>
+                <th className={cn(TH, "px-2 py-2 text-right font-medium")}>Shares</th><th className={cn(TH, "px-2 py-2 text-right font-medium")}>Allocated Profit</th><th className={cn(TH, "px-2 py-2 text-right font-medium")}>Distribution</th>
+                <th className={cn(TH, "px-2 py-2 text-right font-medium")}>Estimated Tax</th><th className={cn(TH, "px-2 py-2 text-right font-medium")}>Surplus/Deficit</th><th className={cn(TH, "px-2 py-2 text-right font-medium")}>APIC</th>
+                <th className={cn(TH, "px-2 py-2 text-right font-medium")}>Paid</th><th className={cn(TH, "px-2 py-2 font-medium")}>Instruction</th>
+                <th className={cn(TH, "px-2 py-2 font-medium")}>Email/Paper</th><th className={cn(TH, "px-2 py-2 font-medium")}>Mailing</th><th className={cn(TH, "px-2 py-2 font-medium")}>Document</th><th className={cn(TH, "px-2 py-2 font-medium")}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
-              {y.holders.map((h) => (
-                <tr key={h.personId} className="align-top hover:bg-secondary/30" data-testid={`row-holder-${h.personId}`}>
-                  <td className="px-3 py-2">
+            <tbody>
+              {y.holders.map((h) => { const dr = byPid.get(h.personId); return (
+                <tr key={h.personId} className="group align-top hover:bg-secondary/30" data-testid={`row-holder-${h.personId}`}>
+                  <td className="sticky left-0 z-10 min-w-[120px] max-w-[130px] break-words sm:min-w-[160px] sm:max-w-[200px] border-r border-border bg-card px-3 py-2 group-hover:bg-secondary">
                     <div className="font-medium">{h.displayName}</div>
                     {h.isUnsettled && <div className="text-[11px] text-[hsl(30_60%_32%)]">Unsettled</div>}
                     {h.holdNote && <div className="max-w-[200px] text-[11px] text-muted-foreground">Instruction note: {h.holdNote}</div>}
@@ -315,34 +333,43 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
                   <td className="num px-2 py-2 text-right">{fmtCents(h.paidCents)}</td>
                   <td className="px-2 py-2">
                     <div data-testid={`text-instruction-${h.personId}`}>{statusTag(h)}</div>
-                    <DirectionConfirmCell yearId={y.id} personId={h.personId} />
+                  </td>
+                  <td className="px-2 py-2">{dr || loaded ? <DirectionChannelCell r={dr} /> : dash("c")}</td>
+                  <td className="px-2 py-2">{dr || loaded ? <DirectionMailingCell r={dr} /> : dash("m")}</td>
+                  <td className="px-2 py-2">{dr || loaded ? <DirectionDocumentCell r={dr} /> : dash("d")}</td>
+                  <td className="px-2 py-2">
                     {ledger && (
-                      <div className="flex justify-end gap-0.5">
+                      <div className="flex flex-wrap gap-0.5">
                          <IconBtn title={h.nominalCents === null ? "Declare a per-share amount before recording payments" : "Record cash payment"} disabled={h.nominalCents === null || h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "cash" })} test={`button-pay-${h.personId}`}><Banknote className="h-4 w-4" /></IconBtn>
                          <IconBtn title={h.nominalCents === null ? "Declare a per-share amount before recording APIC" : "Record APIC retained"} disabled={h.nominalCents === null || h.instruction === "✓" || h.isOnHold} onClick={() => onAction({ k: "pay", holder: h, kind: "apic" })} test={`button-apic-${h.personId}`}><Landmark className="h-4 w-4" /></IconBtn>
                         <IconBtn title={h.isOnHold ? "Remove hold" : "Put on hold"} onClick={() => onAction({ k: "hold", holder: h })} test={`button-hold-${h.personId}`}><Hand className={cn("h-4 w-4", h.isOnHold && "text-[hsl(30_60%_38%)]")} /></IconBtn>
                       </div>
                     )}
-                    {ledger && (h.nominalCents === null || h.instruction === "✓" || h.isOnHold) && <p className="mt-1 max-w-44 whitespace-normal text-xs text-muted-foreground" role="note" data-testid={`text-payment-disabled-reason-${h.personId}`}>{h.isOnHold ? "Remove the hold before recording cash or APIC." : h.nominalCents === null ? "Declare a per-share amount before recording cash or APIC." : "Paid plus APIC already equals this holder's distribution."}</p>}
-                  </td>
+                    {ledger && (h.nominalCents === null || h.instruction === "✓" || h.isOnHold) && <p className="mt-1 mb-1 w-40 whitespace-normal text-xs text-muted-foreground sm:w-56" role="note" data-testid={`text-payment-disabled-reason-${h.personId}`}>{h.isOnHold ? "Remove the hold before recording cash or APIC." : h.nominalCents === null ? "Declare a per-share amount before recording cash or APIC." : "Paid plus APIC already equals this holder's distribution."}</p>}
+                    {dr || loaded ? <DirectionActionsCell id={y.id} r={dr} isPractice={y.isPractice} onPaper={setPaperFor} /> : dash("a")}</td>
                 </tr>
-              ))}
+              ); })}
             </tbody>
             <tfoot className="border-t-2 border-double border-border bg-secondary/40 text-sm font-medium">
               <tr>
-                <td className="px-3 py-2" colSpan={4}>Totals</td>
+                <td className="sticky left-0 z-10 border-r border-border bg-secondary px-3 py-2">Totals</td><td colSpan={3} />
                 <td className="num px-2 py-2 text-right">{y.calculation ? fmtCents(sumCents(y.holders.map((h) => h.shareOfGainCents))) : "—"}</td>
                 <td className="num px-2 py-2 text-right" data-testid="text-total-distribution">{y.declaredPerShareCents === null ? "—" : fmtCents(t.nominalCents)}</td>
                 <td className="num px-2 py-2 text-right">{y.calculation && y.holders.every((h) => h.estimatedTaxCents !== null) ? fmtCents(sumCents(y.holders.map((h) => h.estimatedTaxCents))) : "—"}</td>
                 <td className="num px-2 py-2 text-right">{y.holders.every((h) => h.surplusCents !== null) ? fmtCents(sumCents(y.holders.map((h) => h.surplusCents))) : "—"}</td>
                 <td className="num px-2 py-2 text-right">{fmtCents(t.retainedCents)}</td>
                 <td className="num px-2 py-2 text-right">{fmtCents(t.paidCents)}</td>
-                <td />
+                <td colSpan={5} />
               </tr>
             </tfoot>
           </table>
         </div>
       )}
+      <Dialog open={!!paperFor} onOpenChange={(o) => !o && setPaperFor(null)}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto bg-card sm:max-w-lg">
+          {paperFor && <PaperDirectionForm id={y.id} row={paperFor} onDone={() => setPaperFor(null)} />}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

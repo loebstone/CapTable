@@ -7,6 +7,31 @@ in this workspace. There are no scheduled jobs, roles or officer titles.
 
 ## Tax & Reinvestment Document — Stage B
 
+- The distribution year's **Holders** table shows Email/Paper, mailing delivery, document status,
+  confirmation/history and Resend/Re-issue/Record paper controls are in that row.
+  Actions are at the far right. The old `/years/:id/directions` page is a
+  compatibility redirect to the year's `#holders`, not another status list.
+  Remind unsigned and Print paper directions are above this table.
+- The Holders table is an internally scrolling region capped at 60dvh, with sticky
+  column headings and the Holder name pinned at the left; it scrolls horizontally
+  without losing the name on narrow screens.
+- Uploading a PDF from Mailing's **Shared documents** now selects that sealed PDF
+  in the local mailing draft. It does not select unrelated existing year documents
+  and does not save implicitly. Save draft is required before preview/send, and
+  upload/sealing disables both Save and send controls. The send summary lists the
+  selected shared names/sizes, personal attachment choice and signing-link choice.
+- Signing emails are multipart: the unchanged uniform plain-text message remains
+  the text alternative; a fixed HTML wrapper escapes that message and supplies a
+  table-based **Sign here** button plus a copyable-address fallback. No HTML
+  authoring, tracking, personal figures, or name merges were added. Link-only
+  reissues/reminders use the same button. The latest link opens Continue; old
+  replaced/spent links still return 410 and GET never consumes a fresh token.
+- Verification mail remains mocked while this Resend account has an enabled
+  production callback. A real development mailbox check requires provider callback
+  isolation; a missing production webhook secret is not isolation because provider
+  retries could arrive after it is configured. No production callback changes are
+  made by development tests.
+
 - Each status row has **Resend**, separate from **Re-issue link** (link only) and
   **Remind unsigned**. Resend fetches current Roster contacts first; for real years
   it uses the original sent mailing's immutable subject/body, shared PDF IDs and

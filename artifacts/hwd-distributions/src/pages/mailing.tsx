@@ -7,9 +7,9 @@ import {
   getGetMailingQueryKey, getGetYearQueryKey, getGetHoldingsQueryKey, getListAuditQueryKey,
   type MailingContent, type MailingView, type MailingViewRecipientsItem, type SendMailing200,
 } from "@workspace/api-client-react";
-import { ArrowLeft, Save, Send, Eye, Printer, RefreshCw, FileUp, FileText, Mail, AlertTriangle, RotateCw } from "lucide-react";
+import { ArrowLeft, Save, Send, Eye, Printer, RefreshCw, FileUp, FileText, Mail, AlertTriangle } from "lucide-react";
 import { PageHeader, SkeletonRows, ErrorPanel, Empty, Btn, Field, inputCls, Tag } from "@/components/bits";
-import { fmtDate, errMessage } from "@/lib/format";
+import { errMessage } from "@/lib/format";
 import { fmtBytes } from "@/lib/money";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,18 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
   const [c, setC] = useState<MailingContent>({ ...m.content, includeSigningLink: m.content.includeSigningLink ?? false });
   const initFor = useRef<string>("");
   const serverKey = `${m.draftId}:${JSON.stringify(m.content)}`;
-  useEffect(() => { if (initFor.current !== serverKey) { initFor.current = serverKey; setC({ ...m.content, includeSigningLink: m.content.includeSigningLink ?? false }); } }, [serverKey, m.content]);
+  const prevServer = useRef<MailingContent | null>(null);
+  const cRef = useRef(c); cRef.current = c;
+  useEffect(() => {
+    if (initFor.current === serverKey) return;
+    initFor.current = serverKey;
+    const next = { ...m.content, includeSigningLink: m.content.includeSigningLink ?? false };
+    // Keep unsaved local edits (e.g. newly sealed attachments) across refetches; only adopt server content when local is clean.
+    if (prevServer.current === null || same(cRef.current, prevServer.current)) setC(next);
+    prevServer.current = next;
+  }, [serverKey, m.content]);
+  const [uploading, setUploading] = useState(false);
+  const [sealed, setSealed] = useState<Record<number, { filename: string; size: number }>>({});
   const dirty = !same(c, { ...m.content, includeSigningLink: m.content.includeSigningLink ?? false });
   const saved = m.draftId !== null && !dirty;
   const [results, setResults] = useState<{ kind: string; r: SendMailing200 } | null>(null);
@@ -60,11 +71,11 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
 
   const emailList = m.recipients.filter((r) => r.channel === "Email");
   const paperList = m.recipients.filter((r) => r.channel !== "Email");
-  const unsavedReason = m.draftId === null ? "Save the draft first; sending uses the saved draft." : dirty ? "You have unsaved changes. Save the draft before sending." : null;
+  const unsavedReason = uploading ? "Upload and sealing in progress; please wait." : m.draftId === null ? "Save the draft first; sending uses the saved draft." : dirty ? "You have unsaved changes. Save the draft before sending." : null;
   const sendReason = m.isPractice ? "Practice year: real sending is disabled. Use Preview to send a copy to yourself." : locked ? "This mailing has already been sent; the draft is locked." : unsavedReason ?? (emailList.length === 0 ? "No holders will receive email." : null);
   const subjectOk = c.subject.trim().length > 0 && c.body.trim().length > 0;
 
-  function run(kind: "preview" | "send" | "resend", personId?: string) {
+  function run(kind: "preview" | "send", personId?: string) {
     if (m.draftId === null) return;
     setSendErr(null);
     send.mutate({ id, data: { kind, draftId: m.draftId, ...(personId ? { personId } : {}) } }, {
@@ -72,7 +83,7 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
         setResults({ kind, r }); inval();
         const failed = r.results.filter((result) => result.result !== "sent").length;
         toast({
-          title: failed ? "Sending needs attention" : kind === "preview" ? "Preview accepted by Resend" : kind === "resend" ? "Resend accepted" : "Mailing accepted by Resend",
+          title: failed ? "Sending needs attention" : kind === "preview" ? "Preview accepted by Resend" : "Mailing accepted by Resend",
           description: `${r.results.length - failed} accepted${failed ? `; ${failed} failed or uncertain — review the results below` : ""}`,
           ...(failed ? { variant: "destructive" as const } : {}),
         });
@@ -120,13 +131,14 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
           </Field>
           {save.isError && <div className="rounded-md bg-destructive/5 px-3 py-2 text-xs text-destructive" data-testid="text-save-error">{errMessage(save.error)}</div>}
           <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
-            <Btn onClick={() => save.mutate({ id, data: c })} disabled={locked || !dirty && m.draftId !== null || save.isPending || !subjectOk}
-              disabledReason={locked ? "Sent mailings are locked." : save.isPending ? "Saving; please wait." : !subjectOk ? "Enter a subject and body." : "No changes to save."} data-testid="button-save-draft"><Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save draft"}</Btn>
+            <Btn onClick={() => save.mutate({ id, data: c })} disabled={locked || !dirty && m.draftId !== null || save.isPending || !subjectOk || uploading}
+              disabledReason={locked ? "Sent mailings are locked." : uploading ? "Upload and sealing in progress; please wait." : save.isPending ? "Saving; please wait." : !subjectOk ? "Enter a subject and body." : "No changes to save."} data-testid="button-save-draft"><Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save draft"}</Btn>
           </div>
         </section>
 
         <section className="space-y-4">
-          <Docs id={id} m={m} c={c} setC={setC} locked={locked} onDone={inval} />
+          <Docs id={id} m={m} c={c} setC={setC} locked={locked} onDone={inval} onBusy={setUploading}
+            onSealed={(d) => { setSealed((p) => ({ ...p, [d.id]: { filename: d.filename, size: d.size } })); setC((p) => p.documentIds.includes(d.id) ? p : { ...p, documentIds: [...p.documentIds, d.id] }); }} />
           <div className="space-y-3 rounded-lg border border-border bg-card p-4" data-testid="section-send">
             <h2 className="font-display text-xl">Preview and send</h2>
             {unsavedReason && <p className="flex gap-2 text-xs text-[hsl(30_60%_32%)]" role="note" data-testid="text-unsaved-reason"><AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {unsavedReason}</p>}
@@ -135,6 +147,7 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
                 {m.recipients.map((r) => <option key={r.personId} value={r.personId}>{r.displayName}</option>)}
               </select>
             </Field>
+            <SendSummary m={m} c={c} previewPid={previewPid} sealed={sealed} />
             <div className="flex flex-wrap gap-2">
               <Btn variant="ghost" onClick={() => run("preview", previewPid)} disabled={!!unsavedReason || !previewPid || send.isPending}
                 disabledReason={send.isPending ? "Sending; please wait." : unsavedReason ?? "Choose a holder to preview."} data-testid="button-preview"><Eye className="h-4 w-4" /> Send to me first</Btn>
@@ -158,17 +171,17 @@ function Mailing({ id, m }: { id: number; m: MailingView }) {
         </section>
       </div>
 
-      <RecipientTable title="Email" list={emailList} c={c} locked={locked} setChoice={setChoice} paper={paper} onResend={(pid) => run("resend", pid)}
-        resendReason={m.isPractice ? "Practice year: resending is disabled." : unsavedReason} sending={send.isPending} />
+      <p className="text-xs text-muted-foreground" data-testid="text-status-in-holders">Delivery status, document status and per-holder Resend are in the year's <Link href={`/years/${id}#holders`} className="text-primary underline-offset-2 hover:underline" data-testid="link-holders-status">Holders table</Link>.</p>
+      <RecipientTable title="Email" list={emailList} c={c} locked={locked} setChoice={setChoice} paper={paper} />
       <RecipientTable title="Paper" list={paperList} c={c} locked={locked} setChoice={setChoice} paper={paper} />
       {paper.isError && <div className="rounded-md bg-destructive/5 px-3 py-2 text-xs text-destructive" data-testid="text-paper-error">{errMessage(paper.error)}</div>}
     </div>
   );
 }
 
-function RecipientTable({ title, list, c, locked, setChoice, paper, onResend, resendReason, sending }: {
+function RecipientTable({ title, list, c, locked, setChoice, paper }: {
   title: string; list: MailingViewRecipientsItem[]; c: MailingContent; locked: boolean; setChoice: (pid: string, a: Att) => void;
-  paper: ReturnType<typeof useSavePaperPreference>; onResend?: (pid: string) => void; resendReason?: string | null; sending?: boolean;
+  paper: ReturnType<typeof useSavePaperPreference>;
 }) {
   return (
     <section className="space-y-3" data-testid={`section-${title.toLowerCase()}-list`}>
@@ -177,11 +190,10 @@ function RecipientTable({ title, list, c, locked, setChoice, paper, onResend, re
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <table className="w-full min-w-[860px] text-sm">
             <thead className="bg-secondary/50 text-[11px] tracking-wider text-muted-foreground">
-              <tr className="text-left"><th className="px-3 py-2 font-medium">Holder</th><th className="px-2 py-2 font-medium">Email</th><th className="px-2 py-2 font-medium">Channel</th><th className="px-2 py-2 font-medium">Attachment</th><th className="px-2 py-2 font-medium">Prefers paper</th><th className="px-2 py-2 font-medium">Status</th>{onResend && <th className="px-3 py-2" />}</tr>
+              <tr className="text-left"><th className="px-3 py-2 font-medium">Holder</th><th className="px-2 py-2 font-medium">Email</th><th className="px-2 py-2 font-medium">Channel</th><th className="px-2 py-2 font-medium">Attachment</th><th className="px-2 py-2 font-medium">Prefers paper</th></tr>
             </thead>
             <tbody className="divide-y divide-border">
               {list.map((r) => {
-                const bounced = /bounce|fail|reject|complain/i.test(r.status);
                 return (
                   <tr key={r.personId} className="align-top hover:bg-secondary/30" data-testid={`row-recipient-${r.personId}`}>
                     <td className="px-3 py-2 font-medium">{r.displayName}</td>
@@ -199,20 +211,6 @@ function RecipientTable({ title, list, c, locked, setChoice, paper, onResend, re
                         Paper
                       </label>
                     </td>
-                    <td className="px-2 py-2 text-xs" data-testid={`text-status-${r.personId}`}>
-                      <div className={cn(bounced && "text-destructive")}>{r.status}</div>
-                      {r.sentAt && <div className="text-muted-foreground">{fmtDate(r.sentAt, true)}</div>}
-                      {r.messageId && <div className="num text-[10px] text-muted-foreground">ID {r.messageId}</div>}
-                      {r.detail && <div className="text-muted-foreground">{r.detail}</div>}
-                      {bounced && <div className="mt-1 text-destructive" role="note">Fix this address in the Roster, then refresh addresses.</div>}
-                      {r.channel === "No email" && <div className="mt-1 text-muted-foreground">No email on file; a paper letter is needed.</div>}
-                    </td>
-                    {onResend && (
-                      <td className="px-3 py-2 text-right">
-                        <Btn variant="quiet" className="px-2 py-1 text-xs" disabled={!r.canResend || !!resendReason || sending} onClick={() => { if (window.confirm(`Resend to ${r.displayName}?`)) onResend(r.personId); }}
-                          disabledReason={sending ? "Sending; please wait." : resendReason ?? "Resend is only available after this holder's email was sent or failed."} data-testid={`button-resend-${r.personId}`}><RotateCw className="h-3.5 w-3.5" /> Resend</Btn>
-                      </td>
-                    )}
                   </tr>
                 );
               })}
@@ -224,7 +222,24 @@ function RecipientTable({ title, list, c, locked, setChoice, paper, onResend, re
   );
 }
 
-function Docs({ id, m, c, setC, locked, onDone }: { id: number; m: MailingView; c: MailingContent; setC: (f: (p: MailingContent) => MailingContent) => void; locked: boolean; onDone: () => void }) {
+function SendSummary({ m, c, previewPid, sealed }: { m: MailingView; c: MailingContent; previewPid: string; sealed: Record<number, { filename: string; size: number }> }) {
+  const docs = c.documentIds.map((d) => { const x = m.documents.find((y) => y.id === d) ?? sealed[d]; return { id: d, filename: x?.filename ?? `Document #${d}`, size: x?.size ?? 0 }; });
+  const total = docs.reduce((a, d) => a + d.size, 0);
+  const holder = m.recipients.find((r) => r.personId === previewPid);
+  const att = (holder && c.choices[holder.personId]) ?? c.attachment;
+  return (
+    <div className="space-y-1.5 rounded-md border border-border bg-secondary/30 p-3 text-xs" data-testid="panel-send-summary">
+      <div className="font-medium">This email will include</div>
+      <div data-testid="text-summary-shared">Shared attachments: <span className="num">{docs.length}</span>{docs.length > 0 && <> · <span className="num">{fmtBytes(total)}</span></>}</div>
+      {docs.length > 0 && <ul className="ml-3 list-disc space-y-0.5">{docs.map((d) => <li key={d.id} data-testid={`text-summary-doc-${d.id}`}>{d.filename}{d.size > 0 && <span className="num text-muted-foreground"> · {fmtBytes(d.size)}</span>}</li>)}</ul>}
+      <div data-testid="text-summary-personal">Personal attachment{holder ? ` for ${holder.displayName}` : ""}: {ATT_LABEL[att]}</div>
+      <div data-testid="text-summary-signing-link">Signing link: {c.includeSigningLink ? "included (the only personalized text)" : "not included"}</div>
+      <div className="text-muted-foreground">Selections apply only after Save draft.</div>
+    </div>
+  );
+}
+
+function Docs({ id, m, c, setC, locked, onDone, onBusy, onSealed }: { id: number; m: MailingView; c: MailingContent; setC: (f: (p: MailingContent) => MailingContent) => void; locked: boolean; onDone: () => void; onBusy: (b: boolean) => void; onSealed: (d: { id: number; filename: string; size: number }) => void }) {
   const { toast } = useToast();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -236,6 +251,7 @@ function Docs({ id, m, c, setC, locked, onDone }: { id: number; m: MailingView; 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
     setErr(null);
+    onBusy(true);
     for (const file of Array.from(files)) {
       if (file.type !== "application/pdf") { setErr(`${file.name}: only PDF can be shared.`); continue; }
       if (file.size < 1 || file.size > 20971520) { setErr(`${file.name}: must be under 20 MB.`); continue; }
@@ -245,11 +261,13 @@ function Docs({ id, m, c, setC, locked, onDone }: { id: number; m: MailingView; 
         const put = await fetch(slot.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": "application/pdf" } });
         if (!put.ok) throw new Error(`Upload failed (${put.status}).`);
         setBusy(`Sealing ${file.name}…`);
-        await attach.mutateAsync({ id, data: { uploadId: slot.uploadId } });
-        toast({ title: "Document attached", description: file.name });
+        const doc = await attach.mutateAsync({ id, data: { uploadId: slot.uploadId } });
+        onSealed({ id: doc.id, filename: doc.filename, size: doc.size });
+        toast({ title: "Document sealed and selected", description: `${file.name} · save the draft to include it` });
       } catch (e) { setErr(`${file.name}: ${errMessage(e)}`); }
     }
     setBusy(null);
+    onBusy(false);
     onDone();
     if (input.current) input.current.value = "";
   }

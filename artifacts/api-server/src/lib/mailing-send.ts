@@ -14,7 +14,7 @@ import { mailingView, validateMailDocuments, originalMailing } from "./mailings"
 import { fetchRosterHoldings } from "./roster";
 import { proposeHoldingResidences } from "./holding-residences";
 import { mailingEnvelope } from "./mailing-envelope";
-import { issueSigningToken, signingLinkText } from "./direction-links";
+import { issueSigningToken, signingLinkHtml, signingLinkText } from "./direction-links";
 
 const sendInput = z.object({ kind: z.enum(["send", "resend", "preview"]), draftId: z.number().int().positive(), personId: z.string().optional() });
 // Deliberate, explicit sends only; no background jobs and no automatic retries.
@@ -98,6 +98,7 @@ async function sendWithSpool(identity: Identity, yearId: number, input: unknown,
       const link = content.includeSigningLink ? await issueSigningToken(tx, actor, yearId, reservation.recipient.personId, preview ? identity.email : reservation.recipient.email!, origin) : null;
       if (link) {
         const payload = JSON.parse(await readFile(reservation.spoolFile, "utf8"));
+        payload.html = signingLinkHtml(payload.text, link.url);
         payload.text = signingLinkText(payload.text, link.url);
         const { assertEnvelopeSize } = await import("./mailing-rules");
         assertEnvelopeSize(payload);

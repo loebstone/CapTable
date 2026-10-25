@@ -7,6 +7,7 @@ import { finalizedFixture } from "./stage3-fixture.mjs";
 import { rosterFixture } from "./roster-fixture.ts";
 import { mailingEvents, mailingAttempts, mailingBatches } from "@workspace/db";
 import { append, write } from "../src/lib/records.ts";
+import { signingLinkHtml } from "../src/lib/direction-links.ts";
 
 if (process.env.NODE_ENV === "production") throw new Error("Development only");
 const h = await stage2Harness(), { call, expect, record, client } = h;
@@ -27,6 +28,12 @@ async function sharedPdf(base, cookie) {
   return { document, bytes };
 }
 try {
+  const escaped = signingLinkHtml('Uniform message\n<script>alert("test")</script>', "https://example.invalid/api/signing/open?token=TEST");
+  assert.match(escaped, /role="presentation"/);
+  assert.match(escaped, />Sign here<\/a>/);
+  assert.match(escaped, /If the button doesn't work, copy this address into your browser:/);
+  assert.match(escaped, /&lt;script&gt;/); assert.ok(!escaped.includes("<script>"));
+  assert.throws(() => signingLinkHtml("Uniform", "javascript:alert(1)"));
   record("Environment", (await client.query("SELECT current_database() AS database_name, inet_server_addr()::text AS server_address")).rows[0]);
   h.setHoldings(holdings);
   const real = await finalizedFixture(h), { base, cookie } = real;
@@ -62,6 +69,8 @@ try {
   h.setHoldings(corrected); // Deliberately NO holdings/fetch call: resend refreshes it.
   expect(await call("post", `${base}/directions/resend`, cookie, { personId: holder.personId }), 200);
   const resent = captured.at(-1);
+  assert.match(resent.html, />Sign here<\/a>/);
+  assert.ok(resent.html.includes("Please review the attached documents."));
   assert.deepEqual(resent.to, ["corrected@example.test"]);
   const proposed = (await client.query("SELECT state_code,confirmed FROM tax_residences WHERE person_id='new-contact-test'")).rows[0];
   assert.equal(proposed.state_code, "GA"); assert.equal(proposed.confirmed, false);
@@ -119,6 +128,20 @@ try {
   const pm = expect(await call("get", `${pbase}/mailing`, practice.cookie), 200);
   expect(await call("post", `${pbase}/mailing/send`, practice.cookie, { kind: "preview", draftId: pm.draftId, personId: holder.personId }), 200);
   const preview = captured.at(-1);
+  assert.equal(preview.attachments.length, 2);
+  assert.equal(sha(Buffer.from(preview.attachments[0].content, "base64")), sha(pshared.bytes));
+  assert.match(preview.html, />Sign here<\/a>/);
+  assert.match(preview.html, /PRACTICE/);
+  const continuePage = await call("get", `/api/signing/open?token=${token(preview.text)}`);
+  expect(continuePage, 200); assert.match(continuePage.text, />Continue<\/button>/);
+  assert.equal(continuePage.headers["set-cookie"], undefined);
+  expect(await call("get", `/api/signing/open?token=${token(preview.text)}`), 200);
+  record("Complete practice preview / email button", {
+    source: "LOCAL ROSTER STUB / MOCK RESEND — NO REAL EMAIL",
+    attachments: preview.attachments.map((a) => ({ filename: a.filename, bytes: Buffer.from(a.content, "base64").length })),
+    sharedBytesMatch: true, htmlButton: "Sign here", plainBodyPreserved: true, htmlEscapesAuthoredText: true,
+    linkGET: 200, repeatedGET: 200, continueButtonPresent: true, noSessionCreatedByGET: true,
+  });
   expect(await call("post", `${pbase}/mailing`, practice.cookie, { ...pdraft, subject: "Changed unsent draft", body: "Not the original body", documentIds: [] }), 200);
   expect(await call("post", `${pbase}/directions/resend`, practice.cookie, { personId: holder.personId }), 200);
   const selfResend = captured.at(-1);

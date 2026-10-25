@@ -43,7 +43,7 @@ if (process.argv.includes("--mailings") || process.argv.includes("--directions")
   globalThis.fetch = async (url, options) => {
     if (String(url) === "https://api.resend.com/emails") {
       const payload = JSON.parse(options.body);
-      envelopes.push({ to: payload.to, subject: payload.subject, body: payload.text,
+      envelopes.push({ to: payload.to, subject: payload.subject, body: payload.text, html: payload.html,
         attachments: (payload.attachments ?? []).map((a) => ({ filename: a.filename, size: Buffer.from(a.content, "base64").length })) });
       return new Response(JSON.stringify({ id: `browser-mock-${envelopes.length}` }), { status: 200 });
     }
@@ -89,7 +89,14 @@ test.get("/__security-test/open-signing-link", (_req, res) => {
 test.get("/__security-test/evidence", async (_req, res) => {
   const sessions = (await h.client.query("SELECT count(*)::int AS n FROM hwd_sessions")).rows[0].n;
   res.json({ source: "LOCAL ROSTER STUB / DEVELOPMENT TEMP TABLES", writes, sessions,
-    envelopes: envelopes.map((e) => ({ ...e, body: e.body.replace(/token=[a-f0-9]{64}/g, "token=[REDACTED]") })) });
+    envelopes: envelopes.map((e) => ({ ...e, html: undefined, body: e.body.replace(/token=[a-f0-9]{64}/g, "token=[REDACTED]") })) });
+});
+test.get("/__security-test/email", (_req, res) => {
+  // Screenshot only: redact visible and href tokens; the separate open-signing-link
+  // helper exercises the actual local test link without returning it as evidence.
+  const email = [...envelopes].reverse().find((e) => e.html);
+  if (!email) { res.sendStatus(404); return; }
+  res.type("html").send(email.html.replace(/token=[a-f0-9]{64}/g, "token=[REDACTED]"));
 });
 test.use(h.app);
 test.use(createWebApp());
