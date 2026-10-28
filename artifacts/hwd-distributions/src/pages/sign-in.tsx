@@ -11,6 +11,13 @@ export default function SignIn({ backDoor = false }: { backDoor?: boolean }) {
   const req = useRequestSignIn();
   const valid = /^\S+@\S+\.\S+$/.test(email.trim());
 
+  if (!backDoor) return (
+    <main className="mx-auto flex min-h-[100dvh] max-w-lg flex-col justify-center gap-6 px-6">
+      <h1 className="font-display text-3xl">Sign in to HWD Cap Table</h1>
+      <a href={`${import.meta.env.BASE_URL}api/auth/roster?to=%2F`} className="block rounded-md bg-primary px-4 py-3 text-center text-primary-foreground" data-testid="button-roster-sign-in">Sign in</a>
+    </main>
+  );
+
   return (
     <div className="grid min-h-[100dvh] md:grid-cols-[1.1fr_1fr]">
       <section className="rings relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 text-sidebar-foreground md:flex">
@@ -34,8 +41,7 @@ export default function SignIn({ backDoor = false }: { backDoor?: boolean }) {
           <div className="font-display text-2xl md:hidden">HWD Cap Table</div>
           <h2 className="font-display mt-1 text-3xl">Sign in</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {backDoor ? "For when the Roster is unavailable. Enter your email to request a one-time link. Active Cap Table access is required."
-              : "Use the HWD Roster to verify your identity and sign in to Cap Table."}
+            For when the Roster is unavailable. Enter your email to request a one-time link. Active Cap Table access is required.
           </p>
 
           {!backDoor ? <a href={rosterEntry()} className="mt-8 block rounded-md bg-primary px-4 py-3 text-center text-primary-foreground" data-testid="button-roster-sign-in">Sign in</a> : req.isSuccess ? (

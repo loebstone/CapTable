@@ -3,11 +3,24 @@
  * Roster tickets and email. No existing sessions/access rows are changed.
  */
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import request from "supertest";
 import { stage2Harness } from "./stage2-harness.mjs";
 const h = await stage2Harness();
 const { client, call, expect, record, app } = h;
 const realFetch = globalThis.fetch;
+const frontend = new URL("../../hwd-distributions/src/", import.meta.url);
+const gateSource = await readFile(new URL("App.tsx", frontend), "utf8");
+const signInSource = await readFile(new URL("pages/sign-in.tsx", frontend), "utf8");
+const reauthSource = await readFile(new URL("components/reauthenticate.tsx", frontend), "utf8");
+assert.match(gateSource, /window\.location\.replace\(rosterEntry\(\)\)/);
+assert.match(gateSource, /session\.isLoading \|\| anonymous\) return null/);
+assert.match(gateSource, /path="\/sign-in"><SignIn \/><\/Route>/);
+assert.match(signInSource, /Sign in to HWD Cap Table/);
+assert.match(reauthSource, /For this step we need to confirm it's you — we'll email you a fresh link\./);
+assert.match(reauthSource, />Confirm it's me<\/a>/);
+assert.doesNotMatch(reauthSource, /through the Roster/);
+record("Seamless hand-off display contract", "Protected pages redirect without intermediate screen; direct sign-in and freshness wording are neutral");
 const { hash, randomToken, signedCookie, assertFresh } = await import("../src/lib/auth.ts");
 const { returnPath, entryUrl } = await import("../src/lib/sso.ts");
 let rosterMode = "normal", redeemCalls = 0;

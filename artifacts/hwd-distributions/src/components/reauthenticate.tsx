@@ -15,8 +15,8 @@ export function rosterEntry(fresh = false) {
 export function ReauthenticationMessage() {
   return <div className="mx-auto max-w-lg space-y-4 px-6 py-24" role="alert">
     <h1 className="font-display text-2xl">Please verify your identity again</h1>
-    <p>Sign in through the Roster to continue. Nothing from the blocked action has been submitted. You will return to this page.</p>
-    <a className="inline-block rounded bg-primary px-4 py-3 text-primary-foreground" href={rosterEntry(true)}>Sign in through the Roster</a>
+    <p>For this step we need to confirm it's you — we'll email you a fresh link.</p>
+    <a className="inline-block rounded bg-primary px-4 py-3 text-primary-foreground" href={rosterEntry(true)}>Confirm it's me</a>
   </div>;
 }
 export function ReauthenticationPrompt() {

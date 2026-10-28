@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useLayoutEffect } from 'react';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { useGetSession, getGetSessionQueryKey } from '@workspace/api-client-react';
@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import SignIn, { AdminSignIn } from '@/pages/sign-in';
-import { isReauthentication, reportReauthentication, ReauthenticationMessage, ReauthenticationPrompt } from '@/components/reauthenticate';
+import { isReauthentication, reportReauthentication, rosterEntry, ReauthenticationMessage, ReauthenticationPrompt } from '@/components/reauthenticate';
 import HoldingsPage from '@/pages/holdings';
 import HomePage from '@/pages/home';
 import { SnapshotsPage, SnapshotDetailPage } from '@/pages/snapshots';
@@ -43,18 +43,18 @@ const queryClient: QueryClient = new QueryClient({
 
 function Gate() {
   const session = useGetSession({ query: { queryKey: getGetSessionQueryKey(), retry: false } });
-  if (session.isLoading) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center">
-        <div className="font-display animate-pulse text-xl text-muted-foreground">HWD Cap Table</div>
-      </div>
-    );
-  }
+  const anonymous = !session.isLoading && !isReauthentication(session.error)
+    && (session.isError ? isAuthError(session.error) : !session.data);
+  useLayoutEffect(() => {
+    if (anonymous) window.location.replace(rosterEntry());
+  }, [anonymous]);
+  // Keep the page blank until identity is known; never flash an intermediate sign-in screen.
+  if (session.isLoading || anonymous) return null;
   if (session.isError && isReauthentication(session.error)) return <ReauthenticationMessage />;
   if (session.isError && !isAuthError(session.error)) {
     return <div className="mx-auto max-w-lg px-6 py-24"><ErrorPanel error={session.error} onRetry={() => session.refetch()} /></div>;
   }
-  if (!session.data || session.isError) return <SignIn />;
+  if (!session.data || session.isError) return null;
   return (
     <Shell session={session.data}>
       <RoutedErrorBoundary>
@@ -91,6 +91,7 @@ function App() {
           <Switch>
             <Route path="/sign-direction" component={SignDirectionPage} />
             <Route path="/admin/sign-in" component={AdminSignIn} />
+            <Route path="/sign-in"><SignIn /></Route>
             <Route component={Gate} />
           </Switch>
         </WouterRouter>

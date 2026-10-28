@@ -3,7 +3,13 @@
 - The HWD Roster establishes identity; **this app's active access list remains the
   sole management authorization authority**. Roster `role` / `rosterAdmin` do not
   grant local permissions. No local roles were added.
-- Member sign-in has one **Sign in** button. `/api/auth/roster?to=<path>` redirects
+- Anonymous protected-page visits render no intermediate screen: after the session
+  check, the browser immediately replaces its location with the identity entry URL,
+  preserving the requested path and query. Direct `/sign-in` visits show only
+  **Sign in to HWD Cap Table** and one **Sign in** button. Member-facing sign-in
+  and freshness wording do not name the identity provider; the unlinked back door
+  is unchanged. Freshness asks **Confirm it's me** and explains that a fresh link
+  will be emailed. `/api/auth/roster?to=<path>` redirects
   to `{ROSTER_BASE_URL}/sign-in?app=captable&to=<encoded path>&origin=<APP_ORIGIN>`.
   `APP_ORIGIN` must be set and registered in the Roster for development SSO too.
   `to` is a local single-leading-slash path; schemes, network paths, backslashes,
