@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSignOut, type Session } from "@workspace/api-client-react";
 import { Home, Layers, Archive, MapPin, Percent, KeyRound, ScrollText, LogOut, TreePine } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SuiteHeader } from "./suite-header";
 
 const NAV = [
   { href: "/", label: "Home", icon: Home },
@@ -43,8 +44,10 @@ export function Shell({ session, children }: { session: Session; children: React
   };
 
   return (
+    <>
+    <SuiteHeader session={session} signOut={() => signOut.mutate()} signingOut={signOut.isPending} />
     <div className="flex min-h-[100dvh] flex-col md:flex-row">
-      <aside className="flex shrink-0 flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-[100dvh] md:w-60">
+      <aside className="flex shrink-0 flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-14 md:h-[calc(100dvh-3.5rem)] md:w-60">
         <div className="px-5 pb-4 pt-6">
           <div className="font-display text-xl text-[hsl(40_40%_97%)]">HWD Cap Table</div>
           <div className="text-[11px] uppercase tracking-[0.18em] text-sidebar-primary">Private family records</div>
@@ -95,5 +98,6 @@ export function Shell({ session, children }: { session: Session; children: React
         </footer>
       </div>
     </div>
+    </>
   );
 }

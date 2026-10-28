@@ -17,6 +17,7 @@ import directionsRouter from "./directions";
 import directionsPublicRouter from "./directions-public";
 import { requireAccess, requireFreshAction } from "../lib/auth";
 import ssoRouter from "./sso";
+import suiteMenuRouter from "./suite-menu";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,7 @@ router.use(ssoRouter);
 router.use(directionsPublicRouter);
 // Every business endpoint and unknown API route is behind the same server gate.
 router.use(requireAccess);
+router.use(suiteMenuRouter);
 // Freshness is evaluated before validation, uploads, ledger writes or provider
 // calls. These are management routes only; public signing remains independent.
 router.use((req, res, next) => {

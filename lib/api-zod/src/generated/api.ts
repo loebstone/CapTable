@@ -8,6 +8,26 @@
 import * as zod from 'zod';
 
 
+export const GetSuiteMenuResponse = zod.object({
+  "version": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "href": zod.string(),
+  "order": zod.number().optional()
+})),
+  "tools": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "href": zod.string(),
+  "order": zod.number().optional()
+})),
+  "signOutHref": zod.string(),
+  "homeHref": zod.string(),
+  "source": zod.enum(['site', 'fallback'])
+})
+
+
 /**
  * Also mounted at /auth/sso for the registered Roster callback. Anonymous ticket credential; local membership/bootstrap required.
  */

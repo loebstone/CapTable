@@ -6,6 +6,16 @@ info:
 servers:
   - url: /api
 paths:
+  /suite/menu:
+    get:
+      operationId: getSuiteMenu
+      responses:
+        "200":
+          description: Cached authenticated Farm navigation using a built-in logo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuiteMenu"
   /auth/sso:
     get:
       operationId: redeemRosterSso
@@ -1333,6 +1343,24 @@ components:
       type: object
       required: [email]
       properties: {email: {type: string, format: email}}
+    SuiteMenuItem:
+      type: object
+      required: [id, label, href]
+      properties:
+        id: {type: string}
+        label: {type: string}
+        href: {type: string}
+        order: {type: number}
+    SuiteMenu:
+      type: object
+      required: [version, items, tools, signOutHref, homeHref, source]
+      properties:
+        version: {type: string}
+        items: {type: array, items: {$ref: "#/components/schemas/SuiteMenuItem"}}
+        tools: {type: array, items: {$ref: "#/components/schemas/SuiteMenuItem"}}
+        signOutHref: {type: string}
+        homeHref: {type: string}
+        source: {type: string, enum: [site, fallback]}
     Session:
       type: object
       required: [personId, displayName, environment, databaseName, serverAddress]

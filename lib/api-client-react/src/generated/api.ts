@@ -73,6 +73,7 @@ import type {
   Snapshot,
   SnapshotInput,
   StartRosterSignInParams,
+  SuiteMenu,
   VerifySignInParams,
   YearCorrectionInput,
   YearDetail,
@@ -108,6 +109,77 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetSuiteMenuUrl = () => {
+
+
+
+
+  return `/api/suite/menu`
+}
+
+export const getSuiteMenu = async ( options?: Parameters<typeof customFetch>[1]): Promise<SuiteMenu> => {
+
+  return customFetch<SuiteMenu>(getGetSuiteMenuUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSuiteMenuQueryKey = () => {
+    return [
+    `/api/suite/menu`
+    ] as const;
+    }
+
+
+export const getGetSuiteMenuQueryOptions = <TData = Awaited<ReturnType<typeof getSuiteMenu>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSuiteMenu>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSuiteMenuQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSuiteMenu>>> = ({ signal }) => getSuiteMenu({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSuiteMenu>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSuiteMenuQueryResult = NonNullable<Awaited<ReturnType<typeof getSuiteMenu>>>
+export type GetSuiteMenuQueryError = ErrorType<unknown>
+
+
+
+export function useGetSuiteMenu<TData = Awaited<ReturnType<typeof getSuiteMenu>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSuiteMenu>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSuiteMenuQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getRedeemRosterSsoUrl = (params: RedeemRosterSsoParams,) => {
   const normalizedParams = new URLSearchParams();

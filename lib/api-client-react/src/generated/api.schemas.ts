@@ -591,6 +591,30 @@ export interface EmailInput {
   email: string;
 }
 
+export interface SuiteMenuItem {
+  id: string;
+  label: string;
+  href: string;
+  order?: number;
+}
+
+export type SuiteMenuSource = typeof SuiteMenuSource[keyof typeof SuiteMenuSource];
+
+
+export const SuiteMenuSource = {
+  site: 'site',
+  fallback: 'fallback',
+} as const;
+
+export interface SuiteMenu {
+  version: string;
+  items: SuiteMenuItem[];
+  tools: SuiteMenuItem[];
+  signOutHref: string;
+  homeHref: string;
+  source: SuiteMenuSource;
+}
+
 export interface Session {
   personId: string;
   displayName: string;

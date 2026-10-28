@@ -293,6 +293,31 @@ in this workspace. There are no scheduled jobs, roles or officer titles.
 
 # HWD Cap Table
 
+## Farm suite header
+
+- **Peter-set setting:** `SITE_BASE_URL` is the main site's origin. In development,
+  Peter sets it to the main site's development origin. For production it is
+  `https://hwd-main-site.replit.app` for now, later `https://hwdfarm.com`.
+  Agents never set production settings or secrets.
+- The server fetches public `GET {SITE_BASE_URL}/api/suite/menu` with a 5-second
+  timeout, no redirects, a 128-KB response limit, and a 5-minute in-memory cache
+  (including fallback responses). Concurrent refreshes share one fetch.
+- Authenticated `GET /api/suite/menu` uses the existing session/active-access gate;
+  it exposes navigation only. No session, access, money or mailing changes.
+- Unset/unreachable/invalid menus use built-in Home, Announcements, Scheduler,
+  Family Directory, Documents, Contact, and Tools links. Site pages use the
+  configured origin or `https://hwd-main-site.replit.app`. One warning is logged
+  per outage, reset on a successful refresh. Fallback page paths are `/`,
+  `/announcements`, `/documents`, `/contact`; Forecast uses
+  `https://forecast.hwdfarm.com`, Cap Table `https://captable.hwdfarm.com`.
+- Remote `logoSvg` is discarded, not rendered: the header uses a trusted local
+  treeline mark. Link schemes are limited to HTTP(S), without URL credentials.
+- Tools is visible only with a stored session apps list containing `forecast` or
+  `captable`. Current sessions do not store apps, so Tools is hidden; this change
+  deliberately does not modify sessions. Cap Table remains marked current.
+  Header Sign out invokes the app's existing logout, not the remote signOutHref.
+- Test: `pnpm --filter @workspace/api-server run verify:suite-menu`.
+
 Private distribution recordkeeping for Horace W. Davis Realty Corp. (“HWD Farm”), a Massachusetts S-corporation with approximately 47 family shareholders and 400 shares: Classes A, B, C and D, each with 100 shares.
 
 Stage 1 provides delegated passwordless sign-in, shared access management, current Roster holdings, immutable snapshots, persistent tax residence, annual capital-gains rate tables, and an append-only write audit. Stage 2 adds distribution years, private source documents, exact-cent calculations, frozen finalizations, corrections and the cash-paid/APIC ledger. Stage 3 adds shareholder statements, a board summary, the accountant ledger workbook, ZIP downloads and a signed-in home page. Shareholders do not sign in.
