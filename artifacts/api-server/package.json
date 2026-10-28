@@ -8,6 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify:sso": "tsx tests/verify-sso.mjs",
     "verify:stage1": "tsx tests/verify-stage1.mjs",
     "verify:stage2": "tsx tests/verify-stage2.mjs",
     "verify:notes": "tsx tests/verify-notes.mjs",

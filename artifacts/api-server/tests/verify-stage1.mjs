@@ -41,6 +41,11 @@ const stub = createServer(async (req, res) => {
     res.end(JSON.stringify(identity && (email !== "bootstrap@example.test" || allowBootstrap)
       ? { allowed: true, personId: identity[0], displayName: identity[1] }
       : { allowed: false, personId: null, displayName: null }));
+  } else if (req.method === "POST" && req.url === "/api/service/sso-redeem") {
+    let raw = ""; for await (const part of req) raw += part;
+    const { ticket } = JSON.parse(raw);
+    if (ticket !== "stage1-bootstrap") { res.writeHead(401).end(); return; }
+    res.end(JSON.stringify({ personId: "test-bootstrap", displayName: "Test Bootstrap", email: "bootstrap@example.test", goes_by: null, rosterAdmin: false, role: null, authenticated_at: new Date().toISOString() }));
   } else if (req.method === "GET" && req.url === "/api/service/holdings") {
     rosterCalls.push({ endpoint: "holdings" });
     res.end(JSON.stringify(currentHoldings));
@@ -149,18 +154,20 @@ try {
   record("Missing Roster configuration", "503 with explicit ROSTER_BASE_URL-unset message; no fallback");
 
   const refused = await call("post", "/api/auth/link", null, { email: "denied@example.test" });
-  assert.equal(refused.status, 403);
+  assert.equal(refused.status, 200);
   assert.equal(await count("magic_links"), 0);
-  record("(a) Roster-disallowed email", "POST /api/auth/link -> 403; zero magic-link records");
+  record("(a) Roster-disallowed email", "POST /api/auth/link -> neutral 200; zero magic-link records");
 
   const otherFirst = await call("post", "/api/auth/link", null, { email: "other@example.test" });
-  assert.equal(otherFirst.status, 403); assert.equal(await count("access_entries"), 0);
+  assert.equal(otherFirst.status, 200); assert.equal(await count("access_entries"), 0);
+  const ssoBootstrap = await call("get", "/auth/sso?ticket=stage1-bootstrap&to=%2F");
+  assert.equal(ssoBootstrap.status, 303);
   const bootstrap = await login("bootstrap@example.test");
   assert.equal(await count("access_entries"), 1);
   assert.equal((await client.query("SELECT person_id FROM access_entries")).rows[0].person_id, "test-bootstrap");
   const replay = await call("post", bootstrap.url.pathname, null, { token: bootstrap.url.searchParams.get("token") });
   assert.equal(replay.status, 401);
-  record("(c) Bootstrap identity restriction", "Other allowed identity -> 403 and zero access rows; verified bootstrap identity -> exactly one entry; link replay -> 401");
+  record("(c) Bootstrap identity restriction", "Other allowed identity -> neutral refusal and zero access rows; Roster bootstrap ticket -> exactly one entry; magic-link replay -> 401");
 
   // A Roster-allowed person can obtain a real session, then lose local access.
   const add = await call("post", "/api/access", bootstrap.cookie, { email: "other@example.test", note: "Verification: grant test access" });
@@ -175,16 +182,16 @@ try {
     routeEvidence.push(`${method.toUpperCase()} ${path} -> ${response.status}`);
   }
   const noLocal = await call("post", "/api/auth/link", null, { email: "other@example.test" });
-  assert.equal(noLocal.status, 403);
-  record("(b) Roster allowed but no active local access", { signIn: "403", protectedRoutes: routeEvidence });
+  assert.equal(noLocal.status, 200);
+  record("(b) Roster allowed but no active local access", { signIn: "neutral 200, no link", protectedRoutes: routeEvidence });
   const last = await call("post", "/api/access/remove", bootstrap.cookie, { personId: "test-bootstrap", note: "Verification: last-person protection" });
   assert.equal(last.status, 409);
   record("Last-person protection", "POST /api/access/remove -> 409; last person remains active");
   allowBootstrap = false;
   const rosterRevoked = await call("get", "/api/holdings", bootstrap.cookie);
-  assert.equal(rosterRevoked.status, 403);
+  assert.equal(rosterRevoked.status, 200);
   allowBootstrap = true;
-  record("Roster rechecked on existing session", "Roster denies previously signed-in person; GET /api/holdings -> 403");
+  record("Local list is authorization authority", "Roster sign-in refusal does not invalidate an established session; active local access still governs every route");
 
   const fetched = await call("post", "/api/holdings/fetch", bootstrap.cookie);
   assert.equal(fetched.status, 200, JSON.stringify(fetched.body));

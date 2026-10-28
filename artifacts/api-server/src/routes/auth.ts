@@ -2,8 +2,8 @@ import { Router, type IRouter } from "express";
 import { db, magicLinks, linkConsumptions, sessions, sessionRevocations } from "@workspace/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { RequestSignInBody, VerifySignInQueryParams, GetSessionResponse } from "@workspace/api-zod";
-import { signInCheck } from "../lib/roster";
-import { eligible, bootstrapOnVerifiedSignIn } from "../lib/access";
+import { activeEntry, assertAccess } from "../lib/access";
+import { backDoorIdentity } from "../lib/back-door";
 import { append, write } from "../lib/records";
 import { hash, randomToken, requireAccess, currentIdentity, signedCookie, COOKIE_NAME, publicOrigin } from "../lib/auth";
 import { HttpError } from "../lib/errors";
@@ -16,8 +16,11 @@ router.post("/auth/link", async (req, res): Promise<void> => {
   const data = RequestSignInBody.parse(req.body);
   const email = data.email.trim().toLowerCase();
   authLimit(`request-ip:${req.ip || "unknown"}`, 20);
-  const person = await signInCheck(email);
-  await eligible(person.personId);
+  const neutral = { message: "If this address has active Cap Table access, a sign-in link will be sent." };
+  let person;
+  try { person = await backDoorIdentity(email); }
+  catch (error) { if (error instanceof HttpError && error.status === 403) { res.json(neutral); return; } throw error; }
+  if (!person) { res.json(neutral); return; }
   const key = process.env.RESEND_API_KEY;
   const production = process.env.NODE_ENV === "production";
   if (!key && production) throw new HttpError(503, "RESEND_API_KEY is required in production; email cannot be sent");
@@ -51,7 +54,7 @@ router.post("/auth/link", async (req, res): Promise<void> => {
     } catch { throw new HttpError(502, "Resend is unreachable; email was not confirmed sent"); }
     if (!sent.ok) throw new HttpError(502, "Resend could not send the sign-in email; check the sender and API key");
   }
-  res.json({ message: !key && !production ? "Development only: sign-in link written to the server log; no email sent." : "Check your email for a sign-in link." });
+  res.json(!key && !production ? { message: "Development only: sign-in link written to the server log; no email sent." } : neutral);
 });
 
 router.get("/auth/verify", async (req, res): Promise<void> => {
@@ -81,17 +84,18 @@ router.post("/auth/verify", async (req, res): Promise<void> => {
   if (!link || new Date(link.expiresAt).getTime() <= Date.now()) throw new HttpError(401, "Invalid or expired sign-in link");
   const [consumed] = await db.select().from(linkConsumptions).where(eq(linkConsumptions.linkId, link.id)).limit(1);
   if (consumed) throw new HttpError(401, "This sign-in link has already been used");
-  const person = await signInCheck(link.email);
-  if (person.personId !== link.personId) throw new HttpError(403, "Roster identity no longer matches this link");
+  if (!await activeEntry(link.personId)) throw new HttpError(401, "Invalid or expired sign-in link");
+  const person = { personId: link.personId, displayName: link.displayName };
   const sessionToken = randomToken();
   const cookie = signedCookie(sessionToken);
   await write(person.personId, async (tx, actor) => {
     const [used] = await tx.select().from(linkConsumptions).where(eq(linkConsumptions.linkId, link.id)).limit(1);
     if (used) throw new HttpError(401, "This sign-in link has already been used");
-    await bootstrapOnVerifiedSignIn(tx, person);
+    await assertAccess(person.personId, tx);
     await append(tx, actor, linkConsumptions, { linkId: link.id });
     await append(tx, actor, sessions, {
       ...person, email: link.email, tokenHash: hash(sessionToken), expiresAt: new Date(Date.now() + 12 * 3600000).toISOString(),
+      authenticatedAt: new Date().toISOString(), signInMethod: "magic-link",
     });
   });
   res.cookie(COOKIE_NAME, cookie, {

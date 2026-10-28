@@ -77,6 +77,11 @@ export async function stage2Harness() {
   };
   pool.connect = async () => adapter;
   pool.query = (...args) => client.query(...args);
+  // The email back door now requires existing active access. Bootstrap itself
+  // is verified through the Roster ticket flow in verify:sso / verify:stage1.
+  const { bootstrapOnVerifiedSignIn } = await import("../src/lib/access.ts");
+  const { write } = await import("../src/lib/records.ts");
+  const seedAccess = () => write("test-bootstrap", (tx) => bootstrapOnVerifiedSignIn(tx, { personId: "test-bootstrap", displayName: "Test Bootstrap" }));
   const results = [];
   const call = async (method, path, cookie, data) => {
     let req = request(app)[method](path);
@@ -93,6 +98,7 @@ export async function stage2Harness() {
   const record = (check, evidence, result = "PASS") => results.push({ check, result, source: "LOCAL ROSTER STUB / DEVELOPMENT DB", evidence });
   const expect = (response, status) => { assert.equal(response.status, status, `${response.status}: ${JSON.stringify(response.body)}`); return response.body; };
   async function login(email = "bootstrap@example.test") {
+    await seedAccess();
     loggedLink = undefined;
     expect(await call("post", "/api/auth/link", null, { email }), 200);
     assert.ok(loggedLink);
@@ -115,5 +121,5 @@ export async function stage2Harness() {
     await pool.end();
     console.log(JSON.stringify(results, null, 2));
   };
-  return { app, client, call, login, expect, record, results, finish, getLoggedLink: () => loggedLink, setHoldings: (value) => { holdings = structuredClone(value); } };
+  return { app, client, call, login, seedAccess, expect, record, results, finish, getLoggedLink: () => loggedLink, setHoldings: (value) => { holdings = structuredClone(value); } };
 }

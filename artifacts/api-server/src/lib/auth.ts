@@ -3,13 +3,12 @@ import type { RequestHandler, Request } from "express";
 import { db, sessions, sessionRevocations } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { HttpError } from "./errors";
-import { signInCheck } from "./roster";
 import { assertAccess } from "./access";
 import { publicOrigin } from "./origin";
 export { publicOrigin } from "./origin";
 
 export const COOKIE_NAME = "hwd_distributions_session";
-export type Identity = { personId: string; displayName: string; email: string; sessionId: number };
+export type Identity = { personId: string; displayName: string; email: string; sessionId: number; authenticatedAt: string };
 declare global {
   namespace Express { interface Request { identity?: Identity } }
 }
@@ -32,16 +31,31 @@ export const requireAccess: RequestHandler = async (req, _res, next) => {
     const token = validCookie(req.cookies?.[COOKIE_NAME]);
     if (!token) throw new HttpError(401, "Sign in to HWD Cap Table");
     const [session] = await db.select().from(sessions).where(eq(sessions.tokenHash, hash(token))).limit(1);
-    if (!session || new Date(session.expiresAt).getTime() <= Date.now()) throw new HttpError(401, "Session has expired; sign in again");
+    if (!session) throw new HttpError(401, "Session has expired; sign in again");
     const [revoked] = await db.select().from(sessionRevocations).where(eq(sessionRevocations.sessionId, session.id)).limit(1);
     if (revoked) throw new HttpError(401, "Session has ended");
-    // No authorization cache: Roster and the local list are checked on EVERY protected request.
-    const person = await signInCheck(session.email);
-    if (person.personId !== session.personId) throw new HttpError(403, "Roster identity has changed; sign in again");
-    await assertAccess(person.personId);
-    req.identity = { ...person, email: session.email, sessionId: session.id };
+    // The Roster establishes identity at sign-in; local active access is the
+    // authorization authority on EVERY request, including during a Roster outage.
+    await assertAccess(session.personId);
+    req.identity = { personId: session.personId, displayName: session.displayName, email: session.email, sessionId: session.id,
+      authenticatedAt: session.authenticatedAt ?? session.createdAt };
+    // Logout must remain possible even when authentication is stale.
+    if (req.path !== "/auth/logout") {
+      assertFresh(req.identity.authenticatedAt, 12 * 60);
+      if (new Date(session.expiresAt).getTime() <= Date.now()) throw new HttpError(403, "Please sign in again through the Roster to continue.", "reauthenticate");
+    }
     next();
   } catch (error) { next(error); }
+};
+export function assertFresh(authenticatedAt: string, minutes: number, now = Date.now()) {
+  const time = Date.parse(authenticatedAt);
+  if (!Number.isFinite(time) || time > now + 60000 || now - time > minutes * 60000)
+    throw new HttpError(403, minutes === 15
+      ? "Please verify your identity again through the Roster before this action. Nothing has been submitted."
+      : "Please sign in again through the Roster to continue.", "reauthenticate");
+}
+export const requireFreshAction: RequestHandler = (req, _res, next) => {
+  try { assertFresh(currentIdentity(req).authenticatedAt, 15); next(); } catch (error) { next(error); }
 };
 export function currentIdentity(req: Request): Identity {
   if (!req.identity) throw new HttpError(401, "Sign in required");

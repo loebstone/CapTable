@@ -15,17 +15,30 @@ import backupRouter from "./backup";
 import mailingsRouter from "./mailings";
 import directionsRouter from "./directions";
 import directionsPublicRouter from "./directions-public";
-import { requireAccess } from "../lib/auth";
+import { requireAccess, requireFreshAction } from "../lib/auth";
+import ssoRouter from "./sso";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(ssoRouter);
 // Deliberate public signing exception: only hashed link/restricted-signing
 // cookies authorize these routes, never a management session or arbitrary IDs.
 router.use(directionsPublicRouter);
 // Every business endpoint and unknown API route is behind the same server gate.
 router.use(requireAccess);
+// Freshness is evaluated before validation, uploads, ledger writes or provider
+// calls. These are management routes only; public signing remains independent.
+router.use((req, res, next) => {
+  const sensitive = req.method === "POST" && (
+    /^\/years\/[^/]+\/(payments|reversals|holds|reset-practice)$/.test(req.path) ||
+    /^\/years\/[^/]+\/directions\/(issue|resend|remind|paper)$/.test(req.path) ||
+    /^\/years\/[^/]+\/directions\/[^/]+\/confirm$/.test(req.path) ||
+    /^\/years\/[^/]+\/mailing\/send$/.test(req.path)
+  );
+  if (sensitive) requireFreshAction(req, res, next); else next();
+});
 router.use(holdingsRouter);
 router.use(residencesRouter);
 router.use(ratesRouter);

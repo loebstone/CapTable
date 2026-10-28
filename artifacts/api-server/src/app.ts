@@ -8,6 +8,7 @@ import { logger } from "./lib/logger";
 import { sameOrigin } from "./lib/auth";
 import { HttpError } from "./lib/errors";
 import mailWebhookRouter from "./routes/mail-webhook";
+import ssoRouter from "./routes/sso";
 
 const app: Express = express();
 app.set("trust proxy", 1);
@@ -46,9 +47,10 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(sameOrigin);
 
+app.use(ssoRouter);
 app.use("/api", router);
 const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
-  if (error instanceof HttpError) { res.status(error.status).json({ error: error.message }); return; }
+  if (error instanceof HttpError) { res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) }); return; }
   if (error instanceof ZodError || error instanceof GeneratedZodError) { res.status(400).json({ error: "Invalid input or response format", details: error.issues.map((i) => ({ path: i.path, message: i.message })) }); return; }
   req.log.error({ errorName: error instanceof Error ? error.name : "Unknown" }, "Request failed");
   res.status(500).json({ error: "The request could not be completed" });

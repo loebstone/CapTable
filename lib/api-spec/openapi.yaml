@@ -6,6 +6,33 @@ info:
 servers:
   - url: /api
 paths:
+  /auth/sso:
+    get:
+      operationId: redeemRosterSso
+      description: Also mounted at /auth/sso for the registered Roster callback. Anonymous ticket credential; local membership/bootstrap required.
+      parameters:
+        - {name: ticket, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 4096}}
+        - {name: to, in: query, schema: {type: string, default: "/"}}
+      responses:
+        "303": {description: Normal session cookie issued; safe local redirect}
+        "400": {description: Invalid return path; plain restart page}
+        "401": {description: Refused or expired ticket; plain restart page}
+        "403": {description: No active access or stale identity; plain restart page}
+        "429": {description: More than 20 attempts per real IP in 15 minutes}
+        "503": {description: Roster unavailable; fail closed}
+  /auth/roster:
+    get:
+      operationId: startRosterSignIn
+      parameters:
+        - {name: to, in: query, schema: {type: string, default: "/"}}
+        - {name: fresh, in: query, schema: {type: string, enum: ["1"]}}
+      responses:
+        "303": {description: Redirect to registered Roster entry URL; fresh=1 requests a new email verification}
+  /auth/farm-sign-out:
+    get:
+      operationId: startFarmSignOut
+      responses:
+        "303": {description: Redirect to Roster sign-out after local logout}
   /signing/open:
     get:
       operationId: openSigningLink

@@ -56,6 +56,7 @@ import type {
   RateCsvResult,
   RateInput,
   RateTable,
+  RedeemRosterSsoParams,
   RedeemSignInBodyOne,
   RedeemSignInBodyTwo,
   RemindDirections200,
@@ -71,6 +72,7 @@ import type {
   SigningSession,
   Snapshot,
   SnapshotInput,
+  StartRosterSignInParams,
   VerifySignInParams,
   YearCorrectionInput,
   YearDetail,
@@ -106,6 +108,236 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getRedeemRosterSsoUrl = (params: RedeemRosterSsoParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/auth/sso?${stringifiedParams}` : `/api/auth/sso`
+}
+
+/**
+ * Also mounted at /auth/sso for the registered Roster callback. Anonymous ticket credential; local membership/bootstrap required.
+ */
+export const redeemRosterSso = async (params: RedeemRosterSsoParams, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getRedeemRosterSsoUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRedeemRosterSsoQueryKey = (params?: RedeemRosterSsoParams,) => {
+    return [
+    `/api/auth/sso`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getRedeemRosterSsoQueryOptions = <TData = Awaited<ReturnType<typeof redeemRosterSso>>, TError = ErrorType<void>>(params: RedeemRosterSsoParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof redeemRosterSso>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRedeemRosterSsoQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof redeemRosterSso>>> = ({ signal }) => redeemRosterSso(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof redeemRosterSso>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type RedeemRosterSsoQueryResult = NonNullable<Awaited<ReturnType<typeof redeemRosterSso>>>
+export type RedeemRosterSsoQueryError = ErrorType<void>
+
+
+
+export function useRedeemRosterSso<TData = Awaited<ReturnType<typeof redeemRosterSso>>, TError = ErrorType<void>>(
+ params: RedeemRosterSsoParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof redeemRosterSso>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getRedeemRosterSsoQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartRosterSignInUrl = (params?: StartRosterSignInParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/auth/roster?${stringifiedParams}` : `/api/auth/roster`
+}
+
+export const startRosterSignIn = async (params?: StartRosterSignInParams, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getStartRosterSignInUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartRosterSignInQueryKey = (params?: StartRosterSignInParams,) => {
+    return [
+    `/api/auth/roster`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getStartRosterSignInQueryOptions = <TData = Awaited<ReturnType<typeof startRosterSignIn>>, TError = ErrorType<void>>(params?: StartRosterSignInParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startRosterSignIn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStartRosterSignInQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof startRosterSignIn>>> = ({ signal }) => startRosterSignIn(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof startRosterSignIn>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type StartRosterSignInQueryResult = NonNullable<Awaited<ReturnType<typeof startRosterSignIn>>>
+export type StartRosterSignInQueryError = ErrorType<void>
+
+
+
+export function useStartRosterSignIn<TData = Awaited<ReturnType<typeof startRosterSignIn>>, TError = ErrorType<void>>(
+ params?: StartRosterSignInParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startRosterSignIn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getStartRosterSignInQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartFarmSignOutUrl = () => {
+
+
+
+
+  return `/api/auth/farm-sign-out`
+}
+
+export const startFarmSignOut = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getStartFarmSignOutUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartFarmSignOutQueryKey = () => {
+    return [
+    `/api/auth/farm-sign-out`
+    ] as const;
+    }
+
+
+export const getStartFarmSignOutQueryOptions = <TData = Awaited<ReturnType<typeof startFarmSignOut>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startFarmSignOut>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStartFarmSignOutQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof startFarmSignOut>>> = ({ signal }) => startFarmSignOut({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof startFarmSignOut>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type StartFarmSignOutQueryResult = NonNullable<Awaited<ReturnType<typeof startFarmSignOut>>>
+export type StartFarmSignOutQueryError = ErrorType<void>
+
+
+
+export function useStartFarmSignOut<TData = Awaited<ReturnType<typeof startFarmSignOut>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startFarmSignOut>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getStartFarmSignOutQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getOpenSigningLinkUrl = (params: OpenSigningLinkParams,) => {
   const normalizedParams = new URLSearchParams();

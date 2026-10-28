@@ -3,8 +3,10 @@ import { useRequestSignIn } from "@workspace/api-client-react";
 import { ArrowRight, MailCheck } from "lucide-react";
 import { Btn, inputCls } from "@/components/bits";
 import { errMessage } from "@/lib/format";
+import { rosterEntry } from "@/components/reauthenticate";
 
-export default function SignIn() {
+export function AdminSignIn() { return <SignIn backDoor />; }
+export default function SignIn({ backDoor = false }: { backDoor?: boolean }) {
   const [email, setEmail] = useState("");
   const req = useRequestSignIn();
   const valid = /^\S+@\S+\.\S+$/.test(email.trim());
@@ -32,10 +34,11 @@ export default function SignIn() {
           <div className="font-display text-2xl md:hidden">HWD Cap Table</div>
           <h2 className="font-display mt-1 text-3xl">Sign in</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Enter the email address the family has on file. We will send a one-time sign-in link; there is no password.
+            {backDoor ? "For when the Roster is unavailable. Enter your email to request a one-time link. Active Cap Table access is required."
+              : "Use the HWD Roster to verify your identity and sign in to Cap Table."}
           </p>
 
-          {req.isSuccess ? (
+          {!backDoor ? <a href={rosterEntry()} className="mt-8 block rounded-md bg-primary px-4 py-3 text-center text-primary-foreground" data-testid="button-roster-sign-in">Sign in</a> : req.isSuccess ? (
             <div className="rise mt-8 rounded-lg border border-border bg-card p-5" data-testid="status-link-sent">
               <MailCheck className="h-5 w-5 text-primary" />
               <div className="mt-3 text-sm font-medium">{req.data.message}</div>

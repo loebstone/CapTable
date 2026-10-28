@@ -1,3 +1,70 @@
+# Roster SSO consumer
+
+- The HWD Roster establishes identity; **this app's active access list remains the
+  sole management authorization authority**. Roster `role` / `rosterAdmin` do not
+  grant local permissions. No local roles were added.
+- Member sign-in has one **Sign in** button. `/api/auth/roster?to=<path>` redirects
+  to `{ROSTER_BASE_URL}/sign-in?app=captable&to=<encoded path>&origin=<APP_ORIGIN>`.
+  `APP_ORIGIN` must be set and registered in the Roster for development SSO too.
+  `to` is a local single-leading-slash path; schemes, network paths, backslashes,
+  encoded unsafe paths, controls and malformed encodings are refused.
+- The registered callback is **GET `/auth/sso?ticket=...&to=...`** (also available
+  under `/api/auth/sso`). The API artifact explicitly owns `/auth/sso` in both
+  development and future published routing, so it is not a frontend SPA fallback.
+  The server POSTs `{ticket}` to `/api/service/sso-redeem` with
+  `DISTRIBUTIONS_SERVICE_KEY`, 10-second timeout and redirects forbidden. 401,
+  outages and invalid responses refuse sign-in. Tickets are 60-second/single-use
+  as enforced by the Roster. Query strings/credentials are never logged.
+- Redeemed identity fields: `personId`, `displayName`, `goes_by`, `email`,
+  `rosterAdmin`, `role`, `authenticated_at`. Only identity and authentication time
+  are used. Active local membership is checked again inside the session creation
+  transaction. The original never-initialized/bootstrap-person exception remains;
+  a removed list cannot bootstrap again. Missing membership shows
+  “You're not on the Cap Table access list. Ask Peter.” and writes a refusal
+  audit. Successful session insertion is audited **Signed in via Roster**.
+- SSO callback limit: **20 attempts per IP / 15 minutes**, using Express's
+  existing one-hop trusted-proxy address handling. Limits are per running process,
+  not a distributed cross-instance counter.
+- New sessions append nullable `authenticated_at` and `sign_in_method` metadata;
+  no old session is updated, deleted, extended or revoked by this feature.
+  Existing missing metadata falls back to session creation time. The unchanged
+  signed HttpOnly/SameSite=Lax cookie is `hwd_distributions_session`; Secure in
+  production. Explicit local logout still appends a revocation.
+- Every management route requires active local access and identity age **within
+  12 hours**. Ledger cash/APIC/reversal/hold writes, signed-direction confirmation,
+  paper-direction ledger writes, practice reset and mailing sends/previews/
+  resends/reminders/link emails additionally require age **within 15 minutes**.
+  Gates run before validation, writes or provider calls. Public shareholder
+  signing is not a management session and is unchanged.
+- Stale authentication returns **403, `code: "reauthenticate"`** without mutation.
+  The UI shows an explanation and **Sign in through the Roster**, returning to
+  the current path/query with `fresh=1`. No write is silently retried. The Roster
+  requires a new email link before minting a fresh ticket. Explicit logout still
+  works when stale; **Sign out of all Farm apps** locally signs out and then
+  navigates to `{ROSTER_BASE_URL}/sign-out` (desktop and mobile).
+- The unlinked **`/admin/sign-in`** is labelled **For when the Roster is
+  unavailable**. It is for active local access-list members, not a new admin role.
+  It cannot bootstrap. Unknown/nonmember emails get the neutral response and no
+  link. A previously verified session supplies the local email/person mapping so
+  known members can use this route during an outage; a new address still needs
+  Roster `sign-in-check` identity resolution and active local membership.
+  Mailbox possession is always verified by the existing 15-minute single-use
+  magic link, consumed only by the same-origin Continue POST. Membership is
+  checked again at redemption and transaction time. New back-door sessions use
+  their verify time and `sign_in_method: "magic-link"`.
+- Deliberately anonymous additions: GET `/auth/sso` / `/api/auth/sso` (ticket
+  credential), GET `/api/auth/roster` (validated navigation to identity provider),
+  GET `/api/auth/farm-sign-out` (navigation only), frontend `/admin/sign-in`
+  (email request form; authorization remains server-side). Existing health,
+  magic-link request/Continue routes, signed webhook and restricted public signing
+  exceptions remain as documented below.
+- Run `pnpm --filter @workspace/api-server run verify:sso`. It uses stub tickets,
+  mocked email, rollback-local tables, and covers access refusal/audit, invalid/
+  expired/replayed tickets, unsafe paths, outages, rate limits, both freshness
+  thresholds, legacy metadata fallback and the back door. Existing foundation
+  tests now bootstrap explicitly before exercising the member-only back door;
+  they no longer expect a live Roster authorization call on every data request.
+
 # Stage A and Stage B — mailings and signed directions
 
 Development implementation. Never publish as part of verification and never write
@@ -126,7 +193,8 @@ in this workspace. There are no scheduled jobs, roles or officer titles.
 - Public signing routes are the deliberate capability-based exception to management
   access checks, alongside sign-in/health and the signature-verified Resend webhook.
   All management direction/status/print/download/confirm/paper/reminder routes
-  require both the live Roster session check and active local access.
+  require a fresh authenticated session and active local access, with the
+  additional 15-minute gate on sends and ledger-writing actions.
 - Signing is evidence of the actions taken with a bearer link, typed name and
   consent, not independent identity verification. Do not describe it as proof
   that an email link was not forwarded.
@@ -323,7 +391,7 @@ These rules supersede the earlier auth/setup/test-harness descriptions; historic
 ## Product rules
 
 - This is a separate Farm app: its own project database, deployment and cookie (`hwd_distributions_session`). It shares no code, cookies or database with any other Farm app. Local `lib/` packages belong only to this project.
-- All business endpoints enforce both current Roster permission **and** current local access on the server for every request. Public exceptions are health and the sign-in request/verification endpoints, which disclose no holdings or residence/rate/access data.
+- All business endpoints enforce a valid, fresh authenticated session **and** current local access on the server for every request. Roster identity is established at sign-in, not re-authorized on each request. Public exceptions include health, sign-in request/verification and the ticket/navigation routes listed in the SSO section; none disclose business data.
 - No roles or officer titles. Every active person can add or remove another person; removal of the last active person is refused in a serialized transaction.
 - Bootstrap is possible only when the access list has never been initialized and the **verified** Roster identity exactly matches `BOOTSTRAP_PERSON_ID`. Merely requesting an email does not create access.
 - Money is integer cents (`bigint` database columns, signed integer strings over JSON). No floating-point money or share arithmetic: shares are four-decimal strings and `numeric(10,4)` snapshot values, with BigInt units for sums. Rates are `numeric(6,4)` and four-decimal fraction strings; display conversion is exact. No rates are baked into application data.
@@ -342,13 +410,15 @@ These rules supersede the earlier auth/setup/test-harness descriptions; historic
 
 ## Roster contract (HTTP only)
 
-Both calls use `Authorization: Bearer {DISTRIBUTIONS_SERVICE_KEY}`. Only these read/delegation calls are made; this app never writes to the Roster or queries its database.
+These service calls use `Authorization: Bearer {DISTRIBUTIONS_SERVICE_KEY}`.
+SSO additionally uses the ticket redemption endpoint documented at the top of
+this file. This app never writes Roster business records or queries its database.
 
 ### `POST {ROSTER_BASE_URL}/api/service/sign-in-check`
 
 Request: `{"email":"..."}`.
 
-Response: `{"allowed":true,"personId":"...","displayName":"..."}`. A denied response can omit or null the identity fields. Only an allowed email with a complete identity may receive a magic link, and only if locally active or the exact eligible bootstrap identity. Permission is rechecked at link redemption and on every protected API call. Access-list additions also resolve the email through this endpoint; identity fields are never trusted from the browser.
+Response: `{"allowed":true,"personId":"...","displayName":"..."}`. A denied response can omit or null the identity fields. Access-list additions resolve the email through this endpoint; identity fields are never trusted from the browser. The email back door uses this endpoint only when it has no previously verified local email/person mapping, and still requires active local membership. It never bootstraps. Redemption checks mailbox possession and active local membership again. Ordinary protected requests use the established session identity and current local access, not a new Roster authorization call. Roster SSO alone retains the original exact-person, never-initialized bootstrap exception.
 
 ### `GET {ROSTER_BASE_URL}/api/service/holdings`
 
@@ -405,7 +475,7 @@ The Stage 1 suite exercises the actual Express routes, Roster HTTP client and de
 - One `distribution_years` record per calendar year. Opening fixes the selected snapshot permanently; each of A/B/C/D must total exactly 100.0000 and all rows 400.0000. An incorrect Class is named with its exact shortfall/excess. Holder counts never block opening.
 - A rate table must already exist for the year. Opening offers a prior-year copy in the UI. Draft calculations use that year's latest rate revision and each snapshot holder's latest residence, including unconfirmed proposals. Missing residence/rates make the proposal unavailable rather than silently assuming zero.
 - Every gross figure and labeled cost line references a source document attached to that year. Draft revisions append new figure and cost rows; old rows remain. Documents are PDF/PNG/JPEG/GIF/WebP, at most 20 MB, with filename, upload date and uploader.
-- Documents upload directly to a private staging URL. Attachment copies the bytes to a fresh, server-only object key and verifies size/file signature. Reusing the staging URL cannot modify the sealed document. Files are stored in App Storage, metadata in PostgreSQL; there is no public object/file route. Download requires both live Roster and local access and is `private, no-store`. Multiple documents per year are allowed. No automatic object cleanup or hard deletes.
+- Documents upload directly to a private staging URL. Attachment copies the bytes to a fresh, server-only object key and verifies size/file signature. Reusing the staging URL cannot modify the sealed document. Files are stored in App Storage, metadata in PostgreSQL; there is no public object/file route. Download requires a fresh authenticated session and active local access and is `private, no-store`. Multiple documents per year are allowed. No automatic object cleanup or hard deletes.
 - Exact formula: proposed cents = `net cents × (federal rate + highest holder state rate) ÷ 400`, rounded to integer cents. Highest rate considers only the holders of this fixed snapshot, using their current confirmed or proposed residence. All intermediate arithmetic is BigInt rational arithmetic. Rounding is half away from zero.
 - The proposed amount is advisory. A person must explicitly record the declared integer cents per share and declaration date; that declared amount governs nominal distributions. Calendar dates are validated, but no dates trigger state changes.
 - For each distinct person, shares across Classes are aggregated exactly before rounding: nominal = declared cents × shares; gain = net cents × shares / 400; estimated tax = exact unrounded gain × (federal + own state rate); surplus = rounded nominal minus rounded estimated tax. Gain display alone rounds to cents, not the intermediate tax input. No per-person distribution amount is editable.
@@ -416,7 +486,7 @@ The Stage 1 suite exercises the actual Express routes, Roster HTTP client and de
 - Cash and APIC entries are permitted only after finalization. Cash records positive cents, payment date and free-text method/check number. APIC records positive cents, the **direction-letter-received date**, and an optional note. There are no financial account identifiers.
 - Remaining = nominal − cash − APIC. Any entry exceeding remaining is refused under the same serialized transaction lock used for every write. A positive entry can be reversed once by a new exact negative entry linked to it, with an optional note and required reversal date. Arbitrary negative payments and reversal-of-reversal are refused; original entries remain visible.
 - Status is `complete` whenever remaining is zero; otherwise `held` for a manually noted hold (or the default from an unsettled snapshot row); otherwise `open`. Holds/releases are append-only and noted. Held is a status marker, not an extra authorization rule; recording a valid paid/retained entry does not require silently altering the hold.
-- All new database records are appended and audited inside the same transaction. Year and payment writes recheck local access inside the serialized transaction; the shared middleware also checks live Roster permission on every request, including all source-document routes.
+- All new database records are appended and audited inside the same transaction. Year and payment writes recheck local access inside the serialized transaction; the shared middleware checks session freshness and active local access on every request, including all source-document routes.
 
 ### Stage 2 acceptance-figure resolution
 
@@ -473,7 +543,7 @@ backups and all other paths, identifiers and configuration names are untouched.
 - **Write history header → Download backup** opens an access-checked confirmation page.
   GET never exports or writes. Its origin-preserving referrer policy lets the
   native confirmation form send a same-origin POST to `/api/backup`. Both routes
-  require the usual valid session, current Roster allowance and active local
+  require the usual valid fresh session and active local
   access. Foreign or missing origin metadata is rejected by the existing CSRF
   middleware. No raw token or configuration is put into the link.
 - The browser downloads directly, without a JavaScript Blob. The server streams

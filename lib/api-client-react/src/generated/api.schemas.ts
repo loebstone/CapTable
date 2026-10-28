@@ -856,6 +856,27 @@ export interface AuditEntry {
   recordId: string;
 }
 
+export type RedeemRosterSsoParams = {
+/**
+ * @minLength 1
+ * @maxLength 4096
+ */
+ticket: string;
+to?: string;
+};
+
+export type StartRosterSignInParams = {
+to?: string;
+fresh?: StartRosterSignInFresh;
+};
+
+export type StartRosterSignInFresh = typeof StartRosterSignInFresh[keyof typeof StartRosterSignInFresh];
+
+
+export const StartRosterSignInFresh = {
+  NUMBER_1: '1',
+} as const;
+
 export type OpenSigningLinkParams = {
 /**
  * @pattern ^[a-f0-9]{64}$

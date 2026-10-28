@@ -30,6 +30,7 @@ try {
   const hostile = await request(app).post("/api/auth/link").set("Origin", "https://attacker.example").set("X-Forwarded-Host", "attacker.example").set("X-Forwarded-Proto", "https").send({ email: "bootstrap@example.test" });
   assert.equal(hostile.status, 403);
   record("F1. Fail-closed writes", { noBrowserHeaders: missing.status, hostileOriginWithForgedForwardedHost: hostile.status });
+  await h.seedAccess();
   expect(await call("post", "/api/auth/link", null, { email: "bootstrap@example.test" }), 200);
   const link = new URL(h.getLoggedLink()), token = link.searchParams.get("token");
   for (let i = 0; i < 2; i++) {
@@ -66,7 +67,7 @@ try {
   }
   for (let i = 0; i < 21; i++) {
     const r = await request(app).post("/api/auth/link").set("Origin", origin).set("X-Forwarded-For", "203.0.113.1").send({ email: "denied@example.test" });
-    assert.equal(r.status, i < 20 ? 403 : 429);
+    assert.equal(r.status, i < 20 ? 200 : 429);
   }
   record("F2. Rate limits", { redemptionSameTokenAcrossIPs: "11th -> 429", redemptionSameIPAcrossTokens: "11th -> 429", requestsSameIP: "21st -> 429", counters: "per server process; no scheduled jobs" });
 

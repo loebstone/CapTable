@@ -8,6 +8,34 @@
 import * as zod from 'zod';
 
 
+/**
+ * Also mounted at /auth/sso for the registered Roster callback. Anonymous ticket credential; local membership/bootstrap required.
+ */
+export const redeemRosterSsoQueryTicketMax = 4096;
+
+export const redeemRosterSsoQueryToDefault = `/`;
+
+export const RedeemRosterSsoQueryParams = zod.object({
+  "ticket": zod.coerce.string().min(1).max(redeemRosterSsoQueryTicketMax),
+  "to": zod.coerce.string().default(redeemRosterSsoQueryToDefault)
+})
+
+export const RedeemRosterSsoResponse = zod.void()
+
+
+export const startRosterSignInQueryToDefault = `/`;
+
+export const StartRosterSignInQueryParams = zod.object({
+  "to": zod.coerce.string().default(startRosterSignInQueryToDefault),
+  "fresh": zod.enum(['1']).optional()
+})
+
+export const StartRosterSignInResponse = zod.void()
+
+
+export const StartFarmSignOutResponse = zod.void()
+
+
 export const openSigningLinkQueryTokenRegExp = new RegExp('^[a-f0-9]{64}$');
 
 

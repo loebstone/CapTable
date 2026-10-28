@@ -37,6 +37,10 @@ export function Shell({ session, children }: { session: Session; children: React
       },
     },
   });
+  const farmSignOut = async () => {
+    await signOut.mutateAsync();
+    window.location.href = `${import.meta.env.BASE_URL}api/auth/farm-sign-out`;
+  };
 
   return (
     <div className="flex min-h-[100dvh] flex-col md:flex-row">
@@ -66,6 +70,7 @@ export function Shell({ session, children }: { session: Session; children: React
           })}
         </nav>
         <div className="mt-auto hidden border-t border-sidebar-border px-5 py-4 md:block">
+          <button onClick={farmSignOut} className="mb-3 text-xs underline">Sign out of all Farm apps</button>
           <div className="text-xs opacity-60">Signed in as</div>
           <div className="text-sm text-[hsl(40_40%_97%)]" data-testid="text-session-name">{session.displayName}</div>
           <button
@@ -81,6 +86,7 @@ export function Shell({ session, children }: { session: Session; children: React
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-border px-5 py-2 md:hidden">
           <span className="text-sm">{session.displayName}</span>
+          <button onClick={farmSignOut} className="text-xs text-primary">Sign out of all Farm apps</button>
           <button onClick={() => signOut.mutate()} className="text-xs text-primary" data-testid="button-sign-out-mobile">Sign out</button>
         </div>
         <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 md:px-10 md:py-10">{children}</main>

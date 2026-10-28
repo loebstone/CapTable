@@ -20,6 +20,8 @@ export const sessions = pgTable("hwd_sessions", {
   personId: text("person_id").notNull(),
   email: text("email").notNull(),
   displayName: text("display_name").notNull(),
+  authenticatedAt: timestamp("authenticated_at", { withTimezone: true, mode: "string" }),
+  signInMethod: text("sign_in_method"),
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string" }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
 });
