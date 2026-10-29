@@ -581,6 +581,7 @@ export type YearDetail = YearSummary & ({
 
 export interface HealthStatus {
   status: string;
+  build: string;
 }
 
 export interface Message {

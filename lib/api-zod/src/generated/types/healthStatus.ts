@@ -8,4 +8,5 @@
 
 export interface HealthStatus {
   status: string;
+  build: string;
 }

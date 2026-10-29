@@ -293,6 +293,29 @@ in this workspace. There are no scheduled jobs, roles or officer titles.
 
 # HWD Cap Table
 
+## Proxy trust and build identity
+
+- `TRUSTED_PROXY_HOPS` is read at API startup: an integer `0`–`8` only. Unset keeps
+  the app's previous numeric trust setting, **1**, with a startup log explaining
+  that fallback. Invalid/empty values fail startup; never use “trust all”.
+- **Set from the production diagnostic line, never guessed.** The production
+  value is **4 as of October 29, 2026**, from the main site's observed published
+  ingress: socket plus three forwarded proxies before the visitor. Peter sets
+  production configuration; agents do not set production secrets/settings.
+  This implementation does not silently change the existing default to 4.
+- Only `GET /auth/sso` emits the info-level **SSO proxy diagnostic**: complete
+  X-Forwarded-For, socket address, resolved request IP, and effective hop count.
+  It omits query strings/tickets, cookies and bodies. Startup logs the hop count
+  and reason once. Numeric hop trust assumes every ingress path has the measured
+  topology; reassess it if ingress changes.
+- `GET /api/healthz` returns `{ status, build }`. The API build script embeds
+  a UTC ISO timestamp plus eight random hex characters in the server bundle,
+  e.g. `2026-10-29T12:34:56.789Z-a1b2c3d4`. It stays constant across restarts of
+  that bundle and is logged once at startup as **Application build**.
+  Direct-source tests identify themselves as `development-unbundled`.
+- Test: `pnpm --filter @workspace/api-server run verify:proxy`; existing
+  `verify:sso` and `verify:security` cover their unchanged limiter behavior.
+
 ## Farm suite header
 
 - **Peter-set setting:** `SITE_BASE_URL` is the main site's origin. In development,

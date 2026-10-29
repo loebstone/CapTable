@@ -1,9 +1,12 @@
-import app from "./app";
+import app, { trustedProxyPolicy } from "./app";
 import { logger } from "./lib/logger";
 import { initializeOrigin } from "./lib/origin";
+import { BUILD_ID } from "./lib/build";
 
 // Fail startup closed when production has no trusted origin. Never log its value.
 initializeOrigin();
+logger.info({ trustedProxyHops: trustedProxyPolicy.hops, reason: trustedProxyPolicy.reason }, "Trusted proxy configuration");
+logger.info({ build: BUILD_ID }, "Application build");
 
 const rawPort = process.env["PORT"];
 

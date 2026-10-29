@@ -1333,8 +1333,8 @@ components:
             history: {type: array, items: {$ref: "#/components/schemas/YearHistory"}}
     HealthStatus:
       type: object
-      required: [status]
-      properties: {status: {type: string}}
+      required: [status, build]
+      properties: {status: {type: string}, build: {type: string}}
     Message:
       type: object
       required: [message]

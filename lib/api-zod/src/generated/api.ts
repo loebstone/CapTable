@@ -315,7 +315,8 @@ export const DownloadDirectionPdfResponse = zod.unknown()
 
 
 export const HealthCheckResponse = zod.object({
-  "status": zod.string()
+  "status": zod.string(),
+  "build": zod.string()
 })
 
 

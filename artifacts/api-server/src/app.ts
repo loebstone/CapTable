@@ -9,9 +9,10 @@ import { sameOrigin } from "./lib/auth";
 import { HttpError } from "./lib/errors";
 import mailWebhookRouter from "./routes/mail-webhook";
 import ssoRouter from "./routes/sso";
+import { configureProxy, ssoProxyDiagnostic } from "./lib/proxy";
 
 const app: Express = express();
-app.set("trust proxy", 1);
+export const trustedProxyPolicy = configureProxy(app);
 app.disable("x-powered-by");
 
 app.use(
@@ -33,6 +34,12 @@ app.use(
     },
   }),
 );
+app.use((req, _res, next) => {
+  if (req.method === "GET" && req.path === "/auth/sso") {
+    logger.info(ssoProxyDiagnostic(req, trustedProxyPolicy.hops), "SSO proxy diagnostic");
+  }
+  next();
+});
 app.use((_req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
