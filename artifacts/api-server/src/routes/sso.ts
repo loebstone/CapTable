@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, auditLog, sessions } from "@workspace/db";
 import { bootstrapOnVerifiedSignIn, eligible } from "../lib/access";
 import { append, write } from "../lib/records";
-import { COOKIE_NAME, hash, randomToken, signedCookie, assertFresh } from "../lib/auth";
+import { COOKIE_NAME, hash, randomToken, signedCookie } from "../lib/auth";
 import { authLimit } from "../lib/auth-limits";
 import { entryUrl, returnPath, redeemTicket, rosterBase } from "../lib/sso";
 import { HttpError } from "../lib/errors";
@@ -31,7 +31,6 @@ router.get("/auth/sso", async (req, res): Promise<void> => {
       });
       throw new HttpError(403, "You're not on the Cap Table access list. Ask Peter.");
     }
-    assertFresh(person.authenticated_at, 12 * 60);
     const token = randomToken();
     const cookie = signedCookie(token);
     await write(person.personId, async (tx, actor) => {

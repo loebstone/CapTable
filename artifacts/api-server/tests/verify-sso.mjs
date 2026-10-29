@@ -50,7 +50,7 @@ async function fixtureSession(minutes, legacy = false, overrides = {}) {
   await client.query(`INSERT INTO hwd_sessions(token_hash,person_id,email,display_name,created_at,expires_at,authenticated_at,sign_in_method)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [
     hash(token), overrides.personId ?? "test-bootstrap", "bootstrap@example.test", "Test Bootstrap", created,
-    new Date(Date.now() + 3600000).toISOString(), legacy ? null : created, legacy ? null : "roster",
+    overrides.expiresAt ?? new Date(Date.now() + 3600000).toISOString(), legacy ? null : created, legacy ? null : (overrides.signInMethod ?? "roster"),
   ]);
   return `hwd_distributions_session=${signedCookie(token)}`;
 }
@@ -88,10 +88,19 @@ try {
 
   const old = await fixtureSession(12 * 60 + 1);
   const staleEntry = await call("get", "/api/auth/session", old);
-  expect(staleEntry, 403); assert.equal(staleEntry.body.code, "reauthenticate");
+  expect(staleEntry, 200);
+  expect(await call("get", "/api/years", old), 200);
+  expect(await call("get", "/api/auth/session", await fixtureSession(721, false, { signInMethod: "magic-link" })), 200);
+  ticket("old-identity", { authenticated_at: new Date(Date.now() - 721 * 60000).toISOString() });
+  const oldHandoff = await callback("old-identity", "/years");
+  expect(oldHandoff, 303);
+  const oldHandoffCookie = cookieOf(oldHandoff);
+  expect(await call("get", "/api/auth/session", oldHandoffCookie), 200);
   const recentLegacy = await fixtureSession(5, true);
   expect(await call("get", "/api/auth/session", recentLegacy), 200);
-  expect(await call("get", "/api/auth/session", await fixtureSession(721, true)), 403);
+  expect(await call("get", "/api/auth/session", await fixtureSession(721, true)), 200);
+  const expired = await fixtureSession(721, false, { expiresAt: new Date(Date.now() - 60000).toISOString() });
+  expect(await call("get", "/api/auth/session", expired), 403);
   const staleAction = await fixtureSession(16);
   expect(await call("get", "/api/auth/session", staleAction), 200);
   const sensitive = ["/payments", "/reversals", "/holds", "/reset-practice", "/directions/123/confirm",
@@ -101,13 +110,18 @@ try {
     const result = await call("post", `/api/years/999999${route}`, staleAction, {});
     expect(result, 403); assert.equal(result.body.code, "reauthenticate", route);
   }
+  for (const cookie of [old, oldHandoffCookie]) {
+    const result = await call("post", "/api/years/999999/payments", cookie, {});
+    expect(result, 403); assert.equal(result.body.code, "reauthenticate");
+  }
   assert.equal(await count("audit_log"), auditsBefore); assert.equal(await count("distribution_entries"), entriesBefore);
   const now = Date.now();
   assert.doesNotThrow(() => assertFresh(new Date(now - 900000).toISOString(), 15, now));
   assert.throws(() => assertFresh(new Date(now - 900001).toISOString(), 15, now));
-  assert.doesNotThrow(() => assertFresh(new Date(now - 43200000).toISOString(), 720, now));
-  record("Freshness and legacy fallback", { entry: "12h+1m -> 403 reauthenticate", sensitiveActions: sensitive.length,
-    action: "16m -> 403 reauthenticate before mutation", legacy: "5m accepted / 721m reauthenticate", boundaries: "exact threshold accepted, +1ms refused" });
+  record("Action-only freshness and legacy fallback", { entry: "12h+1m identity accepted for live Roster, magic-link and legacy sessions; old-identity SSO handoff accepted",
+    sensitiveActions: sensitive.length, action: "16m and 12h+1m -> 403 reauthenticate before mutation",
+    legacy: "5m and 721m accepted for browsing", expiry: "expired session still refused",
+    boundaries: "15-minute threshold accepted, +1ms refused" });
   expect(await call("post", "/api/auth/logout", old, {}), 200);
   record("Stale session logout", "Allowed; explicit logout revokes only that test session");
 

@@ -36,14 +36,18 @@
   Existing missing metadata falls back to session creation time. The unchanged
   signed HttpOnly/SameSite=Lax cookie is `hwd_distributions_session`; Secure in
   production. Explicit local logout still appends a revocation.
-- Every management route requires active local access and identity age **within
-  12 hours**. Ledger cash/APIC/reversal/hold writes, signed-direction confirmation,
+- Every management route requires a **live session and active local access**.
+  There is no entry/browsing age limit on `authenticated_at`: older Roster,
+  magic-link and legacy identities may browse while their session remains live.
+  SSO redemption preserves the supplied authentication time without a 12-hour
+  identity-age gate. Session expiry/revocation is unchanged; no existing sessions
+  are extended or modified. Ledger cash/APIC/reversal/hold writes, signed-direction confirmation,
   paper-direction ledger writes, practice reset and mailing sends/previews/
   resends/reminders/link emails additionally require age **within 15 minutes**.
   Gates run before validation, writes or provider calls. Public shareholder
   signing is not a management session and is unchanged.
 - Stale authentication returns **403, `code: "reauthenticate"`** without mutation.
-  The UI shows an explanation and **Sign in through the Roster**, returning to
+  The UI shows an explanation and **Confirm it's me**, returning to
   the current path/query with `fresh=1`. No write is silently retried. The Roster
   requires a new email link before minting a fresh ticket. Explicit logout still
   works when stale; **Sign out of all Farm apps** locally signs out and then
@@ -66,8 +70,8 @@
   exceptions remain as documented below.
 - Run `pnpm --filter @workspace/api-server run verify:sso`. It uses stub tickets,
   mocked email, rollback-local tables, and covers access refusal/audit, invalid/
-  expired/replayed tickets, unsafe paths, outages, rate limits, both freshness
-  thresholds, legacy metadata fallback and the back door. Existing foundation
+  expired/replayed tickets, unsafe paths, outages, rate limits, action-only
+  freshness, old-identity browsing, session expiry, legacy metadata fallback and the back door. Existing foundation
   tests now bootstrap explicitly before exercising the member-only back door;
   they no longer expect a live Roster authorization call on every data request.
 
@@ -540,7 +544,7 @@ The Stage 1 suite exercises the actual Express routes, Roster HTTP client and de
 - Cash and APIC entries are permitted only after finalization. Cash records positive cents, payment date and free-text method/check number. APIC records positive cents, the **direction-letter-received date**, and an optional note. There are no financial account identifiers.
 - Remaining = nominal − cash − APIC. Any entry exceeding remaining is refused under the same serialized transaction lock used for every write. A positive entry can be reversed once by a new exact negative entry linked to it, with an optional note and required reversal date. Arbitrary negative payments and reversal-of-reversal are refused; original entries remain visible.
 - Status is `complete` whenever remaining is zero; otherwise `held` for a manually noted hold (or the default from an unsettled snapshot row); otherwise `open`. Holds/releases are append-only and noted. Held is a status marker, not an extra authorization rule; recording a valid paid/retained entry does not require silently altering the hold.
-- All new database records are appended and audited inside the same transaction. Year and payment writes recheck local access inside the serialized transaction; the shared middleware checks session freshness and active local access on every request, including all source-document routes.
+- All new database records are appended and audited inside the same transaction. Year and payment writes recheck local access inside the serialized transaction; the shared middleware checks live sessions and active local access on every request, including all source-document routes. Only sensitive actions apply the 15-minute authentication freshness gate.
 
 ### Stage 2 acceptance-figure resolution
 

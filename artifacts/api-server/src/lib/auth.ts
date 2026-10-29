@@ -39,9 +39,9 @@ export const requireAccess: RequestHandler = async (req, _res, next) => {
     await assertAccess(session.personId);
     req.identity = { personId: session.personId, displayName: session.displayName, email: session.email, sessionId: session.id,
       authenticatedAt: session.authenticatedAt ?? session.createdAt };
-    // Logout must remain possible even when authentication is stale.
+    // Any live session may browse, regardless of identity age. Only sensitive
+    // actions check authenticatedAt; logout remains possible after expiry.
     if (req.path !== "/auth/logout") {
-      assertFresh(req.identity.authenticatedAt, 12 * 60);
       if (new Date(session.expiresAt).getTime() <= Date.now()) throw new HttpError(403, "Please sign in again through the Roster to continue.", "reauthenticate");
     }
     next();
