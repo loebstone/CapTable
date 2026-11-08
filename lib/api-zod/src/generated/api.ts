@@ -475,6 +475,7 @@ export const ListResidencesResponseItem = zod.object({
   "personId": zod.string(),
   "displayName": zod.string(),
   "stateCode": zod.string().nullable(),
+  "subjectToNiit": zod.boolean(),
   "confirmed": zod.boolean(),
   "confirmedBy": zod.string().nullable(),
   "confirmedAt": zod.string().nullable(),
@@ -492,6 +493,7 @@ export const saveResidenceBodyNoteMax = 5000;
 export const SaveResidenceBody = zod.object({
   "personId": zod.string(),
   "expectedRevisionId": zod.number().int().min(1).optional(),
+  "subjectToNiit": zod.boolean().optional(),
   "stateCode": zod.string().regex(saveResidenceBodyStateCodeRegExp),
   "confirmed": zod.boolean(),
   "note": zod.string().max(saveResidenceBodyNoteMax).optional()
@@ -502,6 +504,7 @@ export const SaveResidenceResponse = zod.object({
   "personId": zod.string(),
   "displayName": zod.string(),
   "stateCode": zod.string().nullable(),
+  "subjectToNiit": zod.boolean(),
   "confirmed": zod.boolean(),
   "confirmedBy": zod.string().nullable(),
   "confirmedAt": zod.string().nullable(),
@@ -538,6 +541,9 @@ export const listRatesResponseOneTaxYearMax = 9999;
 
 export const listRatesResponseOneFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const listRatesResponseOneFederalSourceNoteDefault = ``;
+export const listRatesResponseOneNiitRateDefault = `0.0380`;
+export const listRatesResponseOneNiitRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
+export const listRatesResponseOneNiitSourceNoteDefault = ``;
 export const listRatesResponseOneStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const listRatesResponseOneStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const listRatesResponseOneStatesItemSourceNoteDefault = ``;
@@ -547,6 +553,8 @@ export const ListRatesResponseItem = zod.object({
   "taxYear": zod.number().int().min(listRatesResponseOneTaxYearMin).max(listRatesResponseOneTaxYearMax),
   "federalRate": zod.string().regex(listRatesResponseOneFederalRateRegExp),
   "federalSourceNote": zod.string().default(listRatesResponseOneFederalSourceNoteDefault),
+  "niitRate": zod.string().regex(listRatesResponseOneNiitRateRegExp).default(listRatesResponseOneNiitRateDefault),
+  "niitSourceNote": zod.string().default(listRatesResponseOneNiitSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(listRatesResponseOneStatesItemStateCodeRegExp),
   "rate": zod.string().regex(listRatesResponseOneStatesItemRateRegExp),
@@ -566,6 +574,9 @@ export const saveRatesBodyTaxYearMax = 9999;
 
 export const saveRatesBodyFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const saveRatesBodyFederalSourceNoteDefault = ``;
+export const saveRatesBodyNiitRateDefault = `0.0380`;
+export const saveRatesBodyNiitRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
+export const saveRatesBodyNiitSourceNoteDefault = ``;
 export const saveRatesBodyStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const saveRatesBodyStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const saveRatesBodyStatesItemSourceNoteDefault = ``;
@@ -575,6 +586,8 @@ export const SaveRatesBody = zod.object({
   "taxYear": zod.number().int().min(saveRatesBodyTaxYearMin).max(saveRatesBodyTaxYearMax),
   "federalRate": zod.string().regex(saveRatesBodyFederalRateRegExp),
   "federalSourceNote": zod.string().default(saveRatesBodyFederalSourceNoteDefault),
+  "niitRate": zod.string().regex(saveRatesBodyNiitRateRegExp).default(saveRatesBodyNiitRateDefault),
+  "niitSourceNote": zod.string().default(saveRatesBodyNiitSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(saveRatesBodyStatesItemStateCodeRegExp),
   "rate": zod.string().regex(saveRatesBodyStatesItemRateRegExp),
@@ -588,6 +601,9 @@ export const saveRatesResponseOneTaxYearMax = 9999;
 
 export const saveRatesResponseOneFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const saveRatesResponseOneFederalSourceNoteDefault = ``;
+export const saveRatesResponseOneNiitRateDefault = `0.0380`;
+export const saveRatesResponseOneNiitRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
+export const saveRatesResponseOneNiitSourceNoteDefault = ``;
 export const saveRatesResponseOneStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const saveRatesResponseOneStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const saveRatesResponseOneStatesItemSourceNoteDefault = ``;
@@ -597,6 +613,8 @@ export const SaveRatesResponse = zod.object({
   "taxYear": zod.number().int().min(saveRatesResponseOneTaxYearMin).max(saveRatesResponseOneTaxYearMax),
   "federalRate": zod.string().regex(saveRatesResponseOneFederalRateRegExp),
   "federalSourceNote": zod.string().default(saveRatesResponseOneFederalSourceNoteDefault),
+  "niitRate": zod.string().regex(saveRatesResponseOneNiitRateRegExp).default(saveRatesResponseOneNiitRateDefault),
+  "niitSourceNote": zod.string().default(saveRatesResponseOneNiitSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(saveRatesResponseOneStatesItemStateCodeRegExp),
   "rate": zod.string().regex(saveRatesResponseOneStatesItemRateRegExp),
@@ -629,6 +647,9 @@ export const copyRatesResponseOneTaxYearMax = 9999;
 
 export const copyRatesResponseOneFederalRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const copyRatesResponseOneFederalSourceNoteDefault = ``;
+export const copyRatesResponseOneNiitRateDefault = `0.0380`;
+export const copyRatesResponseOneNiitRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
+export const copyRatesResponseOneNiitSourceNoteDefault = ``;
 export const copyRatesResponseOneStatesItemStateCodeRegExp = new RegExp('^(NONE|[A-Z]{2})$');
 export const copyRatesResponseOneStatesItemRateRegExp = new RegExp('^(0\\.\\d{4}|1\\.0000)$');
 export const copyRatesResponseOneStatesItemSourceNoteDefault = ``;
@@ -638,6 +659,8 @@ export const CopyRatesResponse = zod.object({
   "taxYear": zod.number().int().min(copyRatesResponseOneTaxYearMin).max(copyRatesResponseOneTaxYearMax),
   "federalRate": zod.string().regex(copyRatesResponseOneFederalRateRegExp),
   "federalSourceNote": zod.string().default(copyRatesResponseOneFederalSourceNoteDefault),
+  "niitRate": zod.string().regex(copyRatesResponseOneNiitRateRegExp).default(copyRatesResponseOneNiitRateDefault),
+  "niitSourceNote": zod.string().default(copyRatesResponseOneNiitSourceNoteDefault),
   "states": zod.array(zod.object({
   "stateCode": zod.string().regex(copyRatesResponseOneStatesItemStateCodeRegExp),
   "rate": zod.string().regex(copyRatesResponseOneStatesItemRateRegExp),
@@ -856,6 +879,8 @@ export const OpenYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -870,6 +895,8 @@ export const OpenYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -893,6 +920,9 @@ export const OpenYearResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -1007,6 +1037,8 @@ export const ResetPracticeYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1021,6 +1053,8 @@ export const ResetPracticeYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1044,6 +1078,9 @@ export const ResetPracticeYearResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -1142,6 +1179,8 @@ export const GetYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1156,6 +1195,8 @@ export const GetYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1179,6 +1220,9 @@ export const GetYearResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -1299,6 +1343,8 @@ export const SaveYearFiguresResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1313,6 +1359,8 @@ export const SaveYearFiguresResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1336,6 +1384,9 @@ export const SaveYearFiguresResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -1450,6 +1501,8 @@ export const LinkFigureDocumentResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1464,6 +1517,8 @@ export const LinkFigureDocumentResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1487,6 +1542,9 @@ export const LinkFigureDocumentResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -1595,6 +1653,8 @@ export const DeclareYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1609,6 +1669,8 @@ export const DeclareYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1632,6 +1694,9 @@ export const DeclareYearResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -1739,6 +1804,8 @@ export const FinalizeYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1753,6 +1820,8 @@ export const FinalizeYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1776,6 +1845,9 @@ export const FinalizeYearResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -1889,6 +1961,8 @@ export const CorrectYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1903,6 +1977,8 @@ export const CorrectYearResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -1926,6 +2002,9 @@ export const CorrectYearResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -2042,6 +2121,8 @@ export const RecordPaymentResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -2056,6 +2137,8 @@ export const RecordPaymentResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -2079,6 +2162,9 @@ export const RecordPaymentResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -2190,6 +2276,8 @@ export const ReversePaymentResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -2204,6 +2292,8 @@ export const ReversePaymentResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -2227,6 +2317,9 @@ export const ReversePaymentResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),
@@ -2337,6 +2430,8 @@ export const SetYearHoldResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -2351,6 +2446,8 @@ export const SetYearHoldResponse = zod.object({
   "costTotalCents": zod.string(),
   "netProfitCents": zod.string(),
   "federalRate": zod.string(),
+  "niitRate": zod.string().optional(),
+  "niitIncludedInPool": zod.boolean().optional(),
   "highestState": zod.string().nullable(),
   "highestStateRate": zod.string().nullable(),
   "combinedRate": zod.string().nullable(),
@@ -2374,6 +2471,9 @@ export const SetYearHoldResponse = zod.object({
   "residenceConfirmed": zod.boolean(),
   "isUnsettled": zod.boolean(),
   "stateRate": zod.string().nullable(),
+  "subjectToNiit": zod.boolean().optional(),
+  "niitRate": zod.string().optional(),
+  "combinedRate": zod.string().nullish(),
   "nominalCents": zod.string().nullable(),
   "shareOfGainCents": zod.string().nullable(),
   "estimatedTaxCents": zod.string().nullable(),

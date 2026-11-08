@@ -13,6 +13,7 @@ export async function currentRates(database: RateDatabase, taxYear: number) {
   const original = base ? await database.select().from(stateRates).where(eq(stateRates.tableId, base.id)) : [];
   const codes = new Map(original.map((s) => [s.stateCode, { rate: s.rate, sourceNote: s.sourceNote }]));
   if (base) codes.set("FEDERAL", { rate: base.federalRate, sourceNote: base.federalSourceNote });
+  codes.set("NIIT", { rate: base?.niitRate ?? "0.0380", sourceNote: base?.niitSourceNote ?? "" });
   const revisions = await database.select({
     id: rateCodeRevisions.id, code: rateCodeRevisions.code, rate: rateCodeRevisions.rate, sourceNote: rateCodeRevisions.sourceNote,
   }).from(rateCodeRevisions).innerJoin(rateImports, eq(rateCodeRevisions.importId, rateImports.id))
@@ -25,7 +26,8 @@ export async function currentRates(database: RateDatabase, taxYear: number) {
     // distributions store their complete effective rate inputs, not this pointer.
     id: base?.id ?? -lastImport!.id, taxYear,
     federalRate: federal.rate, federalSourceNote: federal.sourceNote,
-    states: [...codes].filter(([code]) => code !== "FEDERAL").sort(([a], [b]) => a.localeCompare(b))
+    niitRate: codes.get("NIIT")!.rate, niitSourceNote: codes.get("NIIT")!.sourceNote,
+    states: [...codes].filter(([code]) => code !== "FEDERAL" && code !== "NIIT").sort(([a], [b]) => a.localeCompare(b))
       .map(([stateCode, value]) => ({ stateCode, ...value })),
     createdAt: lastImport?.createdAt ?? base!.createdAt,
     createdBy: lastImport?.createdBy ?? base!.createdBy,

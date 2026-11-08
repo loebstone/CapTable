@@ -10,6 +10,7 @@ export interface ResidenceInput {
   personId: string;
   /** @minimum 1 */
   expectedRevisionId?: number;
+  subjectToNiit?: boolean;
   /** @pattern ^(NONE|[A-Z]{2})$ */
   stateCode: string;
   confirmed: boolean;

@@ -38,6 +38,7 @@ export default function ResidencesPage() {
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   <th className="px-4 py-2.5 font-medium">Shareholder</th>
                   <th className="px-3 py-2.5 font-medium">State</th>
+                  <th className="px-3 py-2.5 font-medium">Subject to NIIT</th>
                   <th className="px-3 py-2.5 font-medium">Status</th>
                   <th className="px-3 py-2.5 font-medium">Confirmed</th>
                   <th className="px-3 py-2.5 font-medium">Note</th>
@@ -49,11 +50,12 @@ export default function ResidencesPage() {
                   <tr key={r.personId} className="transition-colors hover:bg-secondary/50" data-testid={`row-residence-${r.personId}`}>
                     <td className="px-4 py-2.5 font-medium">{r.displayName}</td>
                     <td className="num px-3 py-2.5">{r.stateCode ?? <span className="text-muted-foreground">missing</span>}</td>
+                    <td className="px-3 py-2.5">{r.subjectToNiit ? "Yes" : "No"}</td>
                     <td className="px-3 py-2.5">{r.confirmed ? <Tag tone="lichen">Confirmed</Tag> : <Tag tone="amber">Unconfirmed</Tag>}</td>
                     <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.confirmedBy ? `${r.confirmedBy}, ${fmtDate(r.confirmedAt)}` : "—"}</td>
                     <td className="max-w-xs truncate px-3 py-2.5 text-muted-foreground">{r.note}</td>
                     <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                      {!r.confirmed && r.stateCode && <Btn className="mr-2 py-1 text-xs" disabled={quick.isPending} onClick={() => quick.mutate({ data: { personId: r.personId, expectedRevisionId: r.id, stateCode: r.stateCode!, confirmed: true, note: r.note } })} data-testid={`button-confirm-residence-${r.personId}`}>{quick.isPending && quick.variables?.data.personId === r.personId ? "Confirming…" : "Confirm"}</Btn>}
+                      {!r.confirmed && r.stateCode && <Btn className="mr-2 py-1 text-xs" disabled={quick.isPending} onClick={() => quick.mutate({ data: { personId: r.personId, expectedRevisionId: r.id, stateCode: r.stateCode!, subjectToNiit: r.subjectToNiit, confirmed: true, note: r.note } })} data-testid={`button-confirm-residence-${r.personId}`}>{quick.isPending && quick.variables?.data.personId === r.personId ? "Confirming…" : "Confirm"}</Btn>}
                       <Btn variant="ghost" className="py-1 text-xs" onClick={() => setEditing(r)} data-testid={`button-edit-residence-${r.personId}`}>{r.confirmed ? "Correct" : "Review"}</Btn>
                     </td>
                   </tr>
@@ -77,6 +79,7 @@ function ResidenceForm({ r, onDone }: { r: Residence; onDone: () => void }) {
   const { toast } = useToast();
   const [state, setState] = useState(r.stateCode ?? "");
   const [confirmed, setConfirmed] = useState(true);
+  const [subjectToNiit, setSubjectToNiit] = useState(r.subjectToNiit);
   const [note, setNote] = useState(r.note);
   const save = useSaveResidence({
     mutation: {
@@ -93,13 +96,16 @@ function ResidenceForm({ r, onDone }: { r: Residence; onDone: () => void }) {
   const valid = STATE_RE.test(code);
 
   return (
-    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) save.mutate({ data: { personId: r.personId, expectedRevisionId: r.id, stateCode: code, confirmed, note: note.trim() } }); }}>
+    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) save.mutate({ data: { personId: r.personId, expectedRevisionId: r.id, stateCode: code, subjectToNiit, confirmed, note: note.trim() } }); }}>
       <DialogHeader>
         <DialogTitle className="font-display text-2xl font-normal">{r.displayName}</DialogTitle>
         <DialogDescription>Currently {r.stateCode ?? "missing"}{r.confirmed ? ", confirmed" : ", not confirmed"}.</DialogDescription>
       </DialogHeader>
       <Field label="State of tax residence" hint="e.g. OR, WA. Use NONE when no state income tax applies." error={stateErr}>
         <input className={inputCls + " num uppercase"} maxLength={4} value={state} onChange={(e) => setState(e.target.value.toUpperCase())} placeholder="—" data-testid="input-state-code" />
+      </Field>
+      <Field label="Subject to NIIT">
+        <select className={inputCls} value={subjectToNiit ? "yes" : "no"} onChange={(e) => setSubjectToNiit(e.target.value === "yes")} data-testid="select-subject-to-niit"><option value="yes">Yes</option><option value="no">No</option></select>
       </Field>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="h-4 w-4 accent-[hsl(var(--primary))]" data-testid="checkbox-confirmed" />

@@ -1261,6 +1261,8 @@ components:
         costTotalCents: {type: string}
         netProfitCents: {type: string}
         federalRate: {type: string}
+        niitRate: {type: string}
+        niitIncludedInPool: {type: boolean}
         highestState: {type: [string, "null"]}
         highestStateRate: {type: [string, "null"]}
         combinedRate: {type: [string, "null"]}
@@ -1281,6 +1283,9 @@ components:
         residenceConfirmed: {type: boolean}
         isUnsettled: {type: boolean}
         stateRate: {type: [string, "null"]}
+        subjectToNiit: {type: boolean}
+        niitRate: {type: string}
+        combinedRate: {type: [string, "null"]}
         nominalCents: {type: [string, "null"]}
         shareOfGainCents: {type: [string, "null"]}
         estimatedTaxCents: {type: [string, "null"]}
@@ -1458,6 +1463,7 @@ components:
       properties:
         personId: {type: string}
         expectedRevisionId: {type: integer, minimum: 1}
+        subjectToNiit: {type: boolean}
         stateCode: {type: string, pattern: '^(NONE|[A-Z]{2})$'}
         confirmed: {type: boolean}
         note: {type: string, maxLength: 5000}
@@ -1496,12 +1502,13 @@ components:
           items: {$ref: "#/components/schemas/ResidenceSkipped"}
     Residence:
       type: object
-      required: [id, personId, displayName, stateCode, confirmed, confirmedBy, confirmedAt, note]
+      required: [id, personId, displayName, stateCode, subjectToNiit, confirmed, confirmedBy, confirmedAt, note]
       properties:
         id: {type: integer}
         personId: {type: string}
         displayName: {type: string}
         stateCode: {type: [string, "null"]}
+        subjectToNiit: {type: boolean}
         confirmed: {type: boolean}
         confirmedBy: {type: [string, "null"]}
         confirmedAt: {type: [string, "null"]}
@@ -1520,6 +1527,8 @@ components:
         taxYear: {type: integer, minimum: 1900, maximum: 9999}
         federalRate: {type: string, pattern: '^(0\.\d{4}|1\.0000)$'}
         federalSourceNote: {type: string, default: ""}
+        niitRate: {type: string, pattern: '^(0\.\d{4}|1\.0000)$', default: "0.0380"}
+        niitSourceNote: {type: string, default: ""}
         states: {type: array, items: {$ref: "#/components/schemas/StateRate"}}
         note: {type: string, default: ""}
     RateCopyInput:

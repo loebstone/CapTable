@@ -4,7 +4,7 @@ import { stringify } from "csv-stringify/sync";
 import { HttpError } from "./errors";
 import type { currentRates } from "./rate-data";
 
-const CODES = new Set(("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC AS GU MP PR VI NONE FEDERAL").split(" "));
+const CODES = new Set(("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC AS GU MP PR VI NONE FEDERAL NIIT").split(" "));
 type Table = Awaited<ReturnType<typeof currentRates>>;
 export type CsvRate = { line: number; code: string; rate: string; sourceNote: string };
 
@@ -42,7 +42,7 @@ export function parseRateCsv(filename: string, csv: string): CsvRate[] {
     const line = info.lines;
     if (record.length !== 3) { errors.push(`Line ${line}: expected exactly three columns`); continue; }
     const code = record[header.indexOf("code")].trim(), sourceNote = record[header.indexOf("source_note")];
-    if (!CODES.has(code)) errors.push(`Line ${line}: bad code "${code}"; use FEDERAL, NONE, or a valid US state/territory code`);
+    if (!CODES.has(code)) errors.push(`Line ${line}: bad code "${code}"; use FEDERAL, NIIT, NONE, or a valid US state/territory code`);
     if (seen.has(code)) errors.push(`Line ${line}: duplicate code "${code}"`);
     seen.add(code);
     try {
@@ -59,6 +59,7 @@ export function parseRateCsv(filename: string, csv: string): CsvRate[] {
 export function previewRows(rows: CsvRate[], current: Table) {
   const previous = new Map(current?.states.map((r) => [r.stateCode, { rate: r.rate, sourceNote: r.sourceNote }]) ?? []);
   if (current) previous.set("FEDERAL", { rate: current.federalRate, sourceNote: current.federalSourceNote });
+  if (current) previous.set("NIIT", { rate: current.niitRate, sourceNote: current.niitSourceNote });
   if (!current && !rows.some((r) => r.code === "FEDERAL")) throw new HttpError(400, "FEDERAL is required when importing a new tax year");
   return rows.map((row) => {
     const old = previous.get(row.code);
@@ -92,6 +93,7 @@ export function ratesCsv(table: NonNullable<Table>) {
   return stringify([
     ["code", "rate", "source_note"],
     ["FEDERAL", table.federalRate, table.federalSourceNote],
+    ["NIIT", table.niitRate, table.niitSourceNote],
     ...table.states.map((s) => [s.stateCode, s.rate, s.sourceNote]),
   ], { record_delimiter: "\r\n" });
 }

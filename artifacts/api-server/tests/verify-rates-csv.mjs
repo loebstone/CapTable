@@ -61,10 +61,10 @@ try {
   assert.equal(exported.status, 200); assert.match(exported.headers["content-disposition"], /HWD_Rates_2040\.csv/);
   const roundtripInput = { ...input, filename: "roundtrip.csv", csv: exported.text };
   const rt = await preview(roundtripInput);
-  assert.equal(rt.unchangedCount, 4);
+  assert.equal(rt.unchangedCount, 5);
   await confirm(roundtripInput, rt);
   assert.deepEqual(await counts(), after);
-  record("Export round-trip", { exportedRows: 4, matchingRatesAndNotes: true, unchanged: 4, writesOnReimport: 0 });
+  record("Export round-trip", { exportedRows: 5, matchingRatesAndNotes: true, unchanged: 5, writesOnReimport: 0, includesDefaultNIIT: true });
   const copied = expect(await call("post", "/api/rates/copy", cookie, { fromYear: taxYear, toYear: 2041, note: "STUB copy imported year" }), 201);
   assert.equal(copied.federalRate, "0.1500"); assert.equal(copied.states.find((r) => r.stateCode === "GA").rate, "0.0499");
   const { currentYearRates } = await import("../src/lib/distribution-years.ts");
@@ -85,7 +85,7 @@ try {
   assert.equal(table.states.find((r) => r.stateCode === "CA").rate, "0.1330");
   assert.equal(table.states.find((r) => r.stateCode === "NONE").rate, "0.0000");
   const quotedExport = await call("get", `/api/rates/${taxYear}/csv`, cookie);
-  assert.equal((await preview({ ...input, csv: quotedExport.text })).unchangedCount, 4);
+  assert.equal((await preview({ ...input, csv: quotedExport.text })).unchangedCount, 5);
   record("Changed-only, omitted codes, quoted commas/newlines", { revisions: 1, audits: 2, unchangedSkipped: 1, omittedCAandNONEPreserved: true, quotedNoteRoundTrips: true });
   const stale = await preview(input);
   const alter = { ...input, csv: "code,rate,source_note\nGA,0.06,new source\n" };

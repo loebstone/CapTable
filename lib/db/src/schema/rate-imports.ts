@@ -24,5 +24,5 @@ export const rateCodeRevisions = pgTable("rate_code_revisions", {
   unique("rate_code_import_unique").on(t.importId, t.code),
   check("import_rate_range", sql`${t.rate} BETWEEN 0 AND 1`),
   check("import_rate_none_zero", sql`${t.code} <> 'NONE' OR ${t.rate} = 0`),
-  check("import_rate_code", sql`${t.code} ~ '^(FEDERAL|NONE|[A-Z]{2})$'`),
+  check("import_rate_code_niit", sql`${t.code} ~ '^(FEDERAL|NIIT|NONE|[A-Z]{2})$'`),
 ]);

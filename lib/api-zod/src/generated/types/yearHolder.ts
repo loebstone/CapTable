@@ -19,6 +19,10 @@ export interface YearHolder {
   isUnsettled: boolean;
   /** @nullable */
   stateRate: string | null;
+  subjectToNiit?: boolean;
+  niitRate?: string;
+  /** @nullable */
+  combinedRate?: string | null;
   /** @nullable */
   nominalCents: string | null;
   /** @nullable */

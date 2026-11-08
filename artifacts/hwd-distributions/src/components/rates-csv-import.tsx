@@ -27,7 +27,7 @@ export function RatesCsvImport({ initialYear, onDone }: { initialYear?: number; 
         </DialogDescription>
       </DialogHeader>
       <p className="text-xs text-muted-foreground">
-        Header: <code>code,rate,source_note</code>. Codes: FEDERAL, a US state/territory, or NONE.
+        Header: <code>code,rate,source_note</code>. Codes: FEDERAL, NIIT, a US state/territory, or NONE.
         Use decimal fractions (0.0499) or percentages (4.99%). Rates are stored to four decimal places. Maximum 64 KB.
       </p>
       <Field label="Tax year">

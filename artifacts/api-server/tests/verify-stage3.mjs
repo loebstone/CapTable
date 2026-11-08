@@ -12,12 +12,12 @@ import { stage2Harness } from "./stage2-harness.mjs";
 import { finalizedFixture } from "./stage3-fixture.mjs";
 import { boardHtml } from "../src/lib/reports/templates.ts";
 import { reportContext } from "../src/lib/reports/context.ts";
-import { dollars } from "../src/lib/reports/format.ts";
+import { dollars, TAX_CAVEAT } from "../src/lib/reports/format.ts";
 import { fmtCents } from "../../hwd-distributions/src/lib/money.ts";
 
 const h = await stage2Harness();
 const { client, call, expect, record, results } = h;
-const caveat = "This is an estimate at the highest rates the Corporation plans on. Your own return may differ, and the Corporation does not give tax advice.";
+const caveat = TAX_CAVEAT;
 const normalized = (text) => text.replace(/\s+/g, " ").trim();
 async function inspectPdf(buffer) {
   const task = getDocument({ data: new Uint8Array(buffer), useSystemFonts: true });

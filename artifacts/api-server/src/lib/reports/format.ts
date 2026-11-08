@@ -1,5 +1,6 @@
 export const ISSUER = "Horace W. Davis Realty Corp.";
-export const TAX_CAVEAT = "This is an estimate at the highest rates the Corporation plans on. Your own return may differ, and the Corporation does not give tax advice.";
+export const LEGACY_TAX_CAVEAT = "This is an estimate at the highest rates the Corporation plans on. Your own return may differ, and the Corporation does not give tax advice.";
+export const TAX_CAVEAT = "These are estimates at the rates shown. Your own tax depends on your filing status, your income and your state's brackets; California, for example, taxes gains at its ordinary-income rates, and the federal net investment income tax applies only above an income threshold. Your return may differ.";
 export function html(value: unknown) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 }

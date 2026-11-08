@@ -47,7 +47,7 @@ export async function requireDocument(database: Database, yearId: number, docume
 export async function currentYearRates(database: Database, calendarYear: number) {
   const row = await currentRates(database, calendarYear);
   if (!row) throw new HttpError(409, `No rate table exists for ${calendarYear}. Enter rates or copy a prior year on Annual rates before opening this year.`);
-  return { id: row.id, federalRate: row.federalRate, states: row.states };
+  return { id: row.id, federalRate: row.federalRate, niitRate: row.niitRate, niitIncludedInPool: false, states: row.states };
 }
 export async function draftInputs(database: Database, id: number): Promise<FrozenYearInputs> {
   const year = await requireYear(database, id);
@@ -62,7 +62,7 @@ export async function draftInputs(database: Database, id: number): Promise<Froze
     rows: rows.map(({ personId, displayName, shareClass, shares, isUnsettled, note, addressState }) => ({ personId, displayName, shareClass, shares, isUnsettled, note, addressState })),
     residences: [...new Set(rows.map((r) => r.personId))].map((personId) => {
       const residence = currentResidences.find((r) => r.personId === personId);
-      return { personId, stateCode: residence?.stateCode ?? null, confirmed: residence?.confirmed ?? false, revisionId: residence?.id ?? null };
+      return { personId, stateCode: residence?.stateCode ?? null, confirmed: residence?.confirmed ?? false, revisionId: residence?.id ?? null, subjectToNiit: residence?.subjectToNiit ?? false };
     }),
     rates: await currentYearRates(database, year.calendarYear),
     figures: figures ? {

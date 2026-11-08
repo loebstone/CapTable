@@ -11,6 +11,8 @@ export interface YearCalculation {
   costTotalCents: string;
   netProfitCents: string;
   federalRate: string;
+  niitRate?: string;
+  niitIncludedInPool?: boolean;
   /** @nullable */
   highestState: string | null;
   /** @nullable */

@@ -12,6 +12,7 @@ export interface Residence {
   displayName: string;
   /** @nullable */
   stateCode: string | null;
+  subjectToNiit: boolean;
   confirmed: boolean;
   /** @nullable */
   confirmedBy: string | null;

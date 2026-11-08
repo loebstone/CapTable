@@ -38,6 +38,11 @@ export function calculateYear(input: FrozenYearInputs, entries: Entry[] = [], ho
   const residenceMap = new Map(input.residences.map((r) => [r.personId, r]));
   const rateMap = new Map(input.rates.states.map((s) => [s.stateCode, s.rate]));
   const federal = rateUnits(input.rates.federalRate);
+  const explicitNiit = input.rates.niitRate !== undefined;
+  const niit = explicitNiit ? rateUnits(input.rates.niitRate!) : 0n;
+  // New drafts explicitly exclude NIIT. Missing policy on an older NIIT frozen
+  // record preserves the original inclusive formula; never inject new policy.
+  const niitIncludedInPool = input.rates.niitIncludedInPool ?? explicitNiit;
   const figures = input.figures;
   const gross = figures ? BigInt(figures.grossCents) : 0n;
   const costs = figures ? figures.costs.reduce((sum, c) => sum + BigInt(c.amountCents), 0n) : 0n;
@@ -71,7 +76,10 @@ export function calculateYear(input: FrozenYearInputs, entries: Entry[] = [], ho
     const nominal = declared === null ? null : rounded(declared * person.shares, 10000n);
     // Tax uses exact (unrounded) gain; only displayed gain and final tax round to cents.
     const gain = figures ? rounded(net * person.shares, 4000000n) : null;
-    const tax = figures && stateRate !== null ? rounded(net * person.shares * (federal + rateUnits(stateRate)), 4000000n * 10000n) : null;
+    const subjectToNiit = residence?.subjectToNiit ?? (explicitNiit && input.rates.niitIncludedInPool === undefined);
+    const holderNiit = subjectToNiit ? niit : 0n;
+    const holderCombined = stateRate === null ? null : federal + holderNiit + rateUnits(stateRate);
+    const tax = figures && holderCombined !== null ? rounded(net * person.shares * holderCombined, 4000000n * 10000n) : null;
     const personEntries = entries.filter((e) => e.personId === person.personId);
     const paid = personEntries.filter((e) => e.kind === "cash").reduce((sum, e) => sum + e.amountCents, 0n);
     const retained = personEntries.filter((e) => e.kind === "apic").reduce((sum, e) => sum + e.amountCents, 0n);
@@ -83,6 +91,7 @@ export function calculateYear(input: FrozenYearInputs, entries: Entry[] = [], ho
       personId: person.personId, displayName: person.displayName, shareClass: person.shareClass,
       shares: units4(person.shares), stateCode: state, residenceConfirmed: !!residence?.confirmed,
       isUnsettled: person.isUnsettled, stateRate,
+      ...(explicitNiit ? { subjectToNiit, niitRate: units4(holderNiit), combinedRate: holderCombined === null ? null : units4(holderCombined) } : {}),
       nominalCents: nominal?.toString() ?? null, shareOfGainCents: gain?.toString() ?? null,
       estimatedTaxCents: tax?.toString() ?? null,
       surplusCents: nominal !== null && tax !== null ? (nominal - tax).toString() : null,
@@ -91,12 +100,14 @@ export function calculateYear(input: FrozenYearInputs, entries: Entry[] = [], ho
       holdNote: hold?.note ?? (person.isUnsettled ? "Unsettled in the frozen holdings snapshot" : null),
     };
   });
-  const combined: bigint | null = missingRate || highestRate === null ? null : federal + highestRate;
+  const combined: bigint | null = missingRate || highestRate === null ? null : federal + (niitIncludedInPool ? niit : 0n) + highestRate;
   const sumNominal = holders.reduce((sum, h) => sum + BigInt(h.nominalCents ?? "0"), 0n);
   const expected = declared === null ? null : declared * 400n;
   const calculation = figures ? {
     grossCents: gross.toString(), costTotalCents: costs.toString(), netProfitCents: net.toString(),
     federalRate: input.rates.federalRate,
+    ...(explicitNiit ? { niitRate: input.rates.niitRate! } : {}),
+    ...(input.rates.niitIncludedInPool === undefined ? {} : { niitIncludedInPool }),
     highestState: missingRate ? null : highestState,
     highestStateRate: missingRate || highestRate === null ? null : units4(highestRate),
     combinedRate: combined === null ? null : units4(combined),

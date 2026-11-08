@@ -157,7 +157,8 @@ function WorkedTable({ c, declared, date, muted }: { c: YearCalculation; declare
           <Row label="Gross timber income" value={fmtCents(c.grossCents)} test="text-gross" />
           <Row op="−" label="Costs" value={fmtCents(c.costTotalCents)} test="text-costs" />
           <Row op="=" label="Net profit" value={fmtCents(c.netProfitCents)} strong test="text-net-profit" />
-          <Row label="Federal rate" value={rate(c.federalRate)} />
+          <Row label="Federal LTCG rate" value={rate(c.federalRate)} />
+          {c.niitRate !== undefined && <Row op={c.niitIncludedInPool === false ? undefined : "+"} label={c.niitIncludedInPool === false ? "Federal NIIT — not included in the pool (board policy)" : "NIIT rate"} value={rate(c.niitRate)} />}
           <Row op="+" label={<>Highest state rate {c.highestState && <span className="num ml-1 rounded bg-secondary px-1 text-xs">{c.highestState}</span>}</>} value={rate(c.highestStateRate)} />
           <Row op="=" label="Combined rate" value={rate(c.combinedRate)} strong />
           <Row op="×" label="Distribution pool (net × combined)" value={fmtCents(c.poolCents)} test="text-pool" />
@@ -341,7 +342,7 @@ function Holders({ y, onAction }: { y: YearDetail; onAction: (m: Modal) => void 
                     {h.holdNote && <div className="max-w-[200px] text-[11px] text-muted-foreground">Instruction note: {h.holdNote}</div>}
                   </td>
                   <td className="num px-2 py-2">{h.shareClass}</td>
-                  <td className="num px-2 py-2">{h.stateCode ?? "—"}{!h.residenceConfirmed && <span className="ml-1 text-[10px] text-primary">unconf.</span>}{h.stateRate && <div className="text-[10px] text-muted-foreground">{h.stateRate}</div>}</td>
+                  <td className="num px-2 py-2">{h.stateCode ?? "—"}{!h.residenceConfirmed && <span className="ml-1 text-[10px] text-primary">unconf.</span>}{h.combinedRate ? <div className="text-[10px] text-muted-foreground">Combined {ratePct(h.combinedRate)}</div> : h.stateRate && <div className="text-[10px] text-muted-foreground">{h.stateRate}</div>}</td>
                   <td className="num px-2 py-2 text-right">{formatShares(h.shares)}</td>
                   <td className="num px-2 py-2 text-right">{fmtCents(h.shareOfGainCents)}</td>
                   <td className="num px-2 py-2 text-right font-medium" data-testid={`text-distribution-${h.personId}`}>{fmtCents(h.nominalCents)}</td>

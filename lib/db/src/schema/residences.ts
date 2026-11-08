@@ -7,6 +7,7 @@ export const residences = pgTable("tax_residences", {
   personId: text("person_id").notNull(),
   displayName: text("display_name").notNull(),
   stateCode: text("state_code"),
+  subjectToNiit: boolean("subject_to_niit").notNull().default(false),
   confirmed: boolean("confirmed").notNull(),
   confirmedBy: text("confirmed_by"),
   confirmedAt: timestamp("confirmed_at", { withTimezone: true, mode: "string" }),

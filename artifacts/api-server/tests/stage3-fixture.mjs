@@ -9,7 +9,7 @@ export async function finalizedFixture(h, { isPractice = false } = {}) {
   const snapshot = expect(await call("post", "/api/snapshots", cookie, { fetchId: fetched.id, note: "STUB Stage 3 verification: exact supplied fixture" }), 201);
   const values = { CA: "0.1330", CO: "0.0440", CT: "0.0699", FL: "0.0000", GA: "0.0539", HI: "0.0725", MA: "0.0500", ME: "0.0715", MO: "0.0470", VA: "0.0575", WY: "0.0000", NONE: "0.0000" };
   expect(await call("post", "/api/rates", cookie, {
-    taxYear: 2026, federalRate: "0.1500", federalSourceNote: "STUB Stage 3 test source",
+    taxYear: 2026, federalRate: "0.1500", federalSourceNote: "STUB Stage 3 test source", niitRate: "0.0000",
     states: Object.entries(values).map(([stateCode, rate]) => ({ stateCode, rate, sourceNote: "STUB Stage 3 test source" })),
     note: "STUB test rates only, not tax advice",
   }), 201);

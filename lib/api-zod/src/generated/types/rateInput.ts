@@ -16,6 +16,9 @@ export interface RateInput {
   /** @pattern ^(0\.\d{4}|1\.0000)$ */
   federalRate: string;
   federalSourceNote?: string;
+  /** @pattern ^(0\.\d{4}|1\.0000)$ */
+  niitRate?: string;
+  niitSourceNote?: string;
   states: StateRate[];
   note?: string;
 }

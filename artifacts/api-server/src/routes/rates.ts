@@ -16,7 +16,7 @@ async function fullTable(row: typeof rateTables.$inferSelect, database: Tx | typ
   const states = await database.select({
     stateCode: stateRates.stateCode, rate: stateRates.rate, sourceNote: stateRates.sourceNote,
   }).from(stateRates).where(eq(stateRates.tableId, row.id)).orderBy(stateRates.stateCode);
-  return { ...row, states };
+  return { ...row, niitRate: row.niitRate ?? "0.0380", states };
 }
 async function appendRates(tx: Tx, actor: string, data: RateData) {
   if (new Set(data.states.map((s) => s.stateCode)).size !== data.states.length) throw new HttpError(400, "Use only one row per state code");
@@ -50,6 +50,7 @@ router.post("/rates/copy", async (req, res): Promise<void> => {
     const full = previous;
     return appendRates(tx, actor, {
       taxYear: data.toYear, federalRate: full.federalRate, federalSourceNote: full.federalSourceNote,
+      niitRate: full.niitRate, niitSourceNote: full.niitSourceNote,
       states: full.states, note: data.note,
     });
   });

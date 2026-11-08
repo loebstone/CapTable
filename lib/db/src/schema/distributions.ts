@@ -67,8 +67,10 @@ export type FrozenYearInputs = {
   snapshotId: number;
   snapshotAsOf: string;
   rows: StoredHolding[];
-  residences: { personId: string; stateCode: string | null; confirmed: boolean; revisionId: number | null }[];
-  rates: { id: number; federalRate: string; states: { stateCode: string; rate: string; sourceNote: string }[] };
+  residences: { personId: string; stateCode: string | null; confirmed: boolean; revisionId: number | null; subjectToNiit?: boolean }[];
+  // Absence of niitRate identifies pre-NIIT frozen inputs: retain their exact
+  // arithmetic and report wording, never substitute today's default into them.
+  rates: { id: number; federalRate: string; niitRate?: string; niitIncludedInPool?: boolean; states: { stateCode: string; rate: string; sourceNote: string }[] };
   figures: { grossCents: string; grossDocumentId: number | null; costs: { label: string; amountCents: string; documentId: number | null }[]; note: string } | null;
   declaration: { declaredPerShareCents: string; declarationDate: string } | null;
 };

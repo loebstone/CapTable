@@ -27,7 +27,7 @@ export default function RatesPage() {
           <Btn onClick={() => setMode({ kind: "edit", base: null })} data-testid="button-new-rates"><Plus className="h-4 w-4" /> New year</Btn>
         </>}
       >
-        Rates are entered as decimal fractions with four places: 0.1500 means 15%. Nothing is filled in for you; each rate needs its source.
+        Rates are entered as decimal fractions with four places: 0.1500 means 15%. NIIT starts at 3.8%; review the rates and their sources for each year.
       </PageHeader>
 
       {q.isLoading ? <SkeletonRows /> : q.isError ? <ErrorPanel error={q.error} onRetry={() => q.refetch()} /> : list.length === 0 ? (
@@ -47,7 +47,9 @@ export default function RatesPage() {
               </div>
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-border">
-                  <RateRow label="Federal" rate={t.federalRate} source={t.federalSourceNote ?? ""} />
+                  <RateRow label="Federal long-term capital gains" rate={t.federalRate} source={t.federalSourceNote ?? ""} />
+                  <RateRow label="Federal net investment income tax (NIIT)" rate={t.niitRate ?? "0.0380"} source={t.niitSourceNote ?? ""} />
+                  <tr><td colSpan={4} className="px-4 py-2 text-xs text-muted-foreground">Applies to shareholders above the federal threshold (about $200,000 single / $250,000 joint MAGI, not indexed). Not included in the distribution pool; used only for shareholders flagged as subject to it.</td></tr>
                   {t.states.map((s) => <RateRow key={s.stateCode} label={s.stateCode} rate={s.rate} source={s.sourceNote ?? ""} />)}
                 </tbody>
               </table>
@@ -83,6 +85,7 @@ function useRateInvalidate() {
   return () => {
     qc.invalidateQueries({ queryKey: getListRatesQueryKey() });
     qc.invalidateQueries({ queryKey: getListAuditQueryKey() });
+    qc.invalidateQueries({ predicate: (q) => typeof q.queryKey[0] === "string" && q.queryKey[0].startsWith("/api/years/") });
   };
 }
 
@@ -92,6 +95,8 @@ function RateForm({ base, onDone }: { base: RateTable | null; onDone: () => void
   const [year, setYear] = useState(base ? String(base.taxYear) : "");
   const [fed, setFed] = useState(base?.federalRate ?? "");
   const [fedSrc, setFedSrc] = useState(base?.federalSourceNote ?? "");
+  const [niit, setNiit] = useState(base?.niitRate ?? "0.0380");
+  const [niitSrc, setNiitSrc] = useState(base?.niitSourceNote ?? "");
   const [states, setStates] = useState<StateRate[]>(base?.states.map((s) => ({ ...s })) ?? []);
   const [note, setNote] = useState("");
   const save = useSaveRates({ mutation: { onSuccess: (t) => { inval(); toast({ title: `${t.taxYear} rates saved` }); onDone(); } } });
@@ -101,13 +106,13 @@ function RateForm({ base, onDone }: { base: RateTable | null; onDone: () => void
   const stateErr = (s: StateRate) =>
     !STATE_RE.test(s.stateCode) ? "State code" : !RATE_RE.test(s.rate) ? "Rate format 0.0000" : s.stateCode === "NONE" && s.rate !== "0.0000" ? "NONE must be 0.0000" : null;
   const dupe = new Set(states.map((s) => s.stateCode)).size !== states.length;
-  const valid = yearOk && RATE_RE.test(fed) && !dupe && states.every((s) => !stateErr(s));
+  const valid = yearOk && RATE_RE.test(fed) && RATE_RE.test(niit) && !dupe && states.every((s) => !stateErr(s));
   const upd = (i: number, p: Partial<StateRate>) => setStates((xs) => xs.map((x, j) => (j === i ? { ...x, ...p } : x)));
 
   return (
     <form className="space-y-5" onSubmit={(e) => {
       e.preventDefault();
-      if (valid) save.mutate({ data: { taxYear: y, federalRate: fed, federalSourceNote: fedSrc.trim(), states: states.map((s) => ({ ...s, sourceNote: s.sourceNote?.trim() ?? "" })), note: note.trim() } });
+      if (valid) save.mutate({ data: { taxYear: y, federalRate: fed, federalSourceNote: fedSrc.trim(), niitRate: niit, niitSourceNote: niitSrc.trim(), states: states.map((s) => ({ ...s, sourceNote: s.sourceNote?.trim() ?? "" })), note: note.trim() } });
     }}>
       <DialogHeader>
         <DialogTitle className="font-display text-2xl font-normal">{base ? `Correct ${base.taxYear} rates` : "New tax year"}</DialogTitle>
@@ -115,11 +120,16 @@ function RateForm({ base, onDone }: { base: RateTable | null; onDone: () => void
       </DialogHeader>
       <div className="grid gap-3 sm:grid-cols-[110px_130px_1fr]">
         <Field label="Tax year" hint={base ? "The year is fixed when revising its rates." : undefined}><input className={inputCls + " num"} value={year} disabled={!!base} onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))} maxLength={4} data-testid="input-tax-year" /></Field>
-        <Field label="Federal rate" hint={ratePct(fed) ?? undefined} error={fed && !RATE_RE.test(fed) ? "Format 0.0000" : null}>
+        <Field label="Federal LTCG rate" hint={ratePct(fed) ?? undefined} error={fed && !RATE_RE.test(fed) ? "Format 0.0000" : null}>
           <input className={inputCls + " num"} value={fed} onChange={(e) => setFed(e.target.value.trim())} placeholder="0.0000" data-testid="input-federal-rate" />
         </Field>
         <Field label="Federal source (optional)"><input className={inputCls} value={fedSrc} onChange={(e) => setFedSrc(e.target.value)} placeholder="Where this rate comes from (optional)" data-testid="input-federal-source" /></Field>
       </div>
+
+      <Field label="Federal net investment income tax (NIIT)" hint="Applies to shareholders above the federal threshold (about $200,000 single / $250,000 joint MAGI, not indexed). Not included in the distribution pool; used only for shareholders flagged as subject to it.">
+        <input className={inputCls + " num"} value={niit} onChange={(e) => setNiit(e.target.value.trim())} data-testid="input-niit-rate" />
+      </Field>
+      <Field label="NIIT source (optional)"><input className={inputCls} value={niitSrc} onChange={(e) => setNiitSrc(e.target.value)} data-testid="input-niit-source" /></Field>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">

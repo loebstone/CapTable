@@ -23,6 +23,7 @@ router.post("/residences", async (req, res): Promise<void> => {
     if (expectedRevisionId !== undefined && expectedRevisionId !== previous.id) throw new HttpError(409, "Residence changed since it was displayed. Review the current state before confirming.");
     return append(tx, actor, residences, {
       ...fields, note: data.note ?? "", displayName: previous.displayName,
+      subjectToNiit: data.subjectToNiit ?? previous.subjectToNiit,
       confirmedBy: data.confirmed ? actor : null,
       confirmedAt: data.confirmed ? new Date().toISOString() : null,
     });
@@ -45,8 +46,9 @@ router.post("/residences/confirm-all", async (req, res): Promise<void> => {
       counts.set(r.stateCode!, (counts.get(r.stateCode!) ?? 0) + 1);
       await append(tx, actor, residences, {
         personId: r.personId, displayName: r.displayName, stateCode: r.stateCode,
+        subjectToNiit: r.subjectToNiit,
         confirmed: true, confirmedBy: actor, confirmedAt, note: r.note,
-      }, JSON.stringify({ action: "RESIDENCE_CONFIRMED", batchId, stateCode: r.stateCode, personId: r.personId, confirmedAt }));
+      }, JSON.stringify({ action: "RESIDENCE_CONFIRMED", batchId, stateCode: r.stateCode, subjectToNiit: r.subjectToNiit, personId: r.personId, confirmedAt }));
     }
     const output = {
       confirmedCount: eligible.length, confirmedBy: actor, confirmedAt,

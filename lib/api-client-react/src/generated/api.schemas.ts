@@ -469,6 +469,8 @@ export interface YearCalculation {
   costTotalCents: string;
   netProfitCents: string;
   federalRate: string;
+  niitRate?: string;
+  niitIncludedInPool?: boolean;
   /** @nullable */
   highestState: string | null;
   /** @nullable */
@@ -516,6 +518,10 @@ export interface YearHolder {
   isUnsettled: boolean;
   /** @nullable */
   stateRate: string | null;
+  subjectToNiit?: boolean;
+  niitRate?: string;
+  /** @nullable */
+  combinedRate?: string | null;
   /** @nullable */
   nominalCents: string | null;
   /** @nullable */
@@ -720,6 +726,7 @@ export interface ResidenceInput {
   personId: string;
   /** @minimum 1 */
   expectedRevisionId?: number;
+  subjectToNiit?: boolean;
   /** @pattern ^(NONE|[A-Z]{2})$ */
   stateCode: string;
   confirmed: boolean;
@@ -759,6 +766,7 @@ export interface Residence {
   displayName: string;
   /** @nullable */
   stateCode: string | null;
+  subjectToNiit: boolean;
   confirmed: boolean;
   /** @nullable */
   confirmedBy: string | null;
@@ -784,6 +792,9 @@ export interface RateInput {
   /** @pattern ^(0\.\d{4}|1\.0000)$ */
   federalRate: string;
   federalSourceNote?: string;
+  /** @pattern ^(0\.\d{4}|1\.0000)$ */
+  niitRate?: string;
+  niitSourceNote?: string;
   states: StateRate[];
   note?: string;
 }

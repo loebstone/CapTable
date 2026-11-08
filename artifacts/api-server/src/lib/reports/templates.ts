@@ -1,6 +1,6 @@
 import type { ReportContext, ReportHolder } from "./context";
 import { formatShares } from "@workspace/display";
-import { dollars, html, percent, dateLabel, ISSUER, TAX_CAVEAT } from "./format";
+import { dollars, html, percent, dateLabel, ISSUER, TAX_CAVEAT, LEGACY_TAX_CAVEAT } from "./format";
 import { rateUnits, rounded } from "../distribution-math";
 import { shareUnits } from "../roster";
 
@@ -41,7 +41,9 @@ export function statementHtml(context: ReportContext, holder: ReportHolder) {
   const denominator = 4000000n * 10000n;
   const federal = numerator === null || !c ? null : rounded(numerator * rateUnits(c.federalRate), denominator);
   const state = numerator === null || holder.stateRate === null ? null : rounded(numerator * rateUnits(holder.stateRate), denominator);
-  const rounding = holder.estimatedTaxCents === null || federal === null || state === null ? null : BigInt(holder.estimatedTaxCents) - federal - state;
+  const explicitNiit = c === null || c.niitRate !== undefined;
+  const niit = numerator === null ? null : rounded(numerator * rateUnits(holder.niitRate ?? "0.0000"), denominator);
+  const rounding = holder.estimatedTaxCents === null || federal === null || state === null ? null : BigInt(holder.estimatedTaxCents) - federal - state - (niit ?? 0n);
   const proposedPerShare = c?.proposedPerShareCents ?? null;
   const proposedDistribution = proposedPerShare === null ? null : rounded(BigInt(proposedPerShare) * shareUnits(holder.shares), 10000n);
   const proposedSurplus = proposedDistribution === null || holder.estimatedTaxCents === null ? null : proposedDistribution - BigInt(holder.estimatedTaxCents);
@@ -66,14 +68,14 @@ export function statementHtml(context: ReportContext, holder: ReportHolder) {
     ${valueRow("Allocated profit (your share of the net profit)", dollars(holder.shareOfGainCents))}
     ${valueRow("Distribution", undeclared ? "not yet set" : dollars(holder.nominalCents), true)}</table></section>
     <section><h2>Your estimated tax</h2><table>
-    ${valueRow(c ? `Federal tax at ${percent(c.federalRate)}` : "Federal tax (awaiting figures)", dollars(federal))}
+    ${valueRow(c ? `${explicitNiit ? "Federal LTCG tax" : "Federal tax"} at ${percent(c.federalRate)}` : "Federal tax (awaiting figures)", dollars(federal))}${explicitNiit ? valueRow(`Federal NIIT at ${percent(holder.niitRate ?? "0.0000")}${holder.subjectToNiit === false ? " (not subject)" : ""}`, dollars(niit)) : ""}
     ${valueRow(`State tax: ${holder.stateCode ?? "missing"} at ${percent(holder.stateRate)}`, dollars(state))}
     ${rounding === null || rounding === 0n ? "" : valueRow("Cent rounding adjustment", dollars(rounding))}
     ${valueRow("Estimated tax", dollars(holder.estimatedTaxCents), true)}
     ${valueRow("Surplus/Deficit", dollars(undeclared ? proposedSurplus : holder.surplusCents))}</table>
     <p class="muted">Surplus/Deficit is your distribution less your estimated tax.</p>
     <p class="muted">Estimated from your share of the year's net timbering profit, using ${draftPractice ? "proposed practice inputs, not finalized figures. Missing amounts are not recorded, not zero" : "the rates recorded for this finalized year"}.</p></section></div>
-    <p class="caveat">${TAX_CAVEAT}</p>
+    <p class="caveat">${explicitNiit ? TAX_CAVEAT : LEGACY_TAX_CAVEAT}</p>
     <h2>Paid and APIC retained</h2>
     ${holder.isOnHold ? '<p>Your distribution is being held pending resolution; the Corporation will be in touch.</p>' : `
     <p class="muted">For Paid, the date is the payment date. For APIC retained (additional paid-in capital), it is the date your direction letter was received. A negative entry reverses an earlier entry.</p>
@@ -95,7 +97,9 @@ export function statementNoticeHtml(context: ReportContext, holder: ReportHolder
   const denominator = 4000000n * 10000n;
   const federal = numerator === null || !c ? null : rounded(numerator * rateUnits(c.federalRate), denominator);
   const state = numerator === null || holder.stateRate === null ? null : rounded(numerator * rateUnits(holder.stateRate), denominator);
-  const rounding = holder.estimatedTaxCents === null || federal === null || state === null ? null : BigInt(holder.estimatedTaxCents) - federal - state;
+  const explicitNiit = c === null || c.niitRate !== undefined;
+  const niit = numerator === null ? null : rounded(numerator * rateUnits(holder.niitRate ?? "0.0000"), denominator);
+  const rounding = holder.estimatedTaxCents === null || federal === null || state === null ? null : BigInt(holder.estimatedTaxCents) - federal - state - (niit ?? 0n);
   const proposedPerShare = c?.proposedPerShareCents ?? null;
   const proposedDistribution = proposedPerShare === null ? null : rounded(BigInt(proposedPerShare) * shareUnits(holder.shares), 10000n);
   const proposedSurplus = proposedDistribution === null || holder.estimatedTaxCents === null ? null : proposedDistribution - BigInt(holder.estimatedTaxCents);
@@ -117,14 +121,14 @@ export function statementNoticeHtml(context: ReportContext, holder: ReportHolder
     ${valueRow("Your distribution", undeclared ? "not yet set" : dollars(holder.nominalCents), true)}</table></section>
     <section><h2>Your estimated tax</h2><table>
     ${valueRow("Allocated profit (your share of the net profit)", dollars(holder.shareOfGainCents))}
-    ${valueRow(c ? `Federal tax at ${percent(c.federalRate)}` : "Federal tax (awaiting figures)", dollars(federal))}
+    ${valueRow(c ? `${explicitNiit ? "Federal LTCG tax" : "Federal tax"} at ${percent(c.federalRate)}` : "Federal tax (awaiting figures)", dollars(federal))}${explicitNiit ? valueRow(`Federal NIIT at ${percent(holder.niitRate ?? "0.0000")}${holder.subjectToNiit === false ? " (not subject)" : ""}`, dollars(niit)) : ""}
     ${valueRow(`State tax: ${holder.stateCode ?? "missing"} at ${percent(holder.stateRate)}`, dollars(state))}
     ${rounding === null || rounding === 0n ? "" : valueRow("Cent rounding adjustment", dollars(rounding))}
     ${valueRow("Estimated tax", dollars(holder.estimatedTaxCents), true)}
     ${valueRow("Surplus/Deficit", dollars(surplus))}
     ${valueRow("Amount eligible for Additional Paid-In Capital reinvestment", dollars(eligible))}</table>
     <p class="muted">Surplus/Deficit is your distribution less your estimated tax.</p></section></div>
-    <p class="caveat">${TAX_CAVEAT}</p>`;
+    <p class="caveat">${explicitNiit ? TAX_CAVEAT : LEGACY_TAX_CAVEAT}</p>`;
   return document(context, `${year.calendarYear} shareholder distribution notice`, body);
 }
 export function boardHtml(context: ReportContext) {
@@ -137,7 +141,8 @@ export function boardHtml(context: ReportContext) {
     year.figures.costs.map((line) => valueRow(`${line.label} — ${sourceName(line.documentId)}`, dollars(line.amountCents))).join("") +
     valueRow("Net timbering profit (gross minus costs)", dollars(c!.netProfitCents), true) : valueRow("Year figures", "Not recorded");
   const worked = c ? valueRow("Net profit", dollars(c.netProfitCents)) +
-    valueRow("Federal rate", percent(c.federalRate)) + valueRow(`Highest state: ${c.highestState ?? "missing"}`, percent(c.highestStateRate)) +
+    valueRow(c.niitRate === undefined ? "Federal rate" : "Federal LTCG rate", percent(c.federalRate)) +
+    (c.niitRate === undefined ? "" : valueRow(c.niitIncludedInPool === false ? "Federal NIIT — not included in the pool (board policy)" : "NIIT rate", percent(c.niitRate))) + valueRow(`Highest state: ${c.highestState ?? "missing"}`, percent(c.highestStateRate)) +
     valueRow("Combined rate", percent(c.combinedRate)) + valueRow("Pool: net × combined rate", dollars(c.poolCents)) +
     valueRow("Divide pool by shares", "400") + valueRow("Proposed amount per share", dollars(c.proposedPerShareCents), true) : valueRow("Proposed amount", "Awaiting figures");
   const status = year.isPractice ? year.status : year.status === "draft" ? "Draft" : year.status === "corrected" ? "Final — corrected" : "Final";
@@ -156,5 +161,5 @@ export function boardHtml(context: ReportContext) {
     <th>Holder</th><th>Class</th><th>State</th><th class="right">Shares</th><th class="right">Allocated profit</th><th class="right">Distribution</th><th class="right">Estimated tax</th><th class="right">Surplus/Deficit</th><th class="right">APIC retained</th><th class="right">Paid</th><th>Instruction</th></tr></thead><tbody>
     ${year.holders.map((h) => `<tr data-holder-row><td class="name">${html(h.displayName)}${h.isUnsettled ? " (unsettled)" : ""}</td><td>${html(h.shareClass)}</td><td>${html(h.stateCode ?? "missing")}</td><td class="right">${html(formatShares(h.shares))}</td><td class="right">${html(dollars(h.shareOfGainCents))}</td><td class="right">${html(dollars(h.nominalCents))}</td><td class="right">${html(dollars(h.estimatedTaxCents))}</td><td class="right">${html(dollars(h.surplusCents))}</td><td class="right">${html(dollars(h.retainedCents))}</td><td class="right">${html(dollars(h.paidCents))}</td><td>${html(h.instruction)}</td></tr>`).join("")}
     </tbody><tfoot><tr class="strong"><td colspan="4">Totals</td><td class="right">${html(dollars(sum("shareOfGainCents")))}</td><td class="right">${html(dollars(year.declaredPerShareCents === null ? null : year.totals.nominalCents))}</td><td class="right">${html(dollars(sum("estimatedTaxCents")))}</td><td class="right">${html(dollars(sum("surplusCents")))}</td><td class="right">${year.payments.length ? html(dollars(year.totals.retainedCents)) : "—"}</td><td class="right">${year.payments.length ? html(dollars(year.totals.paidCents)) : "—"}</td><td></td></tr></tfoot></table><p class="muted">${year.status === "draft" ? "Open year: figures, rates and residences remain subject to revision until finalization." : year.status === "corrected" ? "Includes explicit corrections; calculations retain the finalized snapshot, rates and residences." : "Finalized inputs are locked."}</p>`;
-  return document(context, `${year.calendarYear} board summary`, body, true, draftBoard);
+  return document(context, `${year.calendarYear} board summary`, body + (c?.niitRate === undefined ? "" : `<p class="caveat">${TAX_CAVEAT}</p>`), true, draftBoard);
 }
