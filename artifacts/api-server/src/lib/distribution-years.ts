@@ -2,12 +2,14 @@ import {
   db, distributionYears, snapshots, snapshotRows, residences,
   yearFigures, yearCosts, yearDeclarations, yearFinalizations, yearCorrections,
   distributionEntries, distributionHolds, yearDocuments, type FrozenYearInputs,
+  accessEntries,
 } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { latestBy, type Tx } from "./records";
 import { HttpError } from "./errors";
 import { calculateYear } from "./distribution-math";
 import { currentRates } from "./rate-data";
+import { sourceDocumentBlockers } from "./year-document-blockers";
 
 export type Database = Tx | typeof db;
 
@@ -108,18 +110,25 @@ export async function yearDetail(database: Database, id: number) {
   const holds = latestBy(holdHistory, (r) => r.personId);
   const result = calculateYear(effective, entries, holds);
   const figuresHistory = await database.select().from(yearFigures).where(eq(yearFigures.yearId, id)).orderBy(yearFigures.id);
+  const figureRevisions = await Promise.all(figuresHistory.map(async (figure) => ({
+    ...figure, costs: await database.select().from(yearCosts).where(eq(yearCosts.figuresId, figure.id)).orderBy(yearCosts.id),
+  })));
+  const actorNames = new Map((await database.select().from(accessEntries).orderBy(accessEntries.id)).map((entry) => [entry.personId, entry.displayName]));
   const declarationHistory = await database.select().from(yearDeclarations).where(eq(yearDeclarations.yearId, id)).orderBy(yearDeclarations.id);
   const documents = await database.select().from(yearDocuments).where(eq(yearDocuments.yearId, id)).orderBy(yearDocuments.id);
   const history = [
     { id: `year-${year.id}`, kind: "Year opened", note: year.note, amountCents: null, createdAt: year.createdAt, createdBy: year.createdBy },
-    ...figuresHistory.map((r) => ({ id: `figures-${r.id}`, kind: "Figures revision", note: r.note, amountCents: r.grossCents.toString(), createdAt: r.createdAt, createdBy: r.createdBy })),
-    ...declarationHistory.map((r) => ({ id: `declaration-${r.id}`, kind: "Declaration revision (per share)", note: r.note, amountCents: r.declaredPerShareCents.toString(), createdAt: r.createdAt, createdBy: r.createdBy })),
+    ...figureRevisions.map((r) => ({ id: `figures-${r.id}`, kind: "Figures revision", note: r.note, amountCents: r.grossCents.toString(), createdAt: r.createdAt, createdBy: r.createdBy,
+      figures: { grossCents: r.grossCents.toString(), grossDocumentId: r.grossDocumentId, note: r.note,
+        costs: r.costs.map((c) => ({ label: c.label, amountCents: c.amountCents.toString(), documentId: c.documentId })) } })),
+    ...declarationHistory.map((r) => ({ id: `declaration-${r.id}`, kind: "Declaration revision (per share)", note: r.note, amountCents: r.declaredPerShareCents.toString(), declarationDate: r.declarationDate, createdAt: r.createdAt, createdBy: r.createdBy })),
     ...(finalization ? [{ id: `finalization-${finalization.id}`, kind: "Finalized", note: finalization.note, amountCents: null, createdAt: finalization.createdAt, createdBy: finalization.createdBy }] : []),
     ...corrections.map((r) => ({ id: `correction-${r.id}`, kind: r.kind, note: r.note, amountCents: r.amountCents?.toString() ?? null, createdAt: r.createdAt, createdBy: r.createdBy })),
     ...holdHistory.map((r) => ({ id: `hold-${r.id}`, kind: r.held ? `Put on hold: ${r.personId}` : `Remove hold: ${r.personId}`, note: r.note, amountCents: null, createdAt: r.createdAt, createdBy: r.createdBy })),
   ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return {
     ...year,
+    figuresRevisionId: figuresHistory.at(-1)?.id ?? null,
     status: finalization ? corrections.length ? "corrected" as const : "finalized" as const : "draft" as const,
     figures: effective.figures,
     declaredPerShareCents: effective.declaration?.declaredPerShareCents ?? null,
@@ -127,9 +136,10 @@ export async function yearDetail(database: Database, id: number) {
     rateTableId: effective.rates.id, finalizedAt: finalization?.createdAt ?? null,
     originalCalculation: finalization ? calculateYear(base).calculation : null,
     ...result,
+    blockers: [...result.blockers, ...(!finalization ? sourceDocumentBlockers(effective, year.isPractice) : [])],
     documents: documents.map(documentResponse),
     payments: entries.map((entry) => ({ ...entry, amountCents: entry.amountCents.toString() })),
-    history,
+    history: history.map((entry) => ({ ...entry, createdByName: actorNames.get(entry.createdBy) ?? entry.createdBy })),
   };
 }
 export function optionalNote(note?: string) {

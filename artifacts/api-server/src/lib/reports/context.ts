@@ -47,5 +47,6 @@ export function noticeFilename(context: ReportContext, holder: ReportHolder) {
 export function reportFilename(context: ReportContext, kind: "board" | "ledger" | "zip" | "notices") {
   const suffix = { board: "Board_Summary", ledger: "Ledger", zip: "Statements", notices: "Notices" }[kind];
   const extension = { board: "pdf", ledger: "xlsx", zip: "zip", notices: "zip" }[kind];
-  return `HWD_Distribution_${context.year.calendarYear}_${context.year.isPractice ? "Practice_" : ""}${suffix}_${reportDate(context)}.${extension}`;
+  const marker = context.year.isPractice ? "Practice_" : kind === "board" && context.year.status === "draft" ? "Draft_" : "";
+  return `HWD_Distribution_${context.year.calendarYear}_${marker}${suffix}_${reportDate(context)}.${extension}`;
 }

@@ -17,6 +17,8 @@ import {
 } from "../lib/distribution-years";
 import { HttpError } from "../lib/errors";
 import { resetPracticeYear } from "../lib/practice-years";
+import { sourceDocumentBlockers } from "../lib/year-document-blockers";
+import { LinkFigureDocumentBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 for (const [path, practice] of [["/years", false], ["/practice-years", true]] as const) router.get(path, async (_req, res): Promise<void> => {
@@ -65,10 +67,10 @@ router.post("/years/:id/figures", async (req, res): Promise<void> => {
   const data = SaveYearFiguresBody.parse(req.body);
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
     await assertAccess(actor, tx);
-    const year = await requireDraft(tx, id);
-    if (!year.isPractice || data.grossDocumentId != null) await requireDocument(tx, id, data.grossDocumentId);
+    await requireDraft(tx, id);
+    if (data.grossDocumentId != null) await requireDocument(tx, id, data.grossDocumentId);
     for (const cost of data.costs) {
-      if (!year.isPractice || cost.documentId != null) await requireDocument(tx, id, cost.documentId);
+      if (cost.documentId != null) await requireDocument(tx, id, cost.documentId);
     }
     const figures = await append(tx, actor, yearFigures, {
       yearId: id, grossCents: BigInt(data.grossCents), grossDocumentId: data.grossDocumentId ?? null,
@@ -76,6 +78,30 @@ router.post("/years/:id/figures", async (req, res): Promise<void> => {
     });
     for (const cost of data.costs) await append(tx, actor, yearCosts, {
       figuresId: figures.id, label: cost.label?.trim() || "Direct cost", amountCents: BigInt(cost.amountCents), documentId: cost.documentId ?? null,
+    });
+    return yearDetail(tx, id);
+  });
+  res.status(201).json(GetYearResponse.parse(result));
+});
+router.post("/years/:id/figures/documents", async (req, res): Promise<void> => {
+  const { id } = GetYearParams.parse(req.params);
+  const data = LinkFigureDocumentBody.parse(req.body);
+  const result = await write(currentIdentity(req).personId, async (tx, actor) => {
+    await assertAccess(actor, tx);
+    await requireDraft(tx, id);
+    await requireDocument(tx, id, data.documentId);
+    const [current] = await tx.select().from(yearFigures).where(eq(yearFigures.yearId, id)).orderBy(desc(yearFigures.id)).limit(1);
+    if (!current || current.id !== data.figuresId) throw new HttpError(409, "The figures have changed. Reload this year before attaching a document.");
+    const costs = await tx.select().from(yearCosts).where(eq(yearCosts.figuresId, current.id)).orderBy(yearCosts.id);
+    if (data.target === "cost" && (data.costIndex == null || !costs[data.costIndex])) throw new HttpError(400, "Choose an existing cost line");
+    const revision = await append(tx, actor, yearFigures, {
+      yearId: id, grossCents: current.grossCents,
+      grossDocumentId: data.target === "gross" ? data.documentId : current.grossDocumentId,
+      note: current.note, createdBy: actor,
+    }, "Source document attached (amounts unchanged)");
+    for (const [index, cost] of costs.entries()) await append(tx, actor, yearCosts, {
+      figuresId: revision.id, label: cost.label, amountCents: cost.amountCents,
+      documentId: data.target === "cost" && index === data.costIndex ? data.documentId : cost.documentId,
     });
     return yearDetail(tx, id);
   });
@@ -100,11 +126,16 @@ router.post("/years/:id/finalize", async (req, res): Promise<void> => {
   const { id } = GetYearParams.parse(req.params);
   const data = FinalizeYearBody.parse(req.body);
   const result = await write(currentIdentity(req).personId, async (tx, actor) => {
-    await assertAccess(actor, tx); await requireDraft(tx, id);
+    await assertAccess(actor, tx); const year = await requireDraft(tx, id);
     const frozenInputs = await draftInputs(tx, id);
     validateYearSnapshot(frozenInputs.rows);
-    const { blockers } = calculateYear(frozenInputs);
+    const blockers = [...calculateYear(frozenInputs).blockers, ...sourceDocumentBlockers(frozenInputs, year.isPractice)];
     if (blockers.length) throw new HttpError(409, `Cannot finalize: ${blockers.map((b) => `${b.displayName}: ${b.reason}`).join("; ")}`);
+    // Recheck ownership/existence of every source reference at the lock boundary.
+    if (frozenInputs.figures) {
+      if (frozenInputs.figures.grossDocumentId != null) await requireDocument(tx, id, frozenInputs.figures.grossDocumentId);
+      for (const cost of frozenInputs.figures.costs) if (cost.documentId != null) await requireDocument(tx, id, cost.documentId);
+    }
     await append(tx, actor, yearFinalizations, { yearId: id, frozenInputs, note: optionalNote(data.note), createdBy: actor });
     return yearDetail(tx, id);
   });

@@ -14,8 +14,9 @@ import { fmtDate, errMessage } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-export function StatusTag({ status }: { status: YearSummaryStatus }) {
-  return <Tag tone={status === "draft" ? "amber" : status === "finalized" ? "lichen" : "rust"}>{status === "draft" ? "Draft" : status === "finalized" ? "Finalized" : "Corrected"}</Tag>;
+export function StatusTag({ status, isPractice = false }: { status: YearSummaryStatus; isPractice?: boolean }) {
+  if (isPractice) return null;
+  return <Tag tone={status === "draft" ? "amber" : status === "finalized" ? "lichen" : "rust"}>{status === "draft" ? "Draft" : status === "finalized" ? "Final" : "Final — corrected"}</Tag>;
 }
 
 export default function YearsPage() {
@@ -49,7 +50,7 @@ export default function YearsPage() {
         <p className="text-xs text-muted-foreground">Separate from real distributions. Any number may use the same calendar year.</p>
         {practice.isLoading ? <SkeletonRows rows={2} /> : practice.isError ? <ErrorPanel error={practice.error} onRetry={() => practice.refetch()} /> : !practice.data?.length ? <Empty title="No practice years yet." /> : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
-            {practice.data.map((y) => <li key={y.id}><Link href={`/years/${y.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-secondary/40" data-testid={`link-practice-year-${y.id}`}><span className="font-display text-xl">{y.calendarYear} — Practice</span><StatusTag status={y.status} /><span className="text-xs text-muted-foreground">Snapshot #{y.snapshotId}</span><ArrowRight className="ml-auto h-4 w-4" /></Link></li>)}
+            {practice.data.map((y) => <li key={y.id}><Link href={`/years/${y.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-secondary/40" data-testid={`link-practice-year-${y.id}`}><span className="font-display text-xl">{y.calendarYear} — Practice</span><span className="text-xs text-muted-foreground">Snapshot #{y.snapshotId}</span><ArrowRight className="ml-auto h-4 w-4" /></Link></li>)}
           </ul>
         )}
       </section>

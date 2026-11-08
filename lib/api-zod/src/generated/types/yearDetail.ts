@@ -16,6 +16,8 @@ import type { YearSummary } from './yearSummary';
 import type { YearTotals } from './yearTotals';
 
 export type YearDetail = YearSummary & ({
+  /** @nullable */
+  figuresRevisionId?: number | null;
   figures: YearFigures | null;
   /** @nullable */
   declaredPerShareCents: string | null;

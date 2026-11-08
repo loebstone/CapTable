@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify:sso": "tsx tests/verify-sso.mjs",
     "verify:proxy": "tsx tests/verify-proxy.mjs",
+    "verify:drafts": "tsx tests/verify-drafts.mjs",
     "verify:suite-menu": "tsx tests/verify-suite-menu.mjs",
     "verify:stage1": "tsx tests/verify-stage1.mjs",
     "verify:stage2": "tsx tests/verify-stage2.mjs",

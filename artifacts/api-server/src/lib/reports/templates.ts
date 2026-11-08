@@ -7,7 +7,7 @@ import { shareUnits } from "../roster";
 function footer(context: ReportContext) {
   return `<footer>Generated ${html(context.generatedAt)} · ENVIRONMENT ${html(context.environment)}<br>Observed database ${html(context.databaseName)} · server ${html(context.serverAddress ?? "SQL NULL")}</footer>`;
 }
-function document(context: ReportContext, title: string, body: string, compact = false) {
+function document(context: ReportContext, title: string, body: string, compact = false, draftBoard = false) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${html(ISSUER)} — ${html(title)}</title><style>
   @page{size:Letter;margin:${compact ? ".32in" : ".55in"}}
   *{box-sizing:border-box}html,body{margin:0;padding:0;color:#172b31;background:white;font-family:Arial,Helvetica,sans-serif;font-size:${compact ? "9px" : "12px"};line-height:1.32}
@@ -27,7 +27,7 @@ function document(context: ReportContext, title: string, body: string, compact =
   .holders{font-size:8.5px;line-height:1.2}.holders th{font-size:8px}.holders td{padding:2px 3px;white-space:nowrap;overflow-wrap:normal}
   .holders tr:nth-child(even){background:#faf9f5}.holders .name{white-space:normal}
   footer{font-size:${compact ? "7px" : "8px"};line-height:1.4;color:#536269;border-top:1px solid #d6d2c9;padding-top:7px;margin-top:12px}
-  </style></head><body>${context.year.isPractice ? '<div class="practice-watermark">PRACTICE — NOT A STATEMENT</div>' : ""}<main class="sheet">${body}${footer(context)}</main></body></html>`;
+  </style></head><body>${context.year.isPractice ? '<div class="practice-watermark">PRACTICE — NOT A STATEMENT</div>' : draftBoard ? '<div class="practice-watermark">DRAFT — PRELIMINARY</div>' : ""}<main class="sheet">${body}${footer(context)}</main></body></html>`;
 }
 function valueRow(label: string, value: string, strong = false) {
   return `<tr${strong ? ' class="strong"' : ""}><td>${html(label)}</td><td class="right amount">${html(value)}</td></tr>`;
@@ -129,9 +129,10 @@ export function statementNoticeHtml(context: ReportContext, holder: ReportHolder
 }
 export function boardHtml(context: ReportContext) {
   const year = context.year, c = year.calculation;
+  const draftBoard = !year.isPractice && year.status === "draft";
   const sum = (key: "shareOfGainCents" | "estimatedTaxCents" | "surplusCents") =>
     year.holders.some((h) => h[key] === null) ? null : year.holders.reduce((total, h) => total + BigInt(h[key]!), 0n);
-  const sourceName = (id: number | null) => id === null && year.isPractice ? "none (practice)" : year.documents.find((d) => d.id === id)?.filename ?? "Missing document";
+  const sourceName = (id: number | null) => id === null && year.isPractice ? "none (practice)" : id === null && draftBoard ? "no source document yet (draft)" : year.documents.find((d) => d.id === id)?.filename ?? "Missing document";
   const figureRows = year.figures ? valueRow(`Gross timber revenue — ${sourceName(year.figures.grossDocumentId)}`, dollars(year.figures.grossCents)) +
     year.figures.costs.map((line) => valueRow(`${line.label} — ${sourceName(line.documentId)}`, dollars(line.amountCents))).join("") +
     valueRow("Net timbering profit (gross minus costs)", dollars(c!.netProfitCents), true) : valueRow("Year figures", "Not recorded");
@@ -139,8 +140,10 @@ export function boardHtml(context: ReportContext) {
     valueRow("Federal rate", percent(c.federalRate)) + valueRow(`Highest state: ${c.highestState ?? "missing"}`, percent(c.highestStateRate)) +
     valueRow("Combined rate", percent(c.combinedRate)) + valueRow("Pool: net × combined rate", dollars(c.poolCents)) +
     valueRow("Divide pool by shares", "400") + valueRow("Proposed amount per share", dollars(c.proposedPerShareCents), true) : valueRow("Proposed amount", "Awaiting figures");
-  const body = `<header><div class="eyebrow">Board summary · ${year.calendarYear} · ${html(year.status)}</div>
-    <h1>${ISSUER}</h1><div class="sub"><p>Distribution year ${year.calendarYear} · snapshot #${year.snapshotId}</p><p>As of ${html(context.generatedAt.slice(0, 10))} (UTC)</p></div></header>
+  const status = year.isPractice ? year.status : year.status === "draft" ? "Draft" : year.status === "corrected" ? "Final — corrected" : "Final";
+  const body = `<header><div class="eyebrow">Board summary · ${year.calendarYear} · ${html(status)}</div>
+    <h1>${ISSUER}</h1><div class="sub"><p>Distribution year ${year.calendarYear} · snapshot #${year.snapshotId}</p><p>As of ${html(context.generatedAt.slice(0, 10))} (UTC)</p></div>
+    ${draftBoard ? `<p>Preliminary figures as of ${html(context.generatedAt.slice(0, 10))}. Final figures will follow the Farm's tax filing.</p>` : ""}</header>
     <p>${context.classes.map((cl) => `Class ${html(cl.shareClass)}: ${html(formatShares(cl.totalShares))} shares / ${cl.holderCount} holders`).join(" · ")} · <strong>${year.holders.length} shareholders</strong></p>
     <div class="grid"><section><h2>Year figures and source documents</h2><table class="mini">${figureRows}</table>
     <p><strong>Distribution per share:</strong> ${html(dollars(year.declaredPerShareCents))} · <strong>Date:</strong> ${html(dateLabel(year.declarationDate))}</p>
@@ -153,5 +156,5 @@ export function boardHtml(context: ReportContext) {
     <th>Holder</th><th>Class</th><th>State</th><th class="right">Shares</th><th class="right">Allocated profit</th><th class="right">Distribution</th><th class="right">Estimated tax</th><th class="right">Surplus/Deficit</th><th class="right">APIC retained</th><th class="right">Paid</th><th>Instruction</th></tr></thead><tbody>
     ${year.holders.map((h) => `<tr data-holder-row><td class="name">${html(h.displayName)}${h.isUnsettled ? " (unsettled)" : ""}</td><td>${html(h.shareClass)}</td><td>${html(h.stateCode ?? "missing")}</td><td class="right">${html(formatShares(h.shares))}</td><td class="right">${html(dollars(h.shareOfGainCents))}</td><td class="right">${html(dollars(h.nominalCents))}</td><td class="right">${html(dollars(h.estimatedTaxCents))}</td><td class="right">${html(dollars(h.surplusCents))}</td><td class="right">${html(dollars(h.retainedCents))}</td><td class="right">${html(dollars(h.paidCents))}</td><td>${html(h.instruction)}</td></tr>`).join("")}
     </tbody><tfoot><tr class="strong"><td colspan="4">Totals</td><td class="right">${html(dollars(sum("shareOfGainCents")))}</td><td class="right">${html(dollars(year.declaredPerShareCents === null ? null : year.totals.nominalCents))}</td><td class="right">${html(dollars(sum("estimatedTaxCents")))}</td><td class="right">${html(dollars(sum("surplusCents")))}</td><td class="right">${year.payments.length ? html(dollars(year.totals.retainedCents)) : "—"}</td><td class="right">${year.payments.length ? html(dollars(year.totals.paidCents)) : "—"}</td><td></td></tr></tfoot></table><p class="muted">${year.status === "draft" ? "Open year: figures, rates and residences remain subject to revision until finalization." : year.status === "corrected" ? "Includes explicit corrections; calculations retain the finalized snapshot, rates and residences." : "Finalized inputs are locked."}</p>`;
-  return document(context, `${year.calendarYear} board summary`, body, true);
+  return document(context, `${year.calendarYear} board summary`, body, true, draftBoard);
 }

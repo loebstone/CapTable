@@ -3,7 +3,7 @@ import { AlertTriangle, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { errMessage } from "@/lib/format";
 
-export function PageHeader({ kicker, title, children, actions }: { kicker: string; title: string; children?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({ kicker, title, children, actions }: { kicker: string; title: ReactNode; children?: ReactNode; actions?: ReactNode }) {
   return (
     <header className="rise flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
       <div className="max-w-2xl">

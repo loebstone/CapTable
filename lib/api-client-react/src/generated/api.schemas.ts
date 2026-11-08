@@ -304,6 +304,24 @@ export interface YearFiguresInput {
   note?: string;
 }
 
+export type FigureDocumentInputTarget = typeof FigureDocumentInputTarget[keyof typeof FigureDocumentInputTarget];
+
+
+export const FigureDocumentInputTarget = {
+  gross: 'gross',
+  cost: 'cost',
+} as const;
+
+export interface FigureDocumentInput {
+  /** @minimum 1 */
+  figuresId: number;
+  target: FigureDocumentInputTarget;
+  /** @minimum 0 */
+  costIndex?: number;
+  /** @minimum 1 */
+  documentId: number;
+}
+
 export type YearFiguresCostsItem = {
   label: string;
   amountCents: string;
@@ -548,6 +566,9 @@ export interface YearHistory {
   amountCents: string | null;
   createdAt: string;
   createdBy: string;
+  createdByName?: string;
+  figures?: YearFigures;
+  declarationDate?: string;
 }
 
 export interface YearTotals {
@@ -561,6 +582,8 @@ export interface YearTotals {
 }
 
 export type YearDetail = YearSummary & ({
+  /** @nullable */
+  figuresRevisionId?: number | null;
   figures: YearFigures | null;
   /** @nullable */
   declaredPerShareCents: string | null;

@@ -5,6 +5,7 @@ import { useSignOut, type Session } from "@workspace/api-client-react";
 import { Home, Layers, Archive, MapPin, Percent, KeyRound, ScrollText, LogOut, TreePine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SuiteHeader } from "./suite-header";
+import { YearDraftBanner } from "./year-draft-banner";
 
 const NAV = [
   { href: "/", label: "Home", icon: Home },
@@ -92,7 +93,7 @@ export function Shell({ session, children }: { session: Session; children: React
           <button onClick={farmSignOut} className="text-xs text-primary">Sign out of all Farm apps</button>
           <button onClick={() => signOut.mutate()} className="text-xs text-primary" data-testid="button-sign-out-mobile">Sign out</button>
         </div>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 md:px-10 md:py-10">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 md:px-10 md:py-10"><YearDraftBanner />{children}</main>
         <footer className="border-t border-border px-5 py-3 text-muted-foreground md:px-10">
           <EnvLine session={session} />
         </footer>

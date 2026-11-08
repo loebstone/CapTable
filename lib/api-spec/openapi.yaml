@@ -593,6 +593,22 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/YearDetail"}
+  /years/{id}/figures/documents:
+    post:
+      operationId: linkFigureDocument
+      parameters:
+        - {$ref: "#/components/parameters/YearId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/FigureDocumentInput"}
+      responses:
+        "201":
+          description: Appended figures revision with unchanged amounts
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/YearDetail"}
   /years/{id}/declaration:
     parameters:
       - {name: id, in: path, required: true, schema: {type: integer}}
@@ -1137,6 +1153,14 @@ components:
         grossDocumentId: {type: [integer, "null"], minimum: 1}
         costs: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/CostLineInput"}}
         note: {type: string, default: ""}
+    FigureDocumentInput:
+      type: object
+      required: [figuresId, target, documentId]
+      properties:
+        figuresId: {type: integer, minimum: 1}
+        target: {type: string, enum: [gross, cost]}
+        costIndex: {type: integer, minimum: 0}
+        documentId: {type: integer, minimum: 1}
     YearFigures:
       type: object
       required: [grossCents, grossDocumentId, costs, note]
@@ -1292,6 +1316,9 @@ components:
         amountCents: {type: [string, "null"]}
         createdAt: {type: string}
         createdBy: {type: string}
+        createdByName: {type: string}
+        figures: {$ref: "#/components/schemas/YearFigures"}
+        declarationDate: {type: string}
     YearTotals:
       type: object
       required: [nominalCents, paidCents, retainedCents, remainingCents, openCount, heldCount, completeCount]
@@ -1309,6 +1336,7 @@ components:
         - type: object
           required: [figures, declaredPerShareCents, declarationDate, rateTableId, finalizedAt, calculation, originalCalculation, blockers, holders, totals, documents, payments, history]
           properties:
+            figuresRevisionId: {type: [integer, "null"]}
             figures:
               anyOf:
                 - {$ref: "#/components/schemas/YearFigures"}

@@ -5,6 +5,7 @@
  * HWD Cap Table foundation API
  * OpenAPI spec version: 1.0.0
  */
+import type { YearFigures } from './yearFigures';
 
 export interface YearHistory {
   id: string;
@@ -14,4 +15,7 @@ export interface YearHistory {
   amountCents: string | null;
   createdAt: string;
   createdBy: string;
+  createdByName?: string;
+  figures?: YearFigures;
+  declarationDate?: string;
 }

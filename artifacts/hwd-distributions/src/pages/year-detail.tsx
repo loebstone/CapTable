@@ -4,7 +4,7 @@ import { Link, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetYear, useSaveYearFigures, useDeclareYear, useFinalizeYear, useCorrectYear, useRecordPayment, useReversePayment,
-  useSetYearHold, useRequestYearUpload, useAttachYearDocument,
+  useSetYearHold, useRequestYearUpload, useAttachYearDocument, useLinkFigureDocument,
   getGetYearQueryKey, getGetDirectionsQueryKey, getGetMailingQueryKey, getListYearsQueryKey, getListPracticeYearsQueryKey, getListAuditQueryKey,
   type YearDetail, type YearCalculation, type YearHolder, type YearDocument, type PaymentEntry, type CostLineInput,
   type YearCorrectionInputKind, type DocumentUploadInputContentType,
@@ -60,7 +60,7 @@ export default function YearDetailPage() {
       <Link href="/years" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary" data-testid="link-back-years"><ArrowLeft className="h-3.5 w-3.5" /> All years</Link>
       <PageHeader
         kicker={`Distribution year · snapshot #${y.snapshotId} · rate table #${y.rateTableId}`}
-        title={`${y.calendarYear}${y.isPractice ? " — Practice" : " timber distribution"}`}
+        title={<span className="inline-flex flex-wrap items-center gap-3">{`${y.calendarYear}${y.isPractice ? " — Practice" : " timber distribution"}`}<StatusTag status={y.status} isPractice={y.isPractice} /></span>}
         actions={draft ? <>
           <Btn variant="ghost" onClick={() => setModal({ k: "figures" })} data-testid="button-edit-figures"><PencilLine className="h-4 w-4" /> {y.figures ? "Revise figures" : "Enter figures"}</Btn>
           <Btn variant="ghost" onClick={() => setModal({ k: "declare" })} disabled={!y.calculation} disabledReason="Enter the year's figures before declaring an amount." data-testid="button-declare"><Stamp className="h-4 w-4" /> Declare</Btn>
@@ -68,7 +68,6 @@ export default function YearDetailPage() {
         </> : <Btn variant="ghost" onClick={() => setModal({ k: "correct" })} data-testid="button-correct-year"><PencilLine className="h-4 w-4" /> Record correction</Btn>}
       >
         <span className="inline-flex flex-wrap items-center gap-2">
-          <StatusTag status={y.status} />
           <span>Opened {fmtDate(y.createdAt)} by {y.createdBy}{y.finalizedAt && <> · finalized {fmtDate(y.finalizedAt, true)}</>}</span>
           <MailingLink id={y.id} />
           <a href="#holders" onClick={(e) => { e.preventDefault(); document.getElementById("holders")?.scrollIntoView({ behavior: "smooth" }); }} className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-medium hover:bg-secondary" data-testid="link-year-directions"><Stamp className="h-4 w-4" /> Tax &amp; Reinvestment</a>
@@ -84,7 +83,7 @@ export default function YearDetailPage() {
         <section className="rise rise-d1 min-w-0 space-y-3">
           <SectionTitle>Worked calculation{y.status === "corrected" && " · effective"}</SectionTitle>
           {y.calculation ? <WorkedTable c={y.calculation} declared={y.declaredPerShareCents} date={y.declarationDate} /> : (
-            <Empty title="No figures yet.">Enter the gross timber income and each cost line, each tied to a source document. Net profit is computed on the server.</Empty>
+            <Empty title="No figures yet.">Enter the gross timber income and each cost line. Source documents can be attached later, before Finalize. Net profit is computed on the server.</Empty>
           )}
           {y.status === "corrected" && y.originalCalculation && (
             <details className="rounded-lg border border-border bg-secondary/30">
@@ -182,7 +181,7 @@ function WorkedTable({ c, declared, date, muted }: { c: YearCalculation; declare
 }
 
 function docName(y: YearDetail, id: number | null | undefined) {
-  return y.documents.find((d) => d.id === id)?.filename ?? (id ? `Document #${id}` : y.isPractice ? "no source document (practice)" : "—");
+  return y.documents.find((d) => d.id === id)?.filename ?? (id ? `Document #${id}` : y.isPractice ? "no source document (practice)" : y.status === "draft" ? "no source document yet (draft)" : "—");
 }
 
 function FiguresCard({ y }: { y: YearDetail }) {
@@ -196,10 +195,12 @@ function FiguresCard({ y }: { y: YearDetail }) {
             <div><div>Gross</div><div className="truncate text-xs text-muted-foreground">{docName(y, f.grossDocumentId)}</div></div>
             <div className="num font-medium">{fmtCents(f.grossCents)}</div>
           </div>
+          {!y.isPractice && y.status === "draft" && <FigureSource y={y} target="gross" />}
           {f.costs.length === 0 && <div className="px-4 py-2 text-xs text-muted-foreground">No cost lines.</div>}
           {f.costs.map((c, i) => (
             <div key={i} className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2 last:border-0" data-testid={`row-cost-${i}`}>
               <div className="min-w-0"><div className="truncate">{c.label}</div><div className="truncate text-xs text-muted-foreground">{docName(y, c.documentId)}</div></div>
+              {!y.isPractice && y.status === "draft" && <FigureSource y={y} target="cost" costIndex={i} />}
               <div className="num text-muted-foreground">−{fmtCents(c.amountCents)}</div>
             </div>
           ))}
@@ -208,6 +209,23 @@ function FiguresCard({ y }: { y: YearDetail }) {
       )}
     </div>
   );
+}
+
+function FigureSource({ y, target, costIndex }: { y: YearDetail; target: "gross" | "cost"; costIndex?: number }) {
+  const [documentId, setDocumentId] = useState("");
+  const invalidate = useYearInval(y.id);
+  const m = useLinkFigureDocument({ mutation: { onSuccess: () => { setDocumentId(""); invalidate(); } } });
+  const key = target === "gross" ? "gross" : `cost-${costIndex}`;
+  return <div className="space-y-1 px-4 py-2">
+    {y.documents.length ? <div className="flex flex-wrap gap-2">
+      <select aria-label={`Source document for ${key}`} className={inputCls + " max-w-64"} value={documentId} onChange={(e) => setDocumentId(e.target.value)} data-testid={`select-attach-${key}`}>
+        <option value="">Select source document…</option>
+        {y.documents.map((d) => <option key={d.id} value={d.id}>{d.filename}</option>)}
+      </select>
+      <Btn variant="quiet" disabled={!documentId || m.isPending} disabledReason={m.isPending ? "Attaching; please wait." : "Select a source document."} data-testid={`button-attach-${key}`} onClick={() => m.mutate({ id: y.id, data: { figuresId: y.figuresRevisionId!, target, costIndex, documentId: Number(documentId) } })}>Attach document</Btn>
+    </div> : <p className="text-xs text-muted-foreground">Upload a source document below to attach it without changing this amount.</p>}
+    {!!m.error && <p role="alert" className="text-xs text-destructive">{errMessage(m.error)}</p>}
+  </div>;
 }
 
 const TYPES: DocumentUploadInputContentType[] = ["application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -435,8 +453,13 @@ function History({ y }: { y: YearDetail }) {
               <div className="flex flex-wrap items-baseline gap-x-3 text-sm">
                 <span className="font-medium capitalize">{h.kind.replace(/([A-Z])/g, " $1").toLowerCase()}</span>
                 {h.amountCents && <span className="num text-xs">{fmtCents(h.amountCents, { signed: true })}</span>}
-                <span className="text-xs text-muted-foreground">{fmtDate(h.createdAt, true)} · {h.createdBy}</span>
+                <span className="text-xs text-muted-foreground">{fmtDate(h.createdAt, true)} · {h.createdByName ?? h.createdBy}</span>
               </div>
+              {h.figures && <dl className="grid max-w-xl grid-cols-[1fr_auto] gap-x-4 text-xs" data-testid={`details-history-${h.id}`}>
+                <dt>Gross · {docName(y, h.figures.grossDocumentId)}</dt><dd>{fmtCents(h.figures.grossCents)}</dd>
+                {h.figures.costs.map((cost, i) => <div key={i} className="contents"><dt>{cost.label} · {docName(y, cost.documentId)}</dt><dd>{fmtCents(cost.amountCents)}</dd></div>)}
+              </dl>}
+              {h.declarationDate && <div className="text-xs">Approved by the board on {fmtDate(h.declarationDate)}</div>}
               <div className="text-sm text-muted-foreground">{h.note}</div>
             </li>
           ))}
@@ -470,7 +493,7 @@ function FormShell({ title, desc, children, error, pending, valid, submit, onDon
 function DocSelect({ y, value, onChange, test, optionalPractice = false }: { y: YearDetail; value: string; onChange: (v: string) => void; test: string; optionalPractice?: boolean }) {
   return (
     <select className={inputCls} value={value} onChange={(e) => onChange(e.target.value)} data-testid={test}>
-      <option value="">{optionalPractice && y.isPractice ? "no source document (practice)" : "Source document…"}</option>
+      <option value="">{optionalPractice ? y.isPractice ? "no source document (practice)" : "no source document yet (draft)" : "Source document…"}</option>
       {y.documents.map((d) => <option key={d.id} value={d.id}>#{d.id} {d.filename}</option>)}
     </select>
   );
@@ -492,14 +515,14 @@ function FiguresForm({ y, onDone }: { y: YearDetail; onDone: () => void }) {
   const [note, setNote] = useState("");
   const save = useSaveYearFigures({ mutation: { onSuccess: () => { inval(); toast({ title: "Figures saved", description: "Previous figures remain in the history." }); onDone(); } } });
   const grossC = parseDollars(gross);
-  const parsed: (CostLineInput | null)[] = costs.map((c) => { const a = parseDollars(c.amount); return a && (c.doc || y.isPractice) ? { label: c.label.trim().slice(0, 200) || "Direct cost", amountCents: a, documentId: c.doc ? Number(c.doc) : null } : null; });
+  const parsed: (CostLineInput | null)[] = costs.map((c) => { const a = parseDollars(c.amount); return a ? { label: c.label.trim().slice(0, 200) || "Direct cost", amountCents: a, documentId: c.doc ? Number(c.doc) : null } : null; });
   const costTotal = sumCents(parsed.map((p) => p?.amountCents));
-  const valid = !!grossC && (!!grossDoc || y.isPractice) && parsed.every(Boolean) && costs.length <= 100;
+  const valid = !!grossC && parsed.every(Boolean) && costs.length <= 100;
   const upd = (i: number, p: Partial<CostDraft>) => setCosts((xs) => xs.map((x, j) => (j === i ? { ...x, ...p } : x)));
   return (
-    <FormShell title={f ? "Revise figures" : "Enter figures"} desc={y.isPractice ? "Source documents are optional in practice years only. Saving appends a revision; net profit is computed by the server." : "Each amount is tied to an uploaded document. Saving appends a revision; nothing is deleted. Net profit is computed by the server."} error={save.error} pending={save.isPending} valid={valid} disabledReason={!grossC ? "Enter a valid gross amount." : !grossDoc && !y.isPractice ? "Attach a source document to the gross figure." : costs.length > 100 ? "Use at most 100 cost lines." : "Enter a valid amount for every cost line and, for a real year, select each source document."} submit="Save figures" onDone={onDone}
+    <FormShell title={f ? "Revise figures" : "Enter figures"} desc={y.isPractice ? "Source documents are optional in practice years only. Saving appends a revision; net profit is computed by the server." : "Source documents are optional while drafting and required at Finalize. Saving appends a revision; nothing is deleted. Net profit is computed by the server."} error={save.error} pending={save.isPending} valid={valid} disabledReason={!grossC ? "Enter a valid gross amount." : costs.length > 100 ? "Use at most 100 cost lines." : "Enter a valid amount for every cost line."} submit="Save figures" onDone={onDone}
       onSubmit={() => save.mutate({ id: y.id, data: { grossCents: grossC!, grossDocumentId: grossDoc ? Number(grossDoc) : null, costs: parsed as CostLineInput[], note: note.trim() } })}>
-      {!y.isPractice && y.documents.length === 0 && <div className="rounded-md bg-[hsl(38_70%_94%)] px-3 py-2 text-xs text-[hsl(30_60%_28%)]">Upload the source documents first, from the Source documents panel.</div>}
+      {!y.isPractice && y.documents.length === 0 && <div className="rounded-md bg-[hsl(38_70%_94%)] px-3 py-2 text-xs text-[hsl(30_60%_28%)]">Save preliminary figures now. Upload and attach their source documents before Finalize.</div>}
       <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
         <Field label="Gross income ($)" error={gross && !grossC ? "Dollars and cents, e.g. 48213.07" : null} hint={grossC ? fmtCents(grossC) : undefined}>
           <input className={inputCls + " num"} value={gross} onChange={(e) => setGross(e.target.value)} placeholder="0.00" inputMode="decimal" data-testid="input-gross" />

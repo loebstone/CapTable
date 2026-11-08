@@ -77,7 +77,7 @@ export default function HomePage() {
         <h2 className="font-display text-xl">Practice years</h2>
         {pq.isLoading ? <SkeletonRows rows={2} /> : pq.isError ? <ErrorPanel error={pq.error} onRetry={() => pq.refetch()} /> : !pq.data?.length ? <Empty title="No practice years yet." /> : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
-            {pq.data.map((y) => <li key={y.id}><Link href={`/years/${y.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-secondary/40" data-testid={`link-home-practice-${y.id}`}><span className="font-display text-xl">{y.calendarYear} — Practice</span><StatusTag status={y.status} /><ArrowRight className="ml-auto h-4 w-4" /></Link></li>)}
+            {pq.data.map((y) => <li key={y.id}><Link href={`/years/${y.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-secondary/40" data-testid={`link-home-practice-${y.id}`}><span className="font-display text-xl">{y.calendarYear} — Practice</span><ArrowRight className="ml-auto h-4 w-4" /></Link></li>)}
           </ul>
         )}
       </section>

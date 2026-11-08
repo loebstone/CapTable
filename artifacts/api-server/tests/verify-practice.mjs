@@ -60,7 +60,6 @@ try {
   expect(await call("post", "/api/years", cookie, { calendarYear: 2026, snapshotId, note: "STUB real duplicate refused" }), 409);
   const realBase = `/api/years/${real.id}`, realDocument = await upload(realBase, cookie);
   const auditCount = async () => Number((await client.query("SELECT count(*) AS n FROM audit_log")).rows[0].n);
-  const beforeRejectedFigures = await auditCount();
   const missingSourceMessage = "Every figure must reference an uploaded source document attached to this year";
   for (const body of [
     noDocuments,
@@ -68,16 +67,16 @@ try {
     { ...noDocuments, grossDocumentId: realDocument.id },
     { ...noDocuments, costs: [{ ...noDocuments.costs[0], documentId: realDocument.id }] },
   ]) {
-    const refused = await call("post", `${realBase}/figures`, cookie, body);
-    expect(refused, 400); assert.equal(refused.body.error, missingSourceMessage);
+    expect(await call("post", `${realBase}/figures`, cookie, body), 201);
+    const refused = await call("post", `${realBase}/finalize`, cookie, {});
+    expect(refused, 409); assert.match(refused.body.error, /Source document missing for:/);
   }
-  assert.equal(await auditCount(), beforeRejectedFigures);
   const explicitNull = expect(await call("post", `/api/years/${extra.id}/figures`, cookie, { ...noDocuments, grossDocumentId: null, costs: [{ ...noDocuments.costs[0], documentId: null }] }), 201);
   assert.equal(explicitNull.documents.length, 0);
   assert.equal(explicitNull.figures.grossDocumentId, null); assert.equal(explicitNull.figures.costs[0].documentId, null);
   const invalidReference = await call("post", `/api/years/${extra.id}/figures`, cookie, { ...noDocuments, grossDocumentId: realDocument.id });
   expect(invalidReference, 400); assert.equal(invalidReference.body.error, missingSourceMessage);
-  record("Optional practice sources / required real sources", { practiceOmitted: 201, practiceExplicitNull: 201, practiceGrossAndCostReferences: null, realMissingGrossOrCost: 400, spoofedPracticeFlag: 400, existingMessagePreserved: true, rejectedRealWrites: 0, providedCrossYearReference: 400 });
+  record("Optional draft/practice sources / required real sources at Finalize", { practiceOmitted: 201, practiceExplicitNull: 201, practiceGrossAndCostReferences: null, realDraftWithoutSources: 201, realFinalizeMissingGrossOrCost: 409, spoofedPracticeFlagCannotBypassFinalize: true, providedCrossYearReference: 400 });
   expect(await call("post", `${realBase}/figures`, cookie, { grossCents: "11000000", grossDocumentId: realDocument.id, costs: [{ label: "Zero", amountCents: "0", documentId: realDocument.id }], note: "STUB real figures must survive" }), 201);
   expect(await call("post", `${realBase}/declaration`, cookie, { declaredPerShareCents: "7783", declarationDate: "2026-10-20", note: "STUB real declaration" }), 201);
   const practiceHolder = fixture.detail.holders.find((x) => x.displayName === "Forster Nancy Anne");

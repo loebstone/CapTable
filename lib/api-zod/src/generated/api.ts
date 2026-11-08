@@ -836,6 +836,7 @@ export const OpenYearResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -940,7 +941,19 @@ export const OpenYearResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -974,6 +987,7 @@ export const ResetPracticeYearResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -1078,7 +1092,19 @@ export const ResetPracticeYearResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -1096,6 +1122,7 @@ export const GetYearResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -1200,7 +1227,19 @@ export const GetYearResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -1240,6 +1279,7 @@ export const SaveYearFiguresResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -1344,7 +1384,170 @@ export const SaveYearFiguresResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
+}))
+}))
+
+
+
+
+
+export const LinkFigureDocumentParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+
+export const linkFigureDocumentBodyCostIndexMin = 0;
+
+
+
+
+export const LinkFigureDocumentBody = zod.object({
+  "figuresId": zod.number().int().min(1),
+  "target": zod.enum(['gross', 'cost']),
+  "costIndex": zod.number().int().min(linkFigureDocumentBodyCostIndexMin).optional(),
+  "documentId": zod.number().int().min(1)
+})
+
+export const LinkFigureDocumentResponse = zod.object({
+  "id": zod.number().int(),
+  "calendarYear": zod.number().int(),
+  "isPractice": zod.boolean(),
+  "snapshotId": zod.number().int(),
+  "status": zod.enum(['draft', 'finalized', 'corrected']),
+  "createdAt": zod.string(),
   "createdBy": zod.string()
+}).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
+  "figures": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}),zod.null()]),
+  "declaredPerShareCents": zod.string().nullable(),
+  "declarationDate": zod.string().nullable(),
+  "rateTableId": zod.number().int(),
+  "finalizedAt": zod.string().nullable(),
+  "calculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "originalCalculation": zod.union([zod.object({
+  "grossCents": zod.string(),
+  "costTotalCents": zod.string(),
+  "netProfitCents": zod.string(),
+  "federalRate": zod.string(),
+  "highestState": zod.string().nullable(),
+  "highestStateRate": zod.string().nullable(),
+  "combinedRate": zod.string().nullable(),
+  "poolCents": zod.string().nullable(),
+  "proposedPerShareCents": zod.string().nullable(),
+  "declaredPoolCents": zod.string().nullable(),
+  "sumNominalCents": zod.string().nullable(),
+  "residualCents": zod.string().nullable()
+}),zod.null()]),
+  "blockers": zod.array(zod.object({
+  "personId": zod.string().nullable(),
+  "displayName": zod.string(),
+  "reason": zod.string()
+})),
+  "holders": zod.array(zod.object({
+  "personId": zod.string(),
+  "displayName": zod.string(),
+  "shareClass": zod.string(),
+  "shares": zod.string(),
+  "stateCode": zod.string().nullable(),
+  "residenceConfirmed": zod.boolean(),
+  "isUnsettled": zod.boolean(),
+  "stateRate": zod.string().nullable(),
+  "nominalCents": zod.string().nullable(),
+  "shareOfGainCents": zod.string().nullable(),
+  "estimatedTaxCents": zod.string().nullable(),
+  "surplusCents": zod.string().nullable(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string().nullable(),
+  "status": zod.enum(['open', 'held', 'complete']),
+  "holdNote": zod.string().nullable(),
+  "isOnHold": zod.boolean(),
+  "instruction": zod.enum(['Pay', 'Hold', '✓'])
+})),
+  "totals": zod.object({
+  "nominalCents": zod.string(),
+  "paidCents": zod.string(),
+  "retainedCents": zod.string(),
+  "remainingCents": zod.string(),
+  "openCount": zod.number().int(),
+  "heldCount": zod.number().int(),
+  "completeCount": zod.number().int()
+}),
+  "documents": zod.array(zod.object({
+  "id": zod.number().int(),
+  "filename": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "uploadedAt": zod.string(),
+  "uploadedBy": zod.string(),
+  "downloadUrl": zod.string()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "personId": zod.string(),
+  "kind": zod.enum(['cash', 'apic']),
+  "amountCents": zod.string(),
+  "date": zod.string(),
+  "method": zod.string().nullable(),
+  "note": zod.string(),
+  "reversesEntryId": zod.number().int().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.string(),
+  "note": zod.string(),
+  "amountCents": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -1372,6 +1575,7 @@ export const DeclareYearResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -1476,7 +1680,19 @@ export const DeclareYearResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -1503,6 +1719,7 @@ export const FinalizeYearResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -1607,7 +1824,19 @@ export const FinalizeYearResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -1640,6 +1869,7 @@ export const CorrectYearResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -1744,7 +1974,19 @@ export const CorrectYearResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -1780,6 +2022,7 @@ export const RecordPaymentResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -1884,7 +2127,19 @@ export const RecordPaymentResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -1915,6 +2170,7 @@ export const ReversePaymentResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -2019,7 +2275,19 @@ export const ReversePaymentResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 
@@ -2049,6 +2317,7 @@ export const SetYearHoldResponse = zod.object({
   "createdAt": zod.string(),
   "createdBy": zod.string()
 }).and(zod.object({
+  "figuresRevisionId": zod.number().int().nullish(),
   "figures": zod.union([zod.object({
   "grossCents": zod.string(),
   "grossDocumentId": zod.number().int().nullable(),
@@ -2153,7 +2422,19 @@ export const SetYearHoldResponse = zod.object({
   "note": zod.string(),
   "amountCents": zod.string().nullable(),
   "createdAt": zod.string(),
-  "createdBy": zod.string()
+  "createdBy": zod.string(),
+  "createdByName": zod.string().optional(),
+  "figures": zod.object({
+  "grossCents": zod.string(),
+  "grossDocumentId": zod.number().int().nullable(),
+  "note": zod.string(),
+  "costs": zod.array(zod.object({
+  "label": zod.string(),
+  "amountCents": zod.string(),
+  "documentId": zod.number().int().nullable()
+}))
+}).optional(),
+  "declarationDate": zod.string().optional()
 }))
 }))
 

@@ -25,6 +25,8 @@ export * from './documentUpload';
 export * from './documentUploadInput';
 export * from './documentUploadInputContentType';
 export * from './emailInput';
+export * from './figureDocumentInput';
+export * from './figureDocumentInputTarget';
 export * from './healthStatus';
 export * from './holding';
 export * from './holdings';
